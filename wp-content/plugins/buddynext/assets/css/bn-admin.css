@@ -1,0 +1,2291 @@
+/**
+ * BuddyNext Admin — Premium Chrome Styles
+ *
+ * Replaces the inline <style> block emitted by AdminPageBase::output_shared_styles().
+ * Covers every component class rendered by AdminPageBase and all BuddyNext admin
+ * sub-pages: Settings, Members, Spaces, NavManager, IntegrationHub, EmailEditor,
+ * Analytics, and MemberTypes.
+ *
+ * File structure:
+ *   1. :root — component-specific design tokens (--bn-a-* prefix)
+ *   2. [data-theme="dark"] — dark palette overrides
+ *   3. Component rules — desktop-first
+ *   4. @media breakpoints — 782px and 640px
+ *
+ * @package BuddyNext
+ * @since   1.0.0
+ */
+
+/* ==========================================================================
+   1. DESIGN TOKENS
+   ========================================================================== */
+
+:root {
+	/* --bn-a-* tokens alias the v2 --bn-* source in bn-base.css. They exist
+	 * only to preserve the admin's class surface; new admin code should
+	 * reference --bn-* directly. Dark mode flips through the v2 source. */
+
+	/* -- Brand ------------------------------------------------------------ */
+	--bn-a-brand:             var(--bn-accent);
+	--bn-a-brand-hover:       var(--bn-accent-700);
+	--bn-a-brand-light:       var(--bn-accent-100);
+
+	/* -- Backgrounds ------------------------------------------------------ */
+	--bn-a-bg:                var(--bn-canvas);
+	--bn-a-bg-subtle:         var(--bn-sunken);
+	--bn-a-bg-hover:          var(--bn-sunken);
+
+	/* -- Borders ---------------------------------------------------------- */
+	--bn-a-border:            var(--bn-line);
+	--bn-a-border-soft:       var(--bn-line-faint);
+
+	/* -- Text ------------------------------------------------------------- */
+	--bn-a-text-1:            var(--bn-ink);
+	--bn-a-text-2:            var(--bn-ink-2);
+	--bn-a-text-3:            var(--bn-ink-3);
+
+	/* -- Semantic --------------------------------------------------------- */
+	--bn-a-green:             var(--bn-success);
+	--bn-a-green-bg:          var(--bn-success-bg);
+	--bn-a-amber:             var(--bn-warn);
+	--bn-a-amber-bg:          var(--bn-warn-bg);
+	--bn-a-red:               var(--bn-danger);
+	--bn-a-red-bg:            var(--bn-danger-bg);
+
+	/* -- Sibling-product accents (hue-derived in bn-base.css) ----------- */
+	--bn-a-jetonomy:          var(--bn-jetonomy);
+	--bn-a-jetonomy-bg:       var(--bn-jetonomy-bg);
+	--bn-a-jetonomy-border:   var(--bn-jetonomy-bg);
+	--bn-a-mvs:               var(--bn-media);
+	--bn-a-mvs-bg:            var(--bn-media-bg);
+	--bn-a-mvs-border:        var(--bn-media-bg);
+	--bn-a-gamif:             var(--bn-events);
+	--bn-a-gamif-bg:          var(--bn-events-bg);
+	--bn-a-gamif-border:      var(--bn-events-bg);
+	--bn-a-career:            var(--bn-info);
+	--bn-a-career-bg:         var(--bn-info-bg);
+	--bn-a-career-border:     var(--bn-info-bg);
+
+	/* -- Spacing (4px grid) ----------------------------------------------- */
+	--bn-a-s1:                var(--bn-s1);
+	--bn-a-s2:                var(--bn-s2);
+	--bn-a-s3:                var(--bn-s3);
+	--bn-a-s4:                var(--bn-s4);
+	--bn-a-s5:                var(--bn-s5);
+	--bn-a-s6:                var(--bn-s6);
+	--bn-a-s8:                var(--bn-s8);
+	--bn-a-s10:               var(--bn-s10);
+
+	/* -- Border radius ---------------------------------------------------- */
+	--bn-a-r-sm:              var(--bn-r-sm);
+	--bn-a-r-md:              var(--bn-r-md);
+	--bn-a-r-lg:              var(--bn-r-lg);
+
+	/* -- Typography ------------------------------------------------------- */
+	--bn-a-font-body:         var(--bn-font-ui);
+	--bn-a-font-display:      var(--bn-font-display);
+	--bn-a-text-xs:           var(--bn-text-xs);
+	--bn-a-text-sm:           var(--bn-text-sm);
+	--bn-a-text-md:           var(--bn-text-md);
+	--bn-a-text-base:         var(--bn-text-base);
+	--bn-a-text-lg:           var(--bn-text-lg);
+	--bn-a-text-xl:           var(--bn-text-xl);
+	--bn-a-text-2xl:          var(--bn-text-2xl);
+	--bn-a-fw-normal:         var(--bn-fw-normal);
+	--bn-a-fw-medium:         var(--bn-fw-medium);
+	--bn-a-fw-semibold:       var(--bn-fw-semibold);
+	--bn-a-fw-bold:           var(--bn-fw-bold);
+	--bn-a-fw-extrabold:      var(--bn-fw-extrabold);
+
+	/* -- Shadows ---------------------------------------------------------- */
+	--bn-a-shadow-sm:         var(--bn-shadow-sm);
+	--bn-a-shadow-md:         var(--bn-shadow-md);
+
+	/* -- Transitions ------------------------------------------------------ */
+	--bn-a-transition:        var(--bn-dur) var(--bn-ease);
+
+	/* -- Avatar accent colours not covered by semantic tokens -------------- */
+	--bn-a-av-pink:           oklch(60% 0.20 350);
+
+	/* -- Structural / component sizes ------------------------------------ */
+	--bn-a-page-max-w:        1100px;
+	--bn-a-table-search-w:    240px;
+	--bn-a-addon-accent-w:    3px;
+	--bn-a-row-badge-py:      2px;
+	--bn-a-row-badge-px:      7px;
+
+	/* -- Toggle dimensions ----------------------------------------------- */
+	--bn-a-toggle-w:          40px;
+	--bn-a-toggle-h:          22px;
+	--bn-a-toggle-r:          11px;
+	--bn-a-toggle-knob:       16px;
+	--bn-a-toggle-knob-off:   3px;
+	--bn-a-toggle-knob-on:    21px;
+
+	/* -- Avatar dimensions ----------------------------------------------- */
+	--bn-a-avatar-sz:         34px;
+	--bn-a-avatar-sz-sm:      28px;
+
+	/* -- More-menu button size ------------------------------------------- */
+	--bn-a-more-btn-sz:       28px;
+
+	/* -- Input constraints ----------------------------------------------- */
+	--bn-a-input-min-w:       200px;
+	--bn-a-field-max-w:       400px;
+
+	/* -- Input look (ONE uniform admin field — used by every option) ----- */
+	--bn-a-input-border:      var(--bn-line-strong);   /* crisp, reads as tappable */
+	--bn-a-input-radius:      var(--bn-a-r-sm);
+	--bn-a-input-pad-y:       var(--bn-a-s2);
+	--bn-a-input-pad-x:       var(--bn-a-s3);
+	--bn-a-focus-ring:        0 0 0 3px color-mix(in oklch, var(--bn-a-brand) 22%, transparent);
+
+	/* -- Card / dropdown min-widths -------------------------------------- */
+	--bn-a-stat-card-min-w:   140px;
+	--bn-a-dropdown-min-w:    140px;
+
+	/* -- Drag handle dimensions ------------------------------------------ */
+	--bn-a-drag-bar-w:        18px;
+	--bn-a-drag-bar-h:        2px;
+	--bn-a-drag-bar-gap:      3px;
+
+	/* -- Typography specifics -------------------------------------------- */
+	--bn-a-ls-stat:           -0.5px;
+	--bn-a-outline-offset-in: -2px;
+	--bn-a-outline-offset:    2px;
+
+	/* -- Code background (developer bar) ---------------------------------- */
+	--bn-a-bg-code:           oklch(18% 0.005 var(--bn-hue));
+	--bn-a-code-text:         oklch(82% 0.18 145);
+}
+
+/* ==========================================================================
+   2. DARK MODE
+   ========================================================================== */
+
+/* Dark-mode token shifts come from the v2 source (bn-base.css). The aliases
+ * above already re-resolve, so no admin-scoped dark overrides are required. */
+
+/* ==========================================================================
+   3. COMPONENT RULES
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Page wrap
+   -------------------------------------------------------------------------- */
+
+.bn-admin-wrap {
+	max-width: var(--bn-a-page-max-w);
+	font-family: var(--bn-a-font-body);
+}
+
+/* --------------------------------------------------------------------------
+   Page header
+   -------------------------------------------------------------------------- */
+
+.bn-admin-header {
+	margin-bottom: var(--bn-a-s6);
+}
+
+.bn-admin-title {
+	font-family: var(--bn-a-font-display);
+	font-size: var(--bn-a-text-2xl) !important;
+	font-weight: var(--bn-a-fw-bold) !important;
+	color: var(--bn-a-text-1) !important;
+	margin: 0 0 var(--bn-a-s1) !important;
+	line-height: 1.3 !important;
+}
+
+.bn-admin-sub {
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-2);
+	margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Tab bar
+   -------------------------------------------------------------------------- */
+
+/* Pages & URLs tab — one tidy row per community hub: name + slug + URL preview,
+   with the optional backing page tucked in a disclosure. Divider-separated for
+   a clean, scannable list. */
+/* Compact, columnar layout: Hub | URL slug | Backing page. */
+.bn-pages-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.bn-pages-table th {
+	text-align: left;
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-semibold);
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--bn-a-text-3);
+	padding: 0 var(--bn-a-s4) var(--bn-a-s2) 0;
+	border-bottom: 1px solid var(--bn-a-border);
+}
+.bn-pages-table td {
+	vertical-align: top;
+	padding: var(--bn-a-s3) var(--bn-a-s4) var(--bn-a-s3) 0;
+	border-bottom: 1px solid var(--bn-a-border-soft);
+}
+.bn-pages-table tr:last-child td {
+	border-bottom: 0;
+}
+.bn-pages-table .bn-field-hint {
+	display: block;
+	margin: 2px 0 0;
+}
+.bn-pages-cell--hub strong {
+	display: block;
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+}
+.bn-pages-cell--slug {
+	width: 32%;
+}
+.bn-pages-cell--page {
+	width: 38%;
+}
+.bn-pages-slug-input {
+	width: 100%;
+	max-width: 220px;
+}
+.bn-pages-cell--page select {
+	width: 100%;
+	max-width: 300px;
+	box-sizing: border-box;
+}
+.bn-pages-create {
+	margin-top: var(--bn-a-s2);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-2);
+}
+
+/* Stack to label-over-control on small screens. */
+@media ( max-width: 782px ) {
+	.bn-pages-table,
+	.bn-pages-table tbody,
+	.bn-pages-table tr,
+	.bn-pages-table td {
+		display: block;
+		width: 100%;
+	}
+	.bn-pages-table thead {
+		display: none;
+	}
+	.bn-pages-table td {
+		border-bottom: 0;
+		padding: var(--bn-a-s1) 0;
+	}
+	.bn-pages-table tr {
+		padding: var(--bn-a-s3) 0;
+		border-bottom: 1px solid var(--bn-a-border-soft);
+	}
+}
+
+/* Page sub-nav (Members / Profile Fields / …) — underline tab strip so it
+   matches the AdminHub section tabs and every other nav in the admin. */
+.bn-admin-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--bn-a-s1, 4px);
+	border-bottom: 1px solid var(--bn-a-border);
+	margin-bottom: var(--bn-a-s5);
+}
+
+.bn-atab {
+	padding: 10px 14px;
+	margin-bottom: -1px;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: none;
+	font-size: var(--bn-a-text-sm);
+	font-weight: var(--bn-a-fw-medium);
+	line-height: 1.2;
+	color: var(--bn-a-text-2);
+	cursor: pointer;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	white-space: nowrap;
+	transition: color var(--bn-a-transition), border-color var(--bn-a-transition);
+}
+
+.bn-atab.active,
+.bn-atab.active:visited {
+	color: var(--bn-a-brand);
+	border-bottom-color: var(--bn-a-brand);
+	font-weight: var(--bn-a-fw-semibold);
+}
+
+.bn-atab:hover:not(.active) {
+	color: var(--bn-a-text-1);
+}
+
+.bn-atab:focus-visible {
+	outline: 2px solid var(--bn-a-brand);
+	outline-offset: var(--bn-a-outline-offset-in);
+	border-radius: var(--bn-a-r-sm, 4px);
+}
+
+/* Colour field — swatch picker + hex input, shared across every admin screen
+   (Settings brand colour, taxonomy editor, etc.) so the control is identical
+   everywhere. */
+.bn-color-row {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s2);
+}
+.bn-color-row input[type="color"],
+.bn-color-swatch {
+	width: 36px;
+	height: 36px;
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-sm);
+	padding: 2px;
+	cursor: pointer;
+	background: none;
+	flex-shrink: 0;
+}
+.bn-color-hex {
+	max-width: 120px;
+	font-family: var(--bn-a-font-mono, monospace);
+}
+.bn-color-row .bn-field-hint {
+	margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Section cards
+   -------------------------------------------------------------------------- */
+
+.bn-settings-section {
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-lg);
+	box-shadow: var(--bn-a-shadow-sm);
+	margin-bottom: var(--bn-a-s5);
+	overflow: hidden;
+}
+
+.bn-ss-header {
+	padding: var(--bn-a-s4) var(--bn-a-s5);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--bn-a-s3);
+}
+
+.bn-ss-title {
+	font-family: var(--bn-a-font-display);
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-base);
+	color: var(--bn-a-text-1);
+}
+
+.bn-ss-body {
+	padding: var(--bn-a-s5);
+}
+
+/* Section-body intro paragraph. Shared by every admin tab that opens a
+   section with a lead sentence (Tools, Appearance, Roles, Demo, Members).
+   It lives in this always-loaded sheet — not a page-specific one — so every
+   page gets the same tight top spacing instead of the browser's default
+   <p> margin (which read as an inconsistent gap on non-Members tabs). */
+.bn-av-section-desc {
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-2);
+	margin: 0 0 var(--bn-a-s4);
+}
+
+/* --------------------------------------------------------------------------
+   Form fields
+   -------------------------------------------------------------------------- */
+
+.bn-field {
+	margin-bottom: var(--bn-a-s4);
+}
+
+.bn-field:last-child {
+	margin-bottom: 0;
+}
+
+.bn-field > label,
+.bn-field > .bn-field-label {
+	display: block;
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-sm);
+	margin-bottom: var(--bn-a-s1);
+	color: var(--bn-a-text-1);
+}
+
+/* Form-control sizing inside admin section cards (.bn-ss-body).
+ *
+ * The cards are full-width, so a bare input would either sit tiny at its content
+ * size or sprawl edge-to-edge. Make text inputs / selects fill their container
+ * but cap at a readable width, and give textareas a wider cap. Number and colour
+ * inputs keep their natural compact size. Settings' inline max-widths
+ * (render_*_row) still win where set. */
+.bn-ss-body input.bn-text-input:not([type="number"]):not([type="color"]),
+.bn-ss-body input.bn-input:not([type="number"]):not([type="color"]),
+.bn-ss-body input[type="email"].regular-text,
+.bn-ss-body input[type="url"].regular-text,
+.bn-ss-body select.bn-select,
+.bn-ss-body select.bn-select-input,
+.bn-ss-body select:not([multiple]) {
+	width: 100%;
+	max-width: 560px;
+	box-sizing: border-box;
+}
+.bn-ss-body textarea.bn-text-input,
+.bn-ss-body textarea.bn-textarea,
+.bn-ss-body textarea.bn-input {
+	width: 100%;
+	max-width: 760px;
+	box-sizing: border-box;
+}
+.bn-ss-body input[type="number"] {
+	width: 120px;
+}
+
+/* Icon slot inside a bn-btn (used by Settings → Registration → Manage invitations). */
+.bn-btn .bn-btn__icon {
+	width: 14px;
+	height: 14px;
+	margin-left: var(--bn-a-s1);
+}
+
+.bn-field-hint {
+	display: block;
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-3);
+	margin-top: var(--bn-a-s1);
+}
+
+/* Input + action buttons on one row (e.g. the webhook secret: Show/Copy/
+   Generate). The text input flexes to fill; the buttons keep their size. */
+.bn-input-group {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: stretch;
+	gap: var(--bn-a-s2);
+}
+
+.bn-input-group > input.bn-text-input {
+	flex: 1 1 280px;
+	min-width: 0;
+}
+
+.bn-input-group > .bn-btn {
+	flex: 0 0 auto;
+}
+
+.bn-secret-msg {
+	display: block;
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-green);
+	margin-top: var(--bn-a-s1);
+}
+
+.bn-secret-msg:empty {
+	display: none;
+}
+
+/* ONE uniform admin field. Every option control — the admin primitive
+ * (.bn-text-input / .bn-select-input) AND the frontend primitive
+ * (.bn-input / .bn-select / .bn-textarea) that admin screens reuse — resolves
+ * to the same look: same padding, radius, crisp border, and focus ring. This
+ * file is admin-only and loads after bn-base.css, so the frontend .bn-input is
+ * untouched; only its admin usage converges here. */
+input.bn-text-input,
+textarea.bn-text-input,
+select.bn-text-input,
+select.bn-select-input,
+.bn-input,
+.bn-textarea,
+.bn-select {
+	padding: var(--bn-a-input-pad-y) var(--bn-a-input-pad-x) !important;
+	font-size: var(--bn-a-text-sm) !important;
+	line-height: 1.4 !important;
+	color: var(--bn-a-text-1) !important;
+	background: var(--bn-a-bg) !important;
+	border: 1px solid var(--bn-a-input-border) !important;
+	border-radius: var(--bn-a-input-radius) !important;
+	box-shadow: none !important;
+	height: auto !important;
+	transition: border-color var(--bn-a-transition), box-shadow var(--bn-a-transition);
+}
+
+input.bn-text-input:focus,
+textarea.bn-text-input:focus,
+select.bn-text-input:focus,
+select.bn-select-input:focus,
+.bn-input:focus,
+.bn-textarea:focus,
+.bn-select:focus {
+	border-color: var(--bn-a-brand) !important;
+	box-shadow: var(--bn-a-focus-ring) !important;
+	outline: none !important;
+}
+
+select.bn-select-input {
+	min-width: var(--bn-a-input-min-w);
+}
+
+select.bn-text-input {
+	display: block;
+	width: 100%;
+	max-width: var(--bn-a-field-max-w);
+}
+
+/* Baseline: ANY native / no-class form control inside the BuddyNext admin
+ * shell converges to the uniform field look — e.g. the Pages & URLs
+ * "Backing Page" <select>s that carry no BN class and would otherwise show
+ * the browser default (square 2px radius, grey border). The class rules above
+ * (with !important) still win where a primitive class is present and set the
+ * identical values, so the two layers never visibly conflict. Excludes
+ * checkbox / radio / colour / file / range / submit / button via the type
+ * whitelist. */
+.bn-admin-hub select,
+.bn-admin-hub textarea,
+.bn-admin-hub input[type="text"],
+.bn-admin-hub input[type="url"],
+.bn-admin-hub input[type="email"],
+.bn-admin-hub input[type="search"],
+.bn-admin-hub input[type="password"],
+.bn-admin-hub input[type="number"],
+.bn-admin-hub input[type="tel"],
+.bn-admin-hub input[type="date"],
+.bn-admin-hub input[type="datetime-local"] {
+	padding: var(--bn-a-input-pad-y) var(--bn-a-input-pad-x);
+	font-size: var(--bn-a-text-sm);
+	line-height: 1.4;
+	color: var(--bn-a-text-1);
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-input-border);
+	border-radius: var(--bn-a-input-radius);
+	box-shadow: none;
+	height: auto;
+	transition: border-color var(--bn-a-transition), box-shadow var(--bn-a-transition);
+}
+
+/* Native <select> keeps room for the UA dropdown arrow on the inline-end. */
+.bn-admin-hub select {
+	padding-inline-end: var(--bn-a-s6);
+}
+
+.bn-admin-hub select:focus,
+.bn-admin-hub textarea:focus,
+.bn-admin-hub input[type="text"]:focus,
+.bn-admin-hub input[type="url"]:focus,
+.bn-admin-hub input[type="email"]:focus,
+.bn-admin-hub input[type="search"]:focus,
+.bn-admin-hub input[type="password"]:focus,
+.bn-admin-hub input[type="number"]:focus,
+.bn-admin-hub input[type="tel"]:focus,
+.bn-admin-hub input[type="date"]:focus,
+.bn-admin-hub input[type="datetime-local"]:focus {
+	border-color: var(--bn-a-brand);
+	box-shadow: var(--bn-a-focus-ring);
+	outline: none;
+}
+
+/* Edit member form rows (used by MemberEditForm) */
+.bn-field-row {
+	margin-bottom: var(--bn-a-s4);
+}
+
+.bn-field-row:last-child {
+	margin-bottom: 0;
+}
+
+.bn-label {
+	display: block;
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+	margin-bottom: var(--bn-a-s1);
+}
+
+.bn-label label {
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+	cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Toggle rows
+   -------------------------------------------------------------------------- */
+
+.bn-toggle-row {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--bn-a-s4);
+	padding: var(--bn-a-s3) 0;
+	border-bottom: 1px solid var(--bn-a-border-soft);
+}
+
+.bn-toggle-row:last-child {
+	border-bottom: none;
+}
+
+/* A toggle disabled because a required plugin is inactive — reads as unavailable. */
+.bn-toggle-row.is-disabled .bn-tl-title,
+.bn-toggle-row.is-disabled .bn-toggle {
+	opacity: 0.55;
+}
+.bn-toggle-row.is-disabled .bn-toggle {
+	pointer-events: none;
+}
+
+.bn-tl-label {
+	flex: 1;
+}
+
+.bn-tl-title {
+	display: block;
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+	cursor: pointer;
+}
+
+.bn-tl-desc {
+	display: block;
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-2);
+	margin-top: var(--bn-a-s1);
+}
+
+/*
+ * Toggle: the canonical geometry lives in bn-base.css (.bn-toggle, ::before
+ * thumb, [aria-checked] state). The admin settings template uses class .on
+ * for the active state — wire it into the base ::before thumb so we paint
+ * a single, correct track + thumb everywhere, instead of two competing
+ * pseudo-element thumbs (one from base, one from admin).
+ */
+/*
+ * The settings template renders the checkbox INSIDE the .bn-toggle label
+ * (screen-reader-only) with no JS to add the .on class, so the visual never
+ * reflected the checked state. Drive the active state straight from the nested
+ * checkbox with :has() — pure CSS, correct on load, no flash. The legacy .on
+ * class is kept for any JS-driven toggles elsewhere.
+ */
+.bn-toggle.on,
+.bn-toggle:has( input[type="checkbox"]:checked ) { background: var(--bn-accent); }
+.bn-toggle.on::before,
+.bn-toggle:has( input[type="checkbox"]:checked )::before { transform: translateX(18px); }
+
+/* Make sure the hidden checkbox inside the label stays clipped. */
+.bn-toggle .screen-reader-text {
+	border: 0;
+	clip: rect(1px, 1px, 1px, 1px);
+	-webkit-clip-path: inset(50%);
+	clip-path: inset(50%);
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	padding: 0;
+	position: absolute;
+	width: 1px;
+	word-wrap: normal !important;
+}
+
+/* --------------------------------------------------------------------------
+   Save bar
+   -------------------------------------------------------------------------- */
+
+.bn-save-bar {
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-md);
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: var(--bn-a-s3);
+	margin-top: var(--bn-a-s2);
+}
+
+.bn-save-msg {
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-green);
+	font-weight: var(--bn-a-fw-semibold);
+	margin-right: auto;
+}
+
+/* --------------------------------------------------------------------------
+   Stats cards
+   -------------------------------------------------------------------------- */
+
+.bn-stats-row {
+	display: flex;
+	gap: var(--bn-a-s4);
+	margin-bottom: var(--bn-a-s6);
+	flex-wrap: wrap;
+}
+
+.bn-stat-card {
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-md);
+	padding: var(--bn-a-s4) var(--bn-a-s5);
+	flex: 1;
+	min-width: var(--bn-a-stat-card-min-w);
+}
+
+.bn-stat-label {
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-bold);
+	color: var(--bn-a-text-3);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: var(--bn-a-s1);
+}
+
+.bn-stat-val {
+	font-size: var(--bn-a-text-2xl);
+	font-weight: var(--bn-a-fw-extrabold);
+	color: var(--bn-a-text-1);
+	line-height: 1.1;
+	letter-spacing: var(--bn-a-ls-stat);
+}
+
+.bn-stat-danger {
+	color: var(--bn-a-red);
+}
+
+/* --------------------------------------------------------------------------
+   Data table
+   -------------------------------------------------------------------------- */
+
+.bn-data-table {
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-md);
+	overflow: hidden;
+	margin-bottom: var(--bn-a-s4);
+}
+
+.bn-table-header {
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--bn-a-s3);
+	flex-wrap: wrap;
+}
+
+input.bn-table-search {
+	border: 1px solid var(--bn-a-border) !important;
+	border-radius: var(--bn-a-r-sm) !important;
+	padding: var(--bn-a-s2) var(--bn-a-s3) !important;
+	font-size: var(--bn-a-text-sm) !important;
+	width: var(--bn-a-table-search-w) !important;
+	box-shadow: none !important;
+	background: var(--bn-a-bg) !important;
+	color: var(--bn-a-text-1) !important;
+}
+
+input.bn-table-search:focus {
+	border-color: var(--bn-a-brand) !important;
+	box-shadow: var(--bn-a-focus-ring) !important;
+	outline: none !important;
+}
+
+table.bn-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+table.bn-table th {
+	padding: var(--bn-a-s2) var(--bn-a-s4);
+	text-align: left;
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-bold);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--bn-a-text-3);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+	background: var(--bn-a-bg-subtle);
+}
+
+table.bn-table td {
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+	vertical-align: middle;
+}
+
+table.bn-table tr:last-child td {
+	border-bottom: none;
+}
+
+table.bn-table tr:hover td {
+	background: var(--bn-a-bg-hover);
+}
+
+/* --------------------------------------------------------------------------
+   Badges
+   -------------------------------------------------------------------------- */
+
+.bn-badge {
+	display: inline-block;
+	padding: 2px var(--bn-a-s2);
+	border-radius: var(--bn-a-r-lg);
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-bold);
+}
+
+/* Status tones use the canonical .bn-badge[data-tone] API defined in
+   bn-base.css (success / warn / danger / neutral / info). Admin screens
+   render those directly, so the old standalone status modifiers
+   (.bn-badge-active/-suspended/-open/-private/-secret) are gone. */
+
+/* Role badges — role-specific colour set, layered on the .bn-badge base. */
+.bn-badge-role-admin {
+	background: var(--bn-a-red-bg);
+	color: var(--bn-a-red);
+}
+
+.bn-badge-role-editor {
+	background: var(--bn-a-amber-bg);
+	color: var(--bn-a-amber);
+}
+
+.bn-badge-role-author {
+	background: var(--bn-a-career-bg);
+	color: var(--bn-a-career);
+}
+
+.bn-badge-role-contrib {
+	background: var(--bn-a-jetonomy-bg);
+	color: var(--bn-a-jetonomy);
+}
+
+.bn-badge-role-member {
+	background: var(--bn-a-green-bg);
+	color: var(--bn-a-green);
+}
+
+.bn-feature-check {
+	color: var(--bn-a-green);
+	flex-shrink: 0;
+	margin-top: 1px;
+}
+
+.bn-feature-check svg {
+	width: 13px;
+	height: 13px;
+}
+
+/* --------------------------------------------------------------------------
+   Settings — Integrations companion list (compact row variant)
+   Used by Settings.php → render_tab_integrations() to render the companion
+   plugin roster (active / inactive / not installed) with one-click EDD
+   install + activate. Data comes from CompanionRegistry.
+   -------------------------------------------------------------------------- */
+
+.bn-addon-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--bn-a-s3);
+}
+
+.bn-addon-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--bn-a-s3);
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-radius: var(--bn-a-r-md);
+	border: 1px solid var(--bn-a-border);
+	background: var(--bn-a-bg-subtle);
+}
+
+.bn-addon-row__status {
+	flex-shrink: 0;
+	margin-top: 2px;
+}
+
+.bn-addon-row__meta {
+	flex: 1;
+	min-width: 0;
+}
+
+.bn-addon-row__label {
+	display: block;
+	font-size: var(--bn-a-text-sm);
+	font-weight: var(--bn-a-fw-semibold);
+	color: var(--bn-a-text-1);
+}
+
+.bn-addon-row__desc {
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-2);
+	margin: var(--bn-a-s1) 0 0;
+	line-height: 1.5;
+}
+
+.bn-addon-row__action {
+	flex-shrink: 0;
+	align-self: center;
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-semibold);
+	color: var(--bn-a-brand);
+	text-decoration: none;
+	padding: var(--bn-a-s1) var(--bn-a-s2);
+	border-radius: var(--bn-a-r-sm);
+	min-height: 40px;
+	display: inline-flex;
+	align-items: center;
+}
+
+.bn-addon-row__action:hover,
+.bn-addon-row__action:focus {
+	color: var(--bn-a-brand-hover);
+	background: var(--bn-a-brand-light);
+}
+
+.bn-addon-row__action:focus-visible {
+	outline: 2px solid var(--bn-a-brand);
+	outline-offset: var(--bn-a-outline-offset);
+}
+
+/* --------------------------------------------------------------------------
+   Integrations tab - Wbcom family header + companion card grid
+   Rendered by Settings::render_tab_integrations().
+   Tokens: --bn-a-* aliases map directly to the --bn-* design-token layer.
+   -------------------------------------------------------------------------- */
+
+.bn-fam-header {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+	padding: 20px 22px;
+	margin: 0 0 20px;
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-lg);
+	background: var(--bn-a-bg);
+}
+
+.bn-fam-header__mark {
+	flex: 0 0 auto;
+	width: 52px;
+	height: 52px;
+	object-fit: contain;
+}
+
+.bn-fam-header__body { flex: 1; min-width: 0; }
+
+.bn-fam-header__title {
+	margin: 0 0 2px;
+	font-size: 17px;
+	font-weight: var(--bn-a-fw-bold);
+	color: var(--bn-a-text-1);
+}
+
+.bn-fam-header__desc {
+	margin: 0 0 8px;
+	color: var(--bn-a-text-2);
+	max-width: 70ch;
+	line-height: 1.5;
+}
+
+.bn-fam-header__link {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-weight: var(--bn-a-fw-semibold);
+	text-decoration: none;
+	color: var(--bn-a-brand);
+}
+
+.bn-fam-header__link:hover { text-decoration: underline; }
+.bn-fam-header__link svg { flex-shrink: 0; }
+
+/* Card grid */
+.bn-companion-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+	gap: 16px;
+	margin: 0 0 16px;
+}
+
+.bn-companion-card {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 18px;
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-lg);
+	background: var(--bn-a-bg);
+}
+
+.bn-companion-card__head {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.bn-companion-card__logo {
+	flex: 0 0 auto;
+	width: 40px;
+	height: 40px;
+	object-fit: contain;
+	border-radius: var(--bn-a-r-sm);
+}
+
+.bn-companion-card__title {
+	flex: 1;
+	margin: 0;
+	font-size: 15px;
+	font-weight: var(--bn-a-fw-semibold);
+	color: var(--bn-a-text-1);
+}
+
+.bn-companion-card__why {
+	margin: 0;
+	color: var(--bn-a-text-2);
+	font-size: var(--bn-a-text-sm);
+	line-height: 1.5;
+}
+
+.bn-companion-card__unlocks {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-green);
+}
+
+.bn-companion-card__unlocks svg { flex-shrink: 0; }
+
+.bn-companion-card__actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin-top: auto;
+	padding-top: 4px;
+}
+
+/* Status badge - companion variant */
+.bn-companion-badge {
+	flex: 0 0 auto;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-bold);
+	line-height: 1.6;
+	white-space: nowrap;
+}
+
+.bn-companion-badge--success {
+	background: var(--bn-a-green-bg);
+	color: var(--bn-a-green);
+}
+
+.bn-companion-badge--warning {
+	background: var(--bn-a-amber-bg);
+	color: var(--bn-a-amber);
+}
+
+.bn-companion-badge--muted {
+	background: var(--bn-a-bg-subtle);
+	color: var(--bn-a-text-3);
+}
+
+.bn-companion-foot {
+	margin-top: 4px;
+	color: var(--bn-a-text-3);
+}
+
+/* Live-status message slot inside each card */
+.bn-companion-msg {
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-2);
+}
+
+@media (max-width: 782px) {
+	.bn-fam-header { flex-wrap: wrap; }
+	.bn-companion-grid { grid-template-columns: 1fr; }
+}
+
+/* --------------------------------------------------------------------------
+   Nav manager rows
+   -------------------------------------------------------------------------- */
+
+.bn-nav-row {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s3);
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+}
+
+.bn-nav-row:last-child {
+	border-bottom: none;
+}
+
+.bn-drag-handle {
+	display: flex;
+	flex-direction: column;
+	gap: var(--bn-a-drag-bar-gap);
+	padding: var(--bn-a-s1) var(--bn-a-drag-bar-h);
+	flex-shrink: 0;
+	cursor: grab;
+	opacity: 0.5;
+}
+
+.bn-drag-handle span {
+	display: block;
+	width: var(--bn-a-drag-bar-w);
+	height: var(--bn-a-drag-bar-h);
+	background: var(--bn-a-border);
+	border-radius: var(--bn-a-drag-bar-h);
+}
+
+.bn-row-info {
+	flex: 1;
+}
+
+.bn-row-name {
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+}
+
+.bn-row-desc {
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-2);
+	margin-top: var(--bn-a-s1);
+}
+
+/* --------------------------------------------------------------------------
+   Row badge
+   -------------------------------------------------------------------------- */
+
+.bn-row-badge {
+	display: inline-block;
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-bold);
+	padding: var(--bn-a-row-badge-py) var(--bn-a-row-badge-px);
+	border-radius: var(--bn-a-r-lg);
+	margin-left: var(--bn-a-s2);
+	background: var(--bn-a-brand);
+	color: var(--bn-a-bg);
+	vertical-align: middle;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.bn-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--bn-a-s2);
+	padding: var(--bn-a-s2) var(--bn-a-s4);
+	border-radius: var(--bn-a-r-md);
+	font-size: var(--bn-a-text-sm);
+	font-weight: var(--bn-a-fw-semibold);
+	cursor: pointer;
+	text-decoration: none;
+	border: 1px solid var(--bn-a-border);
+	background: var(--bn-a-bg);
+	color: var(--bn-a-text-1);
+	transition: background var(--bn-a-transition), border-color var(--bn-a-transition), color var(--bn-a-transition), box-shadow var(--bn-a-transition);
+}
+
+.bn-btn:hover {
+	background: var(--bn-a-bg-subtle);
+}
+
+.bn-btn:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px color-mix(in oklch, var(--bn-a-brand) 25%, transparent);
+}
+
+.bn-btn-primary {
+	background: var(--bn-a-brand);
+	color: var(--bn-a-bg);
+	border-color: transparent;
+}
+
+.bn-btn-primary:hover {
+	background: var(--bn-a-brand-hover);
+	color: var(--bn-a-bg);
+}
+
+.bn-btn-secondary {
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	color: var(--bn-a-text-1);
+	border-radius: var(--bn-a-r-md);
+	padding: var(--bn-a-s2) var(--bn-a-s4);
+	font-size: var(--bn-a-text-sm);
+	font-weight: var(--bn-a-fw-semibold);
+	cursor: pointer;
+	font-family: var(--bn-a-font-body);
+}
+
+.bn-btn-secondary:hover {
+	background: var(--bn-a-bg-subtle);
+	border-color: var(--bn-a-text-3);
+}
+
+a.bn-btn-danger,
+button.bn-btn-danger {
+	border-color: var(--bn-a-red) !important;
+	color: var(--bn-a-red) !important;
+	background: var(--bn-a-red-bg);
+}
+
+a.bn-btn-danger:hover,
+button.bn-btn-danger:hover {
+	background: var(--bn-a-red-bg);
+	border-color: var(--bn-a-red) !important;
+}
+
+.bn-toolbar {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s2);
+	flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   Pagination
+   -------------------------------------------------------------------------- */
+
+/* Pagination bar: "Showing X-Y of N" summary on the left, windowed page
+   links on the right. The summary shows even on a single page. */
+.bn-pagination-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: var(--bn-a-s2);
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-top: 1px solid var(--bn-a-border-soft);
+}
+
+.bn-pagination-summary {
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-3);
+}
+
+.bn-pagination {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s1);
+	justify-content: flex-end;
+}
+
+.bn-page-link {
+	padding: 5px var(--bn-a-s3);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-sm);
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-1);
+	text-decoration: none;
+	transition: background var(--bn-a-transition), color var(--bn-a-transition);
+}
+
+.bn-page-link.current {
+	background: var(--bn-a-brand);
+	color: var(--bn-a-bg) !important;
+	border-color: var(--bn-a-brand);
+}
+
+.bn-page-link:hover:not(.current):not(.is-disabled) {
+	background: var(--bn-a-bg-hover);
+}
+
+.bn-page-link--nav {
+	font-weight: var(--bn-a-fw-medium);
+}
+
+.bn-page-link.is-disabled {
+	color: var(--bn-a-text-3);
+	background: var(--bn-a-bg-subtle);
+	cursor: default;
+	opacity: 0.6;
+}
+
+.bn-page-ellipsis {
+	padding: 0 var(--bn-a-s1);
+	color: var(--bn-a-text-3);
+	font-size: var(--bn-a-text-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Member cell
+   -------------------------------------------------------------------------- */
+
+.bn-member-cell {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s2);
+}
+
+.bn-member-info {
+	display: flex;
+	flex-direction: column;
+}
+
+.bn-member-name {
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+	line-height: 1.2;
+}
+
+.bn-member-username {
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-3);
+	margin-top: var(--bn-a-s1);
+}
+
+/* --------------------------------------------------------------------------
+   Avatar initials
+   -------------------------------------------------------------------------- */
+
+.bn-avatar-initials {
+	width: var(--bn-a-avatar-sz);
+	height: var(--bn-a-avatar-sz);
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-bold);
+	color: var(--bn-a-bg);
+	flex-shrink: 0;
+	letter-spacing: 0.02em;
+}
+
+.av-brand  { background: var(--bn-a-brand); }
+.av-green  { background: var(--bn-a-green); }
+.av-purple { background: var(--bn-a-jetonomy); }
+.av-orange { background: var(--bn-a-gamif); }
+.av-pink   { background: var(--bn-a-av-pink); }
+.av-teal   { background: var(--bn-a-mvs); }
+.av-rose   { background: var(--bn-a-red); }
+.av-indigo { background: var(--bn-a-career); }
+
+/* --------------------------------------------------------------------------
+   Filter bar
+   -------------------------------------------------------------------------- */
+
+.bn-filter-bar {
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+	background: var(--bn-a-bg-subtle);
+}
+
+.bn-filter-form {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s2);
+	flex-wrap: wrap;
+}
+
+.bn-search-input {
+	flex: 1;
+	min-width: var(--bn-a-input-min-w);
+	border: 1px solid var(--bn-a-border) !important;
+	border-radius: var(--bn-a-r-sm) !important;
+	padding: var(--bn-a-s2) var(--bn-a-s3) !important;
+	font-size: var(--bn-a-text-sm) !important;
+	box-shadow: none !important;
+	background: var(--bn-a-bg) !important;
+	color: var(--bn-a-text-1) !important;
+}
+
+.bn-search-input:focus {
+	border-color: var(--bn-a-brand) !important;
+	box-shadow: var(--bn-a-focus-ring) !important;
+	outline: none !important;
+}
+
+.bn-filter-select {
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-sm);
+	padding: var(--bn-a-s2) var(--bn-a-s3);
+	font-size: var(--bn-a-text-sm);
+	background: var(--bn-a-bg);
+	color: var(--bn-a-text-1);
+	height: auto;
+	cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Action row
+   -------------------------------------------------------------------------- */
+
+.bn-action-row {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s2);
+	margin-bottom: var(--bn-a-s3);
+	flex-wrap: wrap;
+}
+
+.bn-filter-tab {
+	padding: var(--bn-a-s1) var(--bn-a-s3);
+	border-radius: var(--bn-a-r-lg);
+	font-size: var(--bn-a-text-xs);
+	font-weight: var(--bn-a-fw-semibold);
+	color: var(--bn-a-text-2);
+	text-decoration: none;
+	background: transparent;
+	transition: background var(--bn-a-transition), color var(--bn-a-transition);
+}
+
+.bn-filter-tab.active {
+	background: var(--bn-a-brand);
+	color: var(--bn-a-bg);
+}
+
+.bn-filter-tab:hover:not(.active) {
+	background: var(--bn-a-bg-hover);
+	color: var(--bn-a-text-1);
+}
+
+/* --------------------------------------------------------------------------
+   Table columns
+   -------------------------------------------------------------------------- */
+
+.bn-col-email {
+	color: var(--bn-a-text-1);
+	font-size: var(--bn-a-text-sm);
+}
+
+.bn-col-muted {
+	color: var(--bn-a-text-3);
+	font-size: var(--bn-a-text-xs);
+	white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   Row actions
+   -------------------------------------------------------------------------- */
+
+.bn-row-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s2);
+	white-space: nowrap;
+}
+
+.bn-action-link {
+	font-size: var(--bn-a-text-sm);
+	font-weight: var(--bn-a-fw-medium);
+	color: var(--bn-a-brand);
+	text-decoration: none;
+}
+
+.bn-action-link:hover {
+	text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   More menu dropdown
+   -------------------------------------------------------------------------- */
+
+.bn-more-menu {
+	position: relative;
+	display: inline-block;
+}
+
+.bn-more-btn {
+	background: transparent;
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-sm);
+	width: var(--bn-a-more-btn-sz);
+	height: var(--bn-a-more-btn-sz);
+	font-size: var(--bn-a-text-lg);
+	color: var(--bn-a-text-3);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	line-height: 1;
+	transition: background var(--bn-a-transition), color var(--bn-a-transition), border-color var(--bn-a-transition);
+}
+
+.bn-more-btn:hover {
+	background: var(--bn-a-bg-hover);
+	color: var(--bn-a-text-1);
+	border-color: var(--bn-a-text-3);
+}
+
+.bn-more-dropdown {
+	display: none;
+	position: absolute;
+	right: 0;
+	top: calc(100% + var(--bn-a-s1));
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-md);
+	box-shadow: var(--bn-a-shadow-md);
+	min-width: var(--bn-a-dropdown-min-w);
+	z-index: 100;
+	overflow: hidden;
+}
+
+.bn-more-menu.open .bn-more-dropdown {
+	display: block;
+}
+
+.bn-dropdown-item {
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: var(--bn-a-s2) var(--bn-a-s4);
+	font-size: var(--bn-a-text-sm);
+	font-weight: var(--bn-a-fw-medium);
+	color: var(--bn-a-text-1);
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-family: var(--bn-a-font-body);
+	white-space: nowrap;
+	transition: background var(--bn-a-transition);
+}
+
+.bn-dropdown-item:hover {
+	background: var(--bn-a-bg-subtle);
+}
+
+.bn-dropdown-danger {
+	color: var(--bn-a-red);
+}
+
+.bn-dropdown-danger:hover {
+	background: var(--bn-a-red-bg);
+}
+
+/* --------------------------------------------------------------------------
+   Developer bar
+   -------------------------------------------------------------------------- */
+
+.bn-dev-bar {
+	background: var(--bn-a-bg-code);
+	border-radius: var(--bn-a-r-md);
+	padding: var(--bn-a-s4);
+}
+
+.bn-dev-bar code {
+	font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-code-text);
+	word-break: break-all;
+	background: transparent;
+	display: block;
+	line-height: 1.6;
+}
+
+/* ==========================================================================
+   4. RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+
+@media (max-width: 782px) {
+	.bn-admin-tabs {
+		flex-wrap: wrap;
+	}
+
+	.bn-atab {
+		border-right: none;
+		border-bottom: 1px solid var(--bn-a-border);
+		flex: 1 1 auto;
+		text-align: center;
+	}
+
+	.bn-stats-row {
+		flex-direction: column;
+	}
+
+	.bn-table-header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	input.bn-table-search {
+		width: 100% !important;
+	}
+}
+
+@media (max-width: 640px) {
+	.bn-member-cell {
+		gap: var(--bn-a-s2);
+	}
+
+	.bn-avatar-initials {
+		width: var(--bn-a-avatar-sz-sm);
+		height: var(--bn-a-avatar-sz-sm);
+		font-size: var(--bn-a-text-xs);
+	}
+
+	.bn-col-email,
+	.bn-col-muted {
+		display: none;
+	}
+
+	.bn-save-bar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.bn-save-msg {
+		margin-right: 0;
+		text-align: center;
+	}
+}
+
+/* ==========================================================================
+   6. SHARED PRIMITIVES — modal + drag-row
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Modal backdrop + panel (used by destructive-action confirms in
+   MemberTypesManager and AvatarSettings)
+   -------------------------------------------------------------------------- */
+
+.bn-modal-backdrop {
+	position: fixed;
+	inset: 0;
+	background: color-mix(in oklch, var(--bn-ink) 55%, transparent);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100050;
+	padding: var(--bn-a-s4);
+}
+
+.bn-modal-backdrop[hidden] {
+	display: none;
+}
+
+.bn-modal__panel {
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-md);
+	box-shadow: var(--bn-a-shadow-md);
+	max-width: 420px;
+	width: 100%;
+	padding: var(--bn-a-s5) var(--bn-a-s5) var(--bn-a-s4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--bn-a-s3);
+}
+
+.bn-modal__panel[data-tone="danger"] {
+	border-top: 3px solid var(--bn-a-red);
+}
+
+.bn-modal__title {
+	font-family: var(--bn-a-font-display);
+	font-size: var(--bn-a-text-lg);
+	font-weight: var(--bn-a-fw-bold);
+	color: var(--bn-a-text-1);
+	margin: 0;
+	line-height: 1.3;
+}
+
+.bn-modal__msg {
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-2);
+	margin: 0;
+	line-height: 1.5;
+}
+
+.bn-modal__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--bn-a-s2);
+	margin-top: var(--bn-a-s2);
+}
+
+.bn-modal__actions .bn-btn[data-variant="danger"] {
+	background: var(--bn-a-red);
+	border-color: var(--bn-a-red);
+	color: var(--bn-a-bg);
+}
+
+.bn-modal__actions .bn-btn[data-variant="danger"]:hover {
+	background: color-mix(in oklch, var(--bn-a-red) 85%, var(--bn-ink));
+	border-color: color-mix(in oklch, var(--bn-a-red) 85%, var(--bn-ink));
+}
+
+.bn-modal__actions .bn-btn[data-variant="ghost"] {
+	background: transparent;
+	border-color: var(--bn-a-border);
+	color: var(--bn-a-text-2);
+}
+
+.bn-modal__actions .bn-btn[data-variant="ghost"]:hover {
+	background: var(--bn-a-bg-subtle);
+	color: var(--bn-a-text-1);
+}
+
+/* ==========================================================================
+   Spaces admin — row-meta + table-wrap spacing
+   ==========================================================================
+
+   The Spaces page composes the v2 .bn-stat-grid + .bn-table-wrap +
+   .bn-tabs primitives from bn-base.css. The rules below only add the
+   small admin-specific bits that don't belong in the global vocabulary.
+   -------------------------------------------------------------------------- */
+
+.bn-table-wrap + .bn-stat-grid,
+.bn-stat-grid + .bn-table-wrap {
+	margin-top: var(--bn-a-s5);
+}
+
+.bn-space-row-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.bn-row-meta {
+	font-size: var(--bn-a-text-xs);
+	color: var(--bn-a-text-3);
+}
+
+.bn-delete-space-form {
+	display: inline-block;
+	margin: 0;
+}
+
+/* The bn-table-header inherits from the v2 .bn-table-wrap; align inner
+ * filters + search to that. */
+.bn-table-wrap > .bn-table-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--bn-a-s3);
+	flex-wrap: wrap;
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+}
+
+.bn-table-wrap > .bn-table-header .bn-input {
+	width: 260px;
+	max-width: 100%;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════
+ * Features tab — Settings → Features
+ * Site-owner control catalogue driven by FeatureRegistry::by_group().
+ * ════════════════════════════════════════════════════════════════════════ */
+.bn-feature-group {
+	font-family: var(--bn-font-display);
+	font-size: var(--bn-text-md);
+	font-weight: 600;
+	color: var(--bn-ink);
+	margin: var(--bn-s5) 0 var(--bn-s3);
+	padding-bottom: var(--bn-s2);
+	border-bottom: 1px solid var(--bn-line-faint);
+}
+.bn-feature-group:first-of-type { margin-top: 0; }
+
+.bn-feature-grid {
+	display: flex;
+	flex-direction: column;
+	gap: var(--bn-s2);
+}
+
+.bn-feature-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--bn-s4);
+	padding: var(--bn-s4);
+	background: var(--bn-surface);
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-md);
+	transition: border-color var(--bn-dur) var(--bn-ease);
+}
+.bn-feature-row:hover { border-color: var(--bn-line-strong); }
+.bn-feature-row[data-tier="mandatory"] { opacity: 0.85; }
+
+.bn-feature-row__copy { flex: 1; min-width: 0; }
+.bn-feature-row__head { display: flex; align-items: center; gap: var(--bn-s2); flex-wrap: wrap; }
+.bn-feature-row__label { font-weight: 600; color: var(--bn-ink); font-size: var(--bn-text-sm); }
+.bn-feature-row__desc { font-size: var(--bn-text-sm); color: var(--bn-ink-2); margin: 4px 0 0; line-height: 1.5; }
+.bn-feature-row__deps { font-size: var(--bn-text-xs); color: var(--bn-ink-3); font-family: var(--bn-font-mono); margin: 4px 0 0; }
+
+.bn-feature-row__toggle { flex-shrink: 0; padding-top: 2px; }
+.bn-feature-row__locked {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 22px;
+	color: var(--bn-ink-3);
+}
+.bn-feature-row__locked .bn-icon { width: 16px; height: 16px; }
+
+/* Toggle styled as a checkbox + visual track. The standard form post
+ * submits the checkbox state; the .bn-toggle sibling renders the visual. */
+.bn-toggle-label {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	cursor: pointer;
+	user-select: none;
+}
+.bn-toggle-label input[type="checkbox"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+	width: 40px;
+	height: 22px;
+}
+.bn-toggle--inline {
+	position: relative;
+	width: 40px;
+	height: 22px;
+	border-radius: 11px;
+	background: var(--bn-line-strong);
+	transition: background var(--bn-dur) var(--bn-ease);
+}
+.bn-toggle--inline::after {
+	content: '';
+	position: absolute;
+	top: 3px;
+	left: 3px;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background: var(--bn-surface);
+	box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+	transition: transform var(--bn-dur) var(--bn-ease);
+}
+.bn-toggle-label input[type="checkbox"]:checked + .bn-toggle--inline { background: var(--bn-accent); }
+.bn-toggle-label input[type="checkbox"]:checked + .bn-toggle--inline::after { transform: translateX(18px); }
+.bn-toggle-label input[type="checkbox"]:focus-visible + .bn-toggle--inline {
+	outline: 2px solid var(--bn-accent);
+	outline-offset: 2px;
+}
+
+/* Bridge feature whose required plugin is inactive: the toggle is disabled and
+   shown muted so the owner sees it cannot be configured until the plugin is on. */
+.bn-toggle-label input[type="checkbox"]:disabled + .bn-toggle--inline {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+	.bn-feature-row { flex-direction: column; }
+	.bn-feature-row__toggle { align-self: flex-end; }
+}
+/* Webhook "Events to forward" rows — each checkbox label sits on its own line
+   but only spans its own content width, so clicking whitespace beside it no
+   longer toggles the checkbox (was display:block, full fieldset width). */
+.bn-webhook-event-row {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-s2);
+	width: fit-content;
+	margin-bottom: var(--bn-s1);
+}
+
+/* Endpoint row code element — the URL inside the webhook table. */
+.bn-ep-code {
+	font-family: var(--bn-font-mono, ui-monospace, SFMono-Regular, monospace);
+	font-size: 12px;
+	background: var(--bn-sunken, #f3f4f6);
+	padding: 1px 6px;
+	border-radius: 4px;
+	word-break: break-all;
+}
+
+/* ── Moderation queue (Moderation section) ──────────────────────────────── */
+.bn-ss-count {
+	display: inline-block;
+	min-width: 20px;
+	padding: 1px 8px;
+	margin-inline-start: 8px;
+	border-radius: 999px;
+	background: var(--bn-sunken, #e2e8f0);
+	color: var(--bn-ink, #1e293b);
+	font-size: 12px;
+	font-weight: 600;
+	text-align: center;
+}
+.bn-mod-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+.bn-mod-action-form {
+	display: inline-block;
+	margin: 0;
+}
+
+/* Empty-state "sample data" preview — dimmed, inert illustration of what a
+   moderation tab shows once it has live data. */
+.bn-mod-preview {
+	margin-top: var(--bn-s4);
+	opacity: 0.5;
+	pointer-events: none;
+	user-select: none;
+}
+.bn-mod-preview__badge {
+	display: inline-block;
+	margin-bottom: var(--bn-s2);
+	padding: var(--bn-s1) var(--bn-s3);
+	font-size: var(--bn-text-xs);
+	font-weight: 600;
+	color: var(--bn-ink-2);
+	background: var(--bn-sunken);
+	border: 1px dashed var(--bn-line);
+	border-radius: var(--bn-r-full);
+}
+.bn-mod-preview__table {
+	filter: grayscale(0.35);
+}
+
+/* AI connector status — shown on AI admin screens. Green when a provider is
+   connected via the core Settings > Connectors page, amber otherwise. */
+.bn-ai-status {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-s2);
+	margin-bottom: var(--bn-s4);
+	padding: var(--bn-s2) var(--bn-s3);
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-md);
+	background: var(--bn-sunken);
+	font-size: var(--bn-text-sm);
+	color: var(--bn-ink-2);
+}
+.bn-ai-status__dot {
+	width: 10px;
+	height: 10px;
+	border-radius: var(--bn-r-full);
+	flex: none;
+	background: var(--bn-warn);
+}
+.bn-ai-status.is-connected .bn-ai-status__dot {
+	background: var(--bn-success);
+}
+.bn-ai-status.is-connected {
+	background: var(--bn-success-bg);
+	border-color: var(--bn-success);
+}
+.bn-ai-status__text a {
+	margin-inline-start: var(--bn-s1);
+}
+
+/* ── Roles & Capabilities matrix ────────────────────────────────────────── */
+.bn-roles-group {
+	margin: 20px 0 6px;
+	font-size: 13px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--bn-ink-2, #475569);
+}
+.bn-roles-table { max-width: 720px; }
+.bn-roles-table td { vertical-align: middle; }
+.bn-roles-table select { min-width: 200px; }
+
+/* ── Insights (Growth section + dashboard widget) ───────────────────────── */
+.bn-insights-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: 12px;
+}
+.bn-insight-card {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 16px;
+	border: 1px solid var(--bn-line, #e2e8f0);
+	border-radius: 8px;
+	background: var(--bn-surface, #fff);
+}
+.bn-insight-value { font-size: 28px; font-weight: 700; line-height: 1.1; color: var(--bn-ink, #0f172a); }
+.bn-insight-label { font-size: 13px; color: var(--bn-ink-2, #475569); }
+.bn-insight-sub { font-size: 12px; color: var(--bn-success, #16a34a); }
+.bn-spark {
+	display: flex;
+	align-items: flex-end;
+	gap: 6px;
+	height: 90px;
+	padding-top: 4px;
+}
+.bn-spark__bar {
+	flex: 1 1 0;
+	min-height: 2px;
+	border-radius: 3px 3px 0 0;
+	background: var(--bn-accent, #2563eb);
+	opacity: 0.85;
+}
+.bn-spark__bar:hover { opacity: 1; }
+.bn-insights-widget { margin: 0 0 8px; }
+.bn-insights-widget li { margin: 0 0 6px; }
+.bn-insights-widget strong { font-size: 16px; }
+.bn-insights-delta { color: var(--bn-success, #16a34a); font-size: 12px; margin-inline-start: 4px; }
+
+/* Container for buddynext_profile_field_type_options hook rows (Pro emits
+   <tr><td>). Seamless so it blends into the field panel, not a boxed table. */
+.bn-pf-hook-rows {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 0;
+	background: none;
+	border: 0;
+	box-shadow: none;
+}
+.bn-pf-hook-rows td {
+	padding: 4px 8px 4px 0;
+	border: 0;
+	vertical-align: top;
+}
+.bn-pf-hook-rows:empty,
+.bn-pf-hook-rows tbody:empty { display: none; }
+
+/* Reactions enable palette (Settings → Social). Stacked under its label, the
+   reaction toggles wrap as compact chips instead of being flung to the far
+   right by the toggle-row layout. */
+.bn-reaction-field .bn-tl-title {
+	display: block;
+	font-weight: var(--bn-a-fw-semibold);
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-1);
+}
+.bn-reaction-field .bn-tl-desc {
+	display: block;
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-2);
+	margin-bottom: var(--bn-a-s3);
+}
+.bn-reaction-palette {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--bn-a-s2);
+}
+.bn-reaction-palette__item {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px 6px 8px;
+	border: 1px solid var(--bn-a-border);
+	border-radius: 999px;
+	background: var(--bn-a-bg);
+	cursor: pointer;
+	font-size: var(--bn-a-text-sm);
+	user-select: none;
+	transition: border-color 0.12s, background 0.12s;
+}
+.bn-reaction-palette__item:hover {
+	border-color: var(--bn-a-text-3);
+	background: var(--bn-a-bg-subtle);
+}
+.bn-reaction-palette__item:has(input:checked) {
+	border-color: var(--bn-accent);
+	background: color-mix(in oklch, var(--bn-accent) 8%, var(--bn-a-bg));
+}
+.bn-reaction-palette__emoji {
+	width: 20px;
+	height: 20px;
+	display: inline-block;
+	vertical-align: middle;
+}
+/* When the master Reactions feature is off (Settings → Features), the "which
+   emoji" palette has no effect, so it is rendered disabled with an explanatory
+   note. Dim it and block pointer interaction so it reads as inert. */
+.bn-reaction-field.is-disabled .bn-reaction-palette {
+	opacity: 0.55;
+	pointer-events: none;
+}
+.bn-reaction-field__off-note {
+	font-size: var(--bn-a-text-sm);
+	color: var(--bn-a-text-2);
+	margin: 0 0 var(--bn-a-s3);
+}
+
+/* Custom-reaction emoji picker (Pro Reactions tab). A grid of Fluent emoji
+   tiles; the selected tile gets an accent ring. Visual, so admins see exactly
+   what they're adding instead of typing a hex colour. */
+.bn-cr-emoji-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+	gap: 8px;
+	margin-top: 8px;
+	max-width: 760px;
+}
+.bn-cr-emoji-tile {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 10px 6px;
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-md, 8px);
+	background: var(--bn-a-bg);
+	cursor: pointer;
+	text-align: center;
+	transition: border-color 0.12s, background 0.12s, box-shadow 0.12s;
+}
+.bn-cr-emoji-tile:hover { border-color: var(--bn-a-text-3); background: var(--bn-a-bg-subtle); }
+.bn-cr-emoji-tile input { position: absolute; opacity: 0; pointer-events: none; }
+.bn-cr-emoji-tile:has(input:checked) {
+	border-color: var(--bn-accent);
+	box-shadow: 0 0 0 1px var(--bn-accent);
+	background: color-mix(in oklch, var(--bn-accent) 8%, var(--bn-a-bg));
+}
+.bn-cr-emoji-tile__img { width: 28px; height: 28px; }
+.bn-cr-emoji-tile__name {
+	font-size: 11px;
+	color: var(--bn-a-text-2);
+	line-height: 1.2;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 100%;
+}
+.bn-cr-emoji-tile:has(input:checked) .bn-cr-emoji-tile__name { color: var(--bn-a-text-1); font-weight: 600; }
+
+/* ── Social login provider cards (Settings → Registration) ─────────────────── */
+.bn-social-intro {
+	max-width: 760px;
+	margin-bottom: var(--bn-a-s4);
+}
+
+.bn-social-card {
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-radius, 10px);
+	background: var(--bn-a-bg);
+	margin-bottom: var(--bn-a-s4);
+	overflow: hidden;
+}
+
+.bn-social-card__head {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-a-s3);
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	background: var(--bn-a-bg-subtle);
+	border-bottom: 1px solid var(--bn-a-border-soft);
+}
+
+.bn-social-card__icon {
+	display: inline-flex;
+	font-size: 22px;
+	line-height: 0;
+}
+
+.bn-social-card__name {
+	font-weight: var(--bn-a-fw-bold, 600);
+	color: var(--bn-a-text-1);
+}
+
+.bn-social-card__status {
+	font-size: var(--bn-a-text-3, 0.78rem);
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-weight: 600;
+}
+.bn-social-card__status.is-ready  { background: var(--bn-a-green-bg); color: var(--bn-a-green); }
+.bn-social-card__status.is-paused { background: var(--bn-a-amber-bg); color: var(--bn-a-amber); }
+.bn-social-card__status.is-empty  { background: var(--bn-a-bg-hover); color: var(--bn-a-text-3); }
+
+.bn-social-card__toggle {
+	margin-left: auto;
+	white-space: nowrap;
+}
+
+.bn-social-card__body {
+	padding: var(--bn-a-s4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--bn-a-s3);
+}
+
+.bn-copy-row {
+	display: flex;
+	gap: var(--bn-a-s2);
+	align-items: stretch;
+}
+.bn-copy-row .bn-input {
+	flex: 1;
+	font-family: var(--bn-a-font-mono, monospace);
+	font-size: var(--bn-a-text-3, 0.8rem);
+}
+.bn-copy-btn { white-space: nowrap; }
+
+.bn-social-help {
+	margin-top: var(--bn-a-s1);
+	border-top: 1px dashed var(--bn-a-border-soft);
+	padding-top: var(--bn-a-s3);
+}
+.bn-social-help > summary {
+	cursor: pointer;
+	font-weight: 600;
+	color: var(--bn-a-brand);
+	list-style: none;
+}
+.bn-social-help > summary::-webkit-details-marker { display: none; }
+.bn-social-help > summary::before { content: "▸ "; }
+.bn-social-help[open] > summary::before { content: "▾ "; }
+.bn-social-help__steps {
+	margin: var(--bn-a-s3) 0;
+	padding-left: var(--bn-a-s5);
+	color: var(--bn-a-text-2);
+	line-height: 1.6;
+}
+.bn-social-help__steps li { margin-bottom: var(--bn-a-s2); }
+
+@media ( max-width: 640px ) {
+	.bn-social-card__head { flex-wrap: wrap; }
+	.bn-social-card__toggle { margin-left: 0; width: 100%; }
+	.bn-copy-row { flex-direction: column; }
+}
+
+/* --------------------------------------------------------------------------
+   Uniform premium tables — every admin list/queue (not WP form-table layouts)
+   -------------------------------------------------------------------------- */
+.bn-admin-hub__content table:not(.form-table) {
+	width: 100%;
+	border-collapse: collapse;
+	background: var(--bn-a-bg);
+	border: 1px solid var(--bn-a-border);
+	border-radius: var(--bn-a-r-lg);
+	font-size: var(--bn-a-text-sm);
+	overflow: hidden;
+}
+.bn-admin-hub__content table:not(.form-table) th {
+	text-align: start;
+	font-size: var(--bn-a-text-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--bn-a-text-3);
+	font-weight: var(--bn-a-fw-semibold);
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-bottom: 1px solid var(--bn-a-border);
+	background: var(--bn-a-bg-subtle);
+}
+.bn-admin-hub__content table:not(.form-table) td {
+	padding: var(--bn-a-s3) var(--bn-a-s4);
+	border-top: 1px solid var(--bn-a-border-soft);
+	color: var(--bn-a-text-1);
+	vertical-align: middle;
+}
+.bn-admin-hub__content table:not(.form-table) tbody tr:hover td { background: var(--bn-a-bg-subtle); }

@@ -1,0 +1,53 @@
+/**
+ * BuddyNext Settings hub.
+ *
+ * The tabbed home for per-user preferences (Account, Notifications, Privacy,
+ * Appearance). Section cards reuse the profile editor's `.bn-ep-*` styles
+ * (enqueued alongside via the 'profile' handle); this file only owns the hub
+ * wrapper, the page header, and the tab-strip spacing. Tabs themselves are the
+ * shared `.bn-tabs` / `.bn-tab` primitive from bn-base.css.
+ */
+
+/* One centered column shared by every Settings tab so they read consistently.
+   The notification matrix needs room, so use the wide content measure; the
+   notifications page (its own interactive wrapper) opts into the same width. */
+.bn-settings,
+.bn-notif-prefs {
+	max-width: var(--bn-content-wide, 1080px);
+	margin-inline: auto;
+}
+
+.bn-settings__head {
+	margin-bottom: var(--bn-s4, 1rem);
+}
+
+.bn-settings__title {
+	font-family: var(--bn-font-display, inherit);
+	font-size: var(--bn-text-2xl, 1.5rem);
+	font-weight: var(--bn-fw-bold, 700);
+	color: var(--bn-ink, #0f172a);
+	margin: 0;
+}
+
+.bn-settings__sub {
+	margin: var(--bn-s1, 0.25rem) 0 0;
+	color: var(--bn-ink-3, #64748b);
+	font-size: var(--bn-text-sm, 0.875rem);
+}
+
+/* Tab strip — overflow/scrollbar inherited from base .bn-tabs; spacing only. */
+.bn-settings-tabs {
+	margin-bottom: var(--bn-s5, 1.25rem);
+}
+
+.bn-settings__section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--bn-s4, 1rem);
+}
+
+@media ( max-width: 640px ) {
+	.bn-settings__title {
+		font-size: var(--bn-text-xl, 1.25rem);
+	}
+}

@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "buddynext/member-directory",
+	"title": "Member Directory",
+	"icon": "groups",
+	"category": "buddynext",
+	"description": "Full filterable member grid or list with search and filters.",
+	"keywords": [ "buddynext", "members", "directory", "people" ],
+	"textdomain": "buddynext",
+	"editorScript": "buddynext-blocks-editor",
+	"style": "file:../../assets/css/blocks.css",
+	"supports": {
+		"color": { "background": true, "text": true },
+		"typography": { "fontSize": true },
+		"spacing": { "padding": true, "margin": true }
+	},
+	"attributes": {
+		"perPage": {
+			"type": "integer",
+			"default": 24
+		},
+		"layout": {
+			"type": "string",
+			"default": "grid",
+			"enum": [ "grid", "list" ]
+		}
+	},
+	"example": {}
+}

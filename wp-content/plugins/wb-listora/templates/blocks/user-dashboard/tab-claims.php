@@ -1,0 +1,187 @@
+<?php
+/**
+ * User Dashboard — My Claims tab content.
+ *
+ * Lists claim requests the current user has submitted, with status pill
+ * and a link back to the source listing. This template can be overridden
+ * by copying it to: {theme}/wb-listora/blocks/user-dashboard/tab-claims.php
+ *
+ * @package WBListora
+ *
+ * @var int    $user_id            Current user ID.
+ * @var string $default_tab        Default active tab slug.
+ * @var array  $user_claims        Array of claim rows (associative arrays).
+ * @var int    $claims_page        Current claims page (1-based).
+ * @var int    $claims_total_pages Total number of claim pages.
+ * @var int    $claims_total       Total number of claims for this user.
+ * @var array  $view_data          Full view data array.
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+$view_data = $view_data ?? get_defined_vars();
+
+// Defensive defaults — template may be rendered with partial context
+// (e.g. a theme override that pre-dates the pagination vars).
+$claims_page        = isset( $claims_page ) ? max( 1, (int) $claims_page ) : 1;
+$claims_total_pages = isset( $claims_total_pages ) ? (int) $claims_total_pages : 0;
+
+$claim_status_labels = array(
+	'pending'  => array(
+		'label' => __( 'Under review', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--pending',
+	),
+	'approved' => array(
+		'label' => __( 'Approved', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--publish',
+	),
+	'rejected' => array(
+		'label' => __( 'Not approved', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--rejected',
+	),
+);
+
+do_action( 'wb_listora_before_dashboard_claims', $view_data );
+?>
+<div role="tabpanel" id="dash-panel-claims" aria-labelledby="dash-tab-claims" class="listora-dashboard__panel"
+	<?php echo 'claims' !== $default_tab ? 'hidden' : ''; ?>>
+
+	<?php if ( empty( $user_claims ) ) : ?>
+	<div class="listora-dashboard__empty">
+		<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+			<path d="M9 12l2 2 4-4"/>
+			<path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.86 0 3.59.56 5.03 1.53"/>
+		</svg>
+		<h3><?php esc_html_e( 'No claim requests yet', 'wb-listora' ); ?></h3>
+		<p><?php esc_html_e( 'Claim an existing business listing to manage it. Click "Claim this listing" on any unowned entry.', 'wb-listora' ); ?></p>
+		<a href="<?php echo esc_url( wb_listora_get_directory_url() ); ?>" class="listora-btn listora-btn--primary">
+			<?php esc_html_e( 'Browse the directory', 'wb-listora' ); ?>
+		</a>
+	</div>
+	<?php else : ?>
+	<ul class="listora-dashboard__claims-list">
+		<?php
+		foreach ( $user_claims as $claim ) :
+			$status       = (string) ( $claim['status'] ?? 'pending' );
+			$status_info  = $claim_status_labels[ $status ] ?? $claim_status_labels['pending'];
+			$listing_id   = (int) ( $claim['listing_id'] ?? 0 );
+			$listing_url  = $listing_id ? (string) get_permalink( $listing_id ) : '';
+			$listing_name = (string) ( $claim['listing_title'] ?? __( '(listing removed)', 'wb-listora' ) );
+			$submitted    = ! empty( $claim['created_at'] )
+				? wp_date( get_option( 'date_format' ), strtotime( $claim['created_at'] ) )
+				: '';
+			$admin_notes  = (string) ( $claim['admin_notes'] ?? '' );
+			?>
+		<li class="listora-dashboard__claim-row">
+			<div class="listora-dashboard__claim-main">
+				<h3 class="listora-dashboard__claim-title">
+					<?php if ( $listing_url ) : ?>
+						<a href="<?php echo esc_url( $listing_url ); ?>"><?php echo esc_html( $listing_name ); ?></a>
+					<?php else : ?>
+						<?php echo esc_html( $listing_name ); ?>
+					<?php endif; ?>
+				</h3>
+				<div class="listora-dashboard__claim-meta">
+					<span class="listora-dashboard__status <?php echo esc_attr( $status_info['class'] ); ?>">
+						<?php echo esc_html( $status_info['label'] ); ?>
+					</span>
+					<?php if ( $submitted ) : ?>
+					<span class="listora-dashboard__claim-submitted">
+						<?php
+						/* translators: %s: submission date */
+						printf( esc_html__( 'Submitted %s', 'wb-listora' ), esc_html( $submitted ) );
+						?>
+					</span>
+					<?php endif; ?>
+				</div>
+				<?php if ( 'rejected' === $status && $admin_notes ) : ?>
+				<p class="listora-dashboard__claim-notes">
+					<strong><?php esc_html_e( 'Reviewer notes:', 'wb-listora' ); ?></strong>
+					<?php echo esc_html( $admin_notes ); ?>
+				</p>
+				<?php elseif ( 'pending' === $status ) : ?>
+				<p class="listora-dashboard__claim-notes listora-dashboard__claim-notes--muted">
+					<?php esc_html_e( 'We will email you as soon as the review is complete.', 'wb-listora' ); ?>
+				</p>
+				<?php elseif ( 'approved' === $status ) : ?>
+				<p class="listora-dashboard__claim-notes listora-dashboard__claim-notes--success">
+					<?php esc_html_e( 'You now own this listing. Open My Listings to edit it.', 'wb-listora' ); ?>
+				</p>
+				<?php endif; ?>
+			</div>
+
+			<div class="listora-dashboard__claim-actions">
+				<?php if ( 'approved' === $status && $listing_id ) : ?>
+				<a href="<?php echo esc_url( add_query_arg( 'edit', $listing_id, wb_listora_get_submit_url() ) ); ?>"
+					class="listora-btn listora-btn--primary listora-btn--sm">
+					<?php esc_html_e( 'Edit Listing', 'wb-listora' ); ?>
+				</a>
+				<?php elseif ( $listing_url ) : ?>
+				<a href="<?php echo esc_url( $listing_url ); ?>" class="listora-btn listora-btn--secondary listora-btn--sm">
+					<?php esc_html_e( 'View Listing', 'wb-listora' ); ?>
+				</a>
+				<?php endif; ?>
+			</div>
+		</li>
+		<?php endforeach; ?>
+	</ul>
+
+		<?php
+		// ─── Pagination ───
+		// Server-rendered prev/next nav. Each link reloads the dashboard with
+		// `?tab=claims&claims_page=N`; render.php SSRs the matching slice (the
+		// same model the active tab itself uses via `?tab=`). Progressive-
+		// enhancement safe — works with JS off, survives the back button.
+		if ( $claims_total_pages > 1 ) :
+			$listora_claims_base = wb_listora_get_dashboard_url();
+			$listora_claims_base = add_query_arg( 'tab', 'claims', $listora_claims_base );
+			$listora_prev_page   = max( 1, $claims_page - 1 );
+			$listora_next_page   = min( $claims_total_pages, $claims_page + 1 );
+			$listora_has_prev    = $claims_page > 1;
+			$listora_has_next    = $claims_page < $claims_total_pages;
+			?>
+	<nav class="listora-pagination listora-dashboard__pagination" aria-label="<?php esc_attr_e( 'Claims pagination', 'wb-listora' ); ?>">
+			<?php if ( $listora_has_prev ) : ?>
+		<a href="<?php echo esc_url( add_query_arg( 'claims_page', $listora_prev_page, $listora_claims_base ) ); ?>"
+			class="listora-btn listora-btn--secondary listora-btn--sm listora-pagination__prev"
+			rel="prev">
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+				<?php esc_html_e( 'Previous', 'wb-listora' ); ?>
+		</a>
+		<?php else : ?>
+		<span class="listora-btn listora-btn--secondary listora-btn--sm listora-pagination__prev" aria-disabled="true">
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+			<?php esc_html_e( 'Previous', 'wb-listora' ); ?>
+		</span>
+		<?php endif; ?>
+
+		<span class="listora-pagination__status" aria-live="polite">
+			<?php
+			printf(
+				/* translators: 1: current page number, 2: total page count */
+				esc_html__( 'Page %1$s of %2$s', 'wb-listora' ),
+				esc_html( number_format_i18n( $claims_page ) ),
+				esc_html( number_format_i18n( $claims_total_pages ) )
+			);
+			?>
+		</span>
+
+			<?php if ( $listora_has_next ) : ?>
+		<a href="<?php echo esc_url( add_query_arg( 'claims_page', $listora_next_page, $listora_claims_base ) ); ?>"
+			class="listora-btn listora-btn--secondary listora-btn--sm listora-pagination__next"
+			rel="next">
+				<?php esc_html_e( 'Next', 'wb-listora' ); ?>
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+		</a>
+		<?php else : ?>
+		<span class="listora-btn listora-btn--secondary listora-btn--sm listora-pagination__next" aria-disabled="true">
+			<?php esc_html_e( 'Next', 'wb-listora' ); ?>
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+		</span>
+		<?php endif; ?>
+	</nav>
+		<?php endif; ?>
+	<?php endif; ?>
+</div>
+<?php
+do_action( 'wb_listora_after_dashboard_claims', $view_data );

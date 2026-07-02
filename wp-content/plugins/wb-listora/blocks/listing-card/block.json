@@ -1,0 +1,73 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "listora/listing-card",
+	"version": "1.0.0",
+	"title": "Listing Card",
+	"category": "listora",
+	"icon": "index-card",
+	"description": "Displays a single listing as a card with image, rating, meta fields, and favorite button.",
+	"keywords": [ "card", "listing", "directory" ],
+	"parent": [ "listora/listing-grid" ],
+	"supports": {
+		"html": false,
+		"align": false,
+		"reusable": false
+	},
+	"attributes": {
+		"listingId": {
+			"type": "number",
+			"default": 0
+		},
+		"layout": {
+			"type": "string",
+			"default": "standard",
+			"enum": [ "standard", "horizontal", "compact" ]
+		},
+		"showRating": {
+			"type": "boolean",
+			"default": true
+		},
+		"showFavorite": {
+			"type": "boolean",
+			"default": true
+		},
+		"showType": {
+			"type": "boolean",
+			"default": true
+		},
+		"showFeatures": {
+			"type": "boolean",
+			"default": true
+		},
+		"maxMetaFields": {
+			"type": "number",
+			"default": 4
+		},
+		"uniqueId": { "type": "string", "default": "" },
+		"padding": { "type": "object" },
+		"paddingTablet": { "type": "object" },
+		"paddingMobile": { "type": "object" },
+		"paddingUnit": { "type": "string", "default": "px" },
+		"margin": { "type": "object" },
+		"marginTablet": { "type": "object" },
+		"marginMobile": { "type": "object" },
+		"marginUnit": { "type": "string", "default": "px" },
+		"borderRadius": { "type": "object" },
+		"borderRadiusUnit": { "type": "string", "default": "px" },
+		"boxShadow": { "type": "boolean", "default": false },
+		"shadowHorizontal": { "type": "number", "default": 0 },
+		"shadowVertical": { "type": "number", "default": 4 },
+		"shadowBlur": { "type": "number", "default": 8 },
+		"shadowSpread": { "type": "number", "default": 0 },
+		"shadowColor": { "type": "string", "default": "rgba(0,0,0,0.12)" },
+		"hideOnDesktop": { "type": "boolean", "default": false },
+		"hideOnTablet": { "type": "boolean", "default": false },
+		"hideOnMobile": { "type": "boolean", "default": false }
+	},
+	"usesContext": [ "listora/viewMode", "listora/listingType" ],
+	"textdomain": "wb-listora",
+	"editorScript": "file:../../build/blocks/listing-card/index.js",
+	"style": "file:./style.css",
+	"render": "file:./render.php"
+}

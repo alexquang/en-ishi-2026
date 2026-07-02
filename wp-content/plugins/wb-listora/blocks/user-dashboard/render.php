@@ -1,0 +1,956 @@
+<?php
+/**
+ * User Dashboard block — modern sidebar layout.
+ *
+ * @package WBListora
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+wp_enqueue_style( 'listora-base' );
+// Pro upsell stylesheet intentionally NOT enqueued on the vendor
+// dashboard — Pro is sold to site owners (the directory operators),
+// not to vendors. Vendors can't act on an "Upgrade to Pro" CTA, so
+// surfacing it on their dashboard creates noise. The site owner sees
+// the same upsells inside wp-admin (Listora menu, Settings tabs,
+// Dashboard widget) where the CTAs are actionable.
+// listoraConfirm modal — used by deactivateListing action (T1, 2026-04-30).
+wp_enqueue_style( 'listora-confirm' );
+wp_enqueue_script( 'listora-confirm' );
+
+// The favorites + listings panels render listora-card + listora-grid markup,
+// whose base chrome lives in the listing-card + listing-grid block styles.
+// Those handles only auto-enqueue when the matching block renders on the page,
+// so we explicitly enqueue them here. Without this the dashboard cards lose
+// border / padding / shadow / grid layout. Handle pattern is the WordPress
+// default for block.json `"style": "file:..."` entries: `{namespace}-{name}-style`.
+wp_enqueue_style( 'listora-listing-card-style' );
+wp_enqueue_style( 'listora-listing-grid-style' );
+
+// Login check.
+if ( ! is_user_logged_in() ) {
+	$wrapper_attrs = get_block_wrapper_attributes( array( 'class' => 'listora-dashboard listora-dashboard--logged-out' ) );
+	?>
+	<div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+		<div class="listora-dashboard__login-prompt">
+			<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+				<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+			</svg>
+			<h2><?php esc_html_e( 'My Dashboard', 'wb-listora' ); ?></h2>
+			<p><?php esc_html_e( 'Please log in to view your dashboard.', 'wb-listora' ); ?></p>
+			<a href="<?php echo esc_url( wp_login_url( (string) get_permalink() ) ); ?>" class="listora-btn listora-btn--primary">
+				<?php esc_html_e( 'Log In', 'wb-listora' ); ?>
+			</a>
+		</div>
+	</div>
+	<?php
+	return;
+}
+
+$unique_id   = $attributes['uniqueId'] ?? '';
+$user_id     = get_current_user_id();
+$user        = wp_get_current_user();
+$default_tab = $attributes['defaultTab'] ?? 'overview';
+
+// Override the block's `defaultTab` with `?tab=...` from the URL when
+// it names a known tab. Server-rendering the right tab from the start
+// avoids the post-reload flash where SSR draws Listings, JS hydrates
+// `onDashboardInit`, and the IAPI click switches to Reviews — exactly
+// the symptom QA re-flagged on card 9842842463: hash stayed at
+// `#reviews` but the visual pane briefly (or permanently, when the
+// hydration click misfires) showed Listings. The hash route remains
+// for back-button parity; submitReply now also pushes a `?tab=`
+// query so this branch fires on the post-reply reload.
+// phpcs:disable WordPress.Security.NonceVerification.Recommended
+$known_tabs = array( 'overview', 'listings', 'reviews', 'favorites', 'claims', 'credits', 'profile', 'needs', 'analytics' );
+if ( isset( $_GET['tab'] ) ) {
+	$requested_tab = sanitize_key( wp_unslash( (string) $_GET['tab'] ) );
+	if ( in_array( $requested_tab, $known_tabs, true ) ) {
+		$default_tab = $requested_tab;
+	}
+}
+// phpcs:enable WordPress.Security.NonceVerification.Recommended
+$show_listings  = $attributes['showListings'] ?? true;
+$show_reviews   = $attributes['showReviews'] ?? true;
+$show_favorites = $attributes['showFavorites'] ?? true;
+$show_profile   = $attributes['showProfile'] ?? true;
+$show_claims    = $attributes['showClaims'] ?? true;
+
+// Only show Claims tab if claiming is enabled globally.
+if ( $show_claims && ! wb_listora_feature_enabled( 'claims' ) ) {
+	$show_claims = false;
+}
+
+// Mirror gate for Favorites tab. Without this the tab + count + REST
+// reads still render even after admin disables Favorites under Settings
+// → Features — completing the listing-card + listing-detail + REST POST
+// gating added in journey #29 sweep 2026-05-18.
+if ( $show_favorites && ! wb_listora_feature_enabled( 'favorites' ) ) {
+	$show_favorites = false;
+}
+
+// Mirror gate for Reviews tab — same site-wide setting that
+// templates/blocks/listing-detail/tabs.php uses to hide the write-review
+// form (added in 41c4a68 for card 9895809632). Without this the dashboard
+// Reviews tab still surfaces "Reviews you've written" + "Reviews of your
+// listings" after admin disables Reviews globally. Journey #24 audit.
+if ( $show_reviews && function_exists( 'wb_listora_feature_enabled' ) && ! wb_listora_feature_enabled( 'reviews' ) ) {
+	$show_reviews = false;
+}
+
+global $wpdb;
+$prefix = $wpdb->prefix . WB_LISTORA_TABLE_PREFIX;
+
+// ─── Stats (cached 60s) ───
+$cache_key  = 'listora_dashboard_stats_' . $user_id;
+$stats_data = get_transient( $cache_key );
+
+if ( false === $stats_data ) {
+	$listing_counts = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT post_status, COUNT(*) as cnt FROM {$wpdb->posts}
+		WHERE post_type = 'listora_listing' AND post_author = %d
+		GROUP BY post_status",
+			$user_id
+		),
+		OBJECT_K
+	);
+
+	$review_count = (int) $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT COUNT(*) FROM {$prefix}reviews WHERE user_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$user_id
+		)
+	);
+
+	$favorite_count = (int) $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT COUNT(*) FROM {$prefix}favorites WHERE user_id = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$user_id
+		)
+	);
+
+	$stats_data = array(
+		'published' => (int) ( $listing_counts['publish']->cnt ?? 0 ),
+		'pending'   => (int) ( $listing_counts['pending']->cnt ?? 0 ),
+		'expired'   => (int) ( $listing_counts['listora_expired']->cnt ?? 0 ),
+		'draft'     => (int) ( $listing_counts['draft']->cnt ?? 0 ),
+		'reviews'   => $review_count,
+		'favorites' => $favorite_count,
+	);
+
+	set_transient( $cache_key, $stats_data, 60 );
+}
+
+$stat_published = $stats_data['published'];
+$stat_pending   = $stats_data['pending'];
+$stat_expired   = $stats_data['expired'];
+$stat_draft     = $stats_data['draft'];
+$stat_total     = $stat_published + $stat_pending + $stat_expired + $stat_draft;
+$review_count   = $stats_data['reviews'];
+$favorite_count = $stats_data['favorites'];
+
+// ─── Listing limit (per-role cap + credits overflow) ───
+$limit_value        = \WBListora\Core\Listing_Limits::get_user_limit( $user_id );
+$limit_count        = \WBListora\Core\Listing_Limits::get_user_count( $user_id );
+$limit_remaining    = \WBListora\Core\Listing_Limits::get_remaining( $user_id );
+$limit_unlimited    = ( -1 === $limit_value );
+$limit_overflow     = \WBListora\Core\Listing_Limits::get_overflow_cost();
+$limit_behavior     = \WBListora\Core\Listing_Limits::get_beyond_limit_behavior();
+$limit_can_overflow = ( 'credits' === $limit_behavior ) && $limit_overflow > 0;
+$limit_purchase_url = \WBListora\Core\Listing_Limits::get_purchase_url();
+$limit_period       = \WBListora\Core\Listing_Limits::get_period();
+$limit_period_label = \WBListora\Core\Listing_Limits::get_period_label();
+
+// ─── User Listings ───
+$user_listings = get_posts(
+	array(
+		'post_type'      => 'listora_listing',
+		// listora_payment = Pro plan activation failed (insufficient credits).
+		// Vendor MUST see these so they can top up + auto-resume — without
+		// listora_payment in the fetch, paused listings are invisible.
+		'post_status'    => array( 'publish', 'pending', 'draft', 'listora_expired', 'listora_rejected', 'listora_deactivated', 'pending_verification', 'listora_payment' ),
+		'author'         => $user_id,
+		'posts_per_page' => 20,
+		'orderby'        => 'date',
+		'order'          => 'DESC',
+	)
+);
+
+// ─── View counts (analytics-lite) ───
+// One batched SUM query for the whole page of listings — never one query per
+// row (100k-scale rule). Surfaces the per-listing view count on each dashboard
+// listing row. Works whether Free or Pro wrote the `view` rows.
+$listing_views = array();
+if ( ! empty( $user_listings ) && class_exists( '\\WBListora\\Features\\Analytics_Lite' ) ) {
+	$listing_views = \WBListora\Features\Analytics_Lite::prepare_views(
+		wp_list_pluck( $user_listings, 'ID' )
+	);
+}
+
+// ─── User Reviews ───
+// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$user_reviews = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT r.*, si.title as listing_title
+	FROM {$prefix}reviews r
+	LEFT JOIN {$prefix}search_index si ON r.listing_id = si.listing_id
+	WHERE r.user_id = %d
+	ORDER BY r.created_at DESC LIMIT 20",
+		$user_id
+	),
+	ARRAY_A
+);
+
+$reviews_received = $wpdb->get_results(
+	$wpdb->prepare(
+		"SELECT r.*, si.title as listing_title
+	FROM {$prefix}reviews r
+	INNER JOIN {$wpdb->posts} p ON r.listing_id = p.ID
+	LEFT JOIN {$prefix}search_index si ON r.listing_id = si.listing_id
+	WHERE p.post_author = %d AND r.user_id != %d AND r.status = 'approved'
+	ORDER BY r.created_at DESC LIMIT 20",
+		$user_id,
+		$user_id
+	),
+	ARRAY_A
+);
+// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+// ─── User Favorites ───
+$favorite_ids = $wpdb->get_col(
+	$wpdb->prepare(
+		"SELECT listing_id FROM {$prefix}favorites WHERE user_id = %d ORDER BY created_at DESC LIMIT 20", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$user_id
+	)
+);
+
+// ─── User Claims ───
+$user_claims         = array();
+$pending_claim_count = 0;
+$claims_per_page     = 20;
+$claims_page         = 1;
+$claims_total        = 0;
+$claims_total_pages  = 0;
+if ( $show_claims ) {
+	// Page is read from the URL the same way the active tab is (`?tab=`
+	// above) — a `?claims_page=N` reload re-renders this panel server-side
+	// with the matching slice, so pagination works without JS and survives
+	// the back button. Matches the listing-grid `listora_page` pattern.
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended
+	$claims_page = isset( $_GET['claims_page'] ) ? max( 1, absint( wp_unslash( $_GET['claims_page'] ) ) ) : 1;
+	// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+	// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	// Dedicated COUNT(*) for total pages — never count( a LIMIT-ed result ).
+	$claims_total       = (int) $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT COUNT(*) FROM {$prefix}claims WHERE user_id = %d",
+			$user_id
+		)
+	);
+	$claims_total_pages = (int) ceil( $claims_total / $claims_per_page );
+
+	// Clamp an out-of-range page back into the valid window so a stale /
+	// hand-edited `?claims_page=999` still renders the last real page
+	// instead of an empty list.
+	if ( $claims_total_pages > 0 && $claims_page > $claims_total_pages ) {
+		$claims_page = $claims_total_pages;
+	}
+	$claims_offset = ( $claims_page - 1 ) * $claims_per_page;
+
+	$user_claims = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT c.*, p.post_title AS listing_title
+			FROM {$prefix}claims c
+			LEFT JOIN {$wpdb->posts} p ON c.listing_id = p.ID
+			WHERE c.user_id = %d
+			ORDER BY c.created_at DESC, c.id DESC
+			LIMIT %d OFFSET %d",
+			$user_id,
+			$claims_per_page,
+			$claims_offset
+		),
+		ARRAY_A
+	);
+
+	// Count pending claims in SQL, not by walking the LIMIT 20 result —
+	// otherwise a user with more pending claims than the page size would
+	// see a wrong (and growing-stale) badge in the dashboard nav.
+	$pending_claim_count = (int) $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT COUNT(*) FROM {$prefix}claims WHERE user_id = %d AND status = 'pending'",
+			$user_id
+		)
+	);
+	// phpcs:enable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+}
+
+// ─── Credits ───
+/**
+ * Filter whether customer-facing credit surfaces render.
+ *
+ * Default is SDK availability — the Wbcom Credits SDK ships inside Free
+ * (`libs/wbcom-credits-sdk`), so on a Free-only install this resolves exactly
+ * as before this filter existed. Pro returns false here when its
+ * `monetization` feature toggle is off, hiding the dashboard Credits tab,
+ * ledger, and every Buy Credits CTA together (the same value flows into
+ * nav.php, tab-credits.php, and the paused-row CTA in tab-listings.php).
+ *
+ * @since 1.2.0
+ *
+ * @param bool $show_credits Whether credit surfaces should render.
+ */
+$show_credits        = (bool) apply_filters( 'wb_listora_show_credits', class_exists( '\\Wbcom\\Credits\\Credits' ) );
+$credit_balance      = 0;
+$credit_threshold    = 0;
+$credit_packs        = array();
+$credit_ledger       = array();
+$credit_purchase_url = '';
+
+if ( $show_credits ) {
+	$credit_balance   = (int) \Wbcom\Credits\Credits::get_balance( 'wb-listora', $user_id );
+	$credit_threshold = (int) get_option( 'wb_listora_low_credit_threshold', 5 );
+	$credit_ledger    = \Wbcom\Credits\Credits::get_ledger( 'wb-listora', $user_id, 20, 0 );
+	// We're rendering the dashboard itself — wb_listora_get_credits_purchase_url()
+	// auto-resolves to the dashboard credits tab as a fallback (legitimate for
+	// listing-submission's "buy credits" CTA, etc.), but here it would be self-
+	// referential. Only treat the explicit option/filter value as a real external
+	// store; otherwise leave empty so the template suppresses CTAs that have
+	// nowhere to go.
+	$credit_purchase_url = (string) get_option( 'wb_listora_credit_purchase_url', '' );
+	if ( '' !== $credit_purchase_url && is_numeric( $credit_purchase_url ) ) {
+		$credit_purchase_url = (string) get_permalink( (int) $credit_purchase_url );
+	}
+	/** This filter is documented in wb-listora.php */
+	$credit_purchase_url = (string) apply_filters( 'wb_listora_credits_purchase_url', $credit_purchase_url );
+
+	// Detect whether the SDK has any payment gateway in a state that can
+	// actually accept a checkout (built-in: Stripe, PayPal; consumers may
+	// register more on `wbcom_credits_register_gateways`). When zero
+	// gateways are available AND no external purchase URL is configured,
+	// every "Buy Credits" CTA would lead to a dead end — the template
+	// suppresses them in that case.
+	$has_payment_gateway = false;
+	if ( class_exists( '\\Wbcom\\Credits\\Gateways\\Gateway_Registry' ) ) {
+		try {
+			$listora_gateway_registry = \Wbcom\Credits\Gateways\Gateway_Registry::for_slug( 'wb-listora' );
+			$listora_gateway_registry->boot();
+			$has_payment_gateway = ! empty( $listora_gateway_registry->get_available() );
+		} catch ( \Throwable $e ) {
+			$has_payment_gateway = false;
+		}
+	}
+
+	/**
+	 * Final say on whether the dashboard surfaces credit-purchase CTAs.
+	 *
+	 * Defaults to the SDK probe above. Pro hooks here when the admin has
+	 * toggled "Accept online credit purchases" OFF so the dashboard hides
+	 * Buy Credits surfaces even if a gateway happens to be technically
+	 * configured but disabled at the policy layer.
+	 *
+	 * @param bool $has_payment_gateway True when ≥1 SDK gateway is available.
+	 * @param int  $user_id             User rendering the dashboard.
+	 */
+	$has_payment_gateway = (bool) apply_filters( 'wb_listora_has_payment_gateway', $has_payment_gateway, $user_id );
+
+	// Build display-ready pack data from credit mappings.
+	$credit_mappings = get_option( 'wb-listora_credit_mappings', array() );
+	if ( is_array( $credit_mappings ) ) {
+		foreach ( $credit_mappings as $map ) {
+			if ( ! is_array( $map ) || empty( $map['adapter'] ) || empty( $map['item_id'] ) ) {
+				continue;
+			}
+
+			$pack = array(
+				'adapter'       => (string) $map['adapter'],
+				'adapter_label' => isset( $map['adapter_label'] ) ? (string) $map['adapter_label'] : '',
+				'item_id'       => (int) $map['item_id'],
+				'item_label'    => isset( $map['item_label'] ) ? (string) $map['item_label'] : '',
+				'credits'       => isset( $map['credits'] ) ? (int) $map['credits'] : 0,
+				'price_html'    => '',
+				'buy_url'       => '',
+				'buy_label'     => __( 'Buy Now', 'wb-listora' ),
+			);
+
+			switch ( $pack['adapter'] ) {
+				case 'woocommerce':
+					if ( function_exists( 'wc_get_product' ) ) {
+						$product = wc_get_product( $pack['item_id'] );
+						if ( $product ) {
+							$pack['price_html'] = $product->get_price_html();
+							$pack['buy_url']    = $product->add_to_cart_url();
+							if ( ! $pack['item_label'] ) {
+								$pack['item_label'] = $product->get_name();
+							}
+						}
+					}
+					break;
+
+				case 'woo_subscriptions':
+					if ( function_exists( 'wc_get_product' ) ) {
+						$product = wc_get_product( $pack['item_id'] );
+						if ( $product ) {
+							$pack['price_html'] = $product->get_price_html();
+							$pack['buy_url']    = $product->add_to_cart_url();
+							if ( ! $pack['item_label'] ) {
+								$pack['item_label'] = $product->get_name();
+							}
+						}
+					}
+					$pack['buy_label'] = __( 'Subscribe', 'wb-listora' );
+					break;
+
+				case 'pmpro':
+					if ( function_exists( 'pmpro_url' ) ) {
+						$pack['buy_url'] = pmpro_url( 'checkout', '?level=' . $pack['item_id'] );
+					}
+					$pack['buy_label'] = __( 'Subscribe', 'wb-listora' );
+					break;
+
+				case 'memberpress':
+					$permalink = get_permalink( $pack['item_id'] );
+					if ( $permalink ) {
+						$pack['buy_url'] = $permalink;
+					}
+					$pack['buy_label'] = __( 'Subscribe', 'wb-listora' );
+					break;
+
+				case 'direct':
+					// Direct-payment adapter — buy buttons render per
+					// SDK-registered gateway (Stripe, PayPal, custom). No
+					// $buy_url; the template uses $pack['gateways'] +
+					// $pack['price_cents'] to build buttons that POST to
+					// /wp-json/wbcom-credits/v1/wb-listora/checkout/{gateway}
+					// from the dashboard view module.
+					$price_cents = isset( $map['price_cents'] ) ? (int) $map['price_cents'] : 0;
+					$currency    = isset( $map['currency'] ) ? strtoupper( (string) $map['currency'] ) : 'USD';
+
+					$pack['price_cents'] = $price_cents;
+					$pack['currency']    = $currency;
+					$pack['gateways']    = array();
+					if ( class_exists( '\\Wbcom\\Credits\\Gateways\\Gateway_Registry' ) && $price_cents > 0 ) {
+						foreach ( \Wbcom\Credits\Gateways\Gateway_Registry::for_slug( 'wb-listora' )->get_available() as $gw ) {
+							$pack['gateways'][] = array(
+								'id'    => $gw->get_id(),
+								'label' => $gw->get_label(),
+							);
+						}
+					}
+
+					if ( $price_cents > 0 ) {
+						$pack['price_html'] = sprintf(
+							/* translators: 1: currency code, 2: amount with cents (e.g. 9.99) */
+							esc_html__( '%1$s %2$s', 'wb-listora' ),
+							esc_html( $currency ),
+							esc_html( number_format_i18n( $price_cents / 100, 2 ) )
+						);
+					}
+
+					if ( ! $pack['item_label'] ) {
+						$pack['item_label'] = sprintf(
+							/* translators: %d: number of credits */
+							__( '%d credits', 'wb-listora' ),
+							(int) $pack['credits']
+						);
+					}
+					break;
+			}
+
+			$credit_packs[] = $pack;
+		}
+	}
+}
+
+$context = (string) wp_json_encode( array( 'activeTab' => $default_tab ) );
+
+$visibility_classes = \WBListora\Block_CSS::visibility_classes( $attributes );
+$block_classes      = 'listora-block' . ( $unique_id ? ' listora-block-' . $unique_id : '' ) . ( $visibility_classes ? ' ' . $visibility_classes : '' );
+
+$wrapper_attrs = get_block_wrapper_attributes(
+	array(
+		// Note: the dashboard is NOT wrapped in `.listora-page--dashboard`
+		// because its interior uses a bespoke `display: flex` sidebar+main
+		// layout that conflicts with the canonical shell's `flex-direction:
+		// column`. When the dashboard's inner sections migrate to the
+		// canonical card primitive vocabulary, the outer shell can be added
+		// then. Tracked under tech-debt for the next pass.
+		'class'               => 'listora-dashboard ' . $block_classes,
+		'data-wp-interactive' => 'listora/directory',
+		// Wires the onDashboardInit callback (src/blocks/user-dashboard/view.js)
+		// so the URL hash (#reviews, #favorites, etc.) restores the active
+		// tab on initial load and after submitReply's location.reload().
+		// Without this attribute the callback never fires and the dashboard
+		// always lands on the default Listings tab regardless of hash —
+		// the round-2 cause behind QA card 9842842463.
+		'data-wp-init'        => 'callbacks.onDashboardInit',
+		'data-wp-context'     => $context,
+	)
+);
+
+// Status labels with pill classes.
+$status_map = array(
+	'publish'              => array(
+		'label' => __( 'Published', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--publish',
+	),
+	'pending'              => array(
+		'label' => __( 'Pending Review', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--pending',
+	),
+	'draft'                => array(
+		'label' => __( 'Draft', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--draft',
+	),
+	'listora_expired'      => array(
+		'label' => __( 'Expired', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--expired',
+	),
+	'listora_rejected'     => array(
+		'label' => __( 'Rejected', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--rejected',
+	),
+	'listora_deactivated'  => array(
+		'label' => __( 'Deactivated', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--deactivated',
+	),
+	'pending_verification' => array(
+		'label' => __( 'Pending Verification', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--pending-verification',
+	),
+	'listora_payment'      => array(
+		'label' => __( 'Awaiting Credits', 'wb-listora' ),
+		'class' => 'listora-dashboard__status--awaiting-credits',
+	),
+);
+?>
+
+<?php echo \WBListora\Block_CSS::render( $unique_id, $attributes ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+<div <?php echo $wrapper_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+
+	<?php
+	// ─── Sidebar Navigation (overridable template) ───
+	$nav_view_data              = array(
+		'user'                => $user,
+		'user_id'             => $user_id,
+		'default_tab'         => $default_tab,
+		'show_listings'       => $show_listings,
+		'show_reviews'        => $show_reviews,
+		'show_favorites'      => $show_favorites,
+		'show_profile'        => $show_profile,
+		'show_credits'        => $show_credits,
+		'show_claims'         => $show_claims,
+		'credit_balance'      => $credit_balance,
+		'stat_total'          => $stat_total,
+		'review_count'        => $review_count,
+		'favorite_count'      => $favorite_count,
+		'pending_claim_count' => $pending_claim_count,
+	);
+	$nav_view_data['view_data'] = $nav_view_data;
+	wb_listora_get_template( 'blocks/user-dashboard/nav.php', $nav_view_data );
+	?>
+
+	<?php // ─── Main Content ─── ?>
+	<div class="listora-dashboard__main">
+
+		<?php // ─── Header ─── ?>
+		<div class="listora-dashboard__header">
+			<h1 class="listora-dashboard__title">
+				<?php
+				printf(
+					/* translators: %s: user display name */
+					esc_html__( 'Hello, %s!', 'wb-listora' ),
+					esc_html( $user->display_name )
+				);
+				?>
+			</h1>
+			<div class="listora-dashboard__header-actions">
+				<a href="<?php echo esc_url( wb_listora_get_dashboard_add_url() ); ?>" class="listora-btn listora-btn--primary">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+					<?php esc_html_e( 'Add Listing', 'wb-listora' ); ?>
+				</a>
+				<?php
+				/**
+				 * Action hook for Pro / 3rd-party plugins to inject extra
+				 * primary CTAs into the vendor dashboard header. Pro's
+				 * Reverse_Listings feature appends a "Post a Need" button
+				 * here so buyers + vendors can find the marketplace entry
+				 * point alongside Add Listing.
+				 *
+				 * @since 1.0.5
+				 *
+				 * @param int     $user_id Current user ID.
+				 * @param WP_User $user    Current user.
+				 */
+				do_action( 'wb_listora_dashboard_header_actions', $user_id, $user );
+				?>
+			</div>
+		</div>
+
+		<?php
+		// ─── Overview Panel ───
+		// Default landing tab. Contains the dashboard summary (stats cards
+		// + listing-limit card). When the user switches to a focused tab
+		// (Listings / Reviews / etc.) this panel is hidden by the
+		// `hidden` attribute and the IAPI tab-switch logic.
+		?>
+		<div role="tabpanel" id="dash-panel-overview" aria-labelledby="dash-tab-overview" class="listora-dashboard__panel"<?php echo 'overview' === $default_tab ? '' : ' hidden'; ?>>
+		<?php
+		// ─── Stats Cards (anchors → open matching tab) ───
+		//
+		// Anchors, not <button>s. Themes (BuddyX, Reign, Astra, GeneratePress)
+		// ship aggressive `button:not(...)` rules at specificity 0,7,1 that
+		// paint every custom <button> in the brand accent — turning a
+		// supposed-to-be-white stat card into a brand-coloured tile with
+		// invisible text. A stat-card is semantically a tile that NAVIGATES
+		// to a tab, so <a href="?tab=..."> is the right element. Theme button
+		// rules don't apply, Listora's own bg+fg tokens win uncontested, and
+		// the URL is a progressive-enhancement fallback when IAPI hasn't
+		// hydrated (right-click "Open in new tab" works too).
+		$stats_base = remove_query_arg( 'tab' );
+		?>
+		<div class="listora-dashboard__stats" role="group" aria-label="<?php esc_attr_e( 'Dashboard summary — click a card to open its tab', 'wb-listora' ); ?>">
+			<a class="listora-dashboard__stat"
+				href="<?php echo esc_url( add_query_arg( 'tab', 'listings', $stats_base ) ); ?>"
+				data-wp-on--click="actions.switchDashTab"
+				data-wp-context='{"tabId":"listings"}'
+				aria-label="
+				<?php
+					/* translators: %d: count of active listings */
+					printf( esc_attr__( 'Active listings: %d. Open My Listings.', 'wb-listora' ), (int) $stat_published );
+				?>
+				">
+				<span class="listora-dashboard__stat-icon listora-dashboard__stat-icon--active" aria-hidden="true">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+				</span>
+				<span class="listora-dashboard__stat-content">
+					<span class="listora-dashboard__stat-value"><?php echo esc_html( $stat_published ); ?></span>
+					<span class="listora-dashboard__stat-label"><?php esc_html_e( 'Active', 'wb-listora' ); ?></span>
+				</span>
+			</a>
+			<a class="listora-dashboard__stat"
+				href="<?php echo esc_url( add_query_arg( 'tab', 'listings', $stats_base ) ); ?>"
+				data-wp-on--click="actions.switchDashTab"
+				data-wp-context='{"tabId":"listings"}'
+				aria-label="
+				<?php
+					/* translators: %d: count of pending listings */
+					printf( esc_attr__( 'Pending review: %d. Open My Listings.', 'wb-listora' ), (int) $stat_pending );
+				?>
+				">
+				<span class="listora-dashboard__stat-icon listora-dashboard__stat-icon--pending" aria-hidden="true">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+				</span>
+				<span class="listora-dashboard__stat-content">
+					<span class="listora-dashboard__stat-value"><?php echo esc_html( $stat_pending ); ?></span>
+					<span class="listora-dashboard__stat-label"><?php esc_html_e( 'Pending', 'wb-listora' ); ?></span>
+				</span>
+			</a>
+			<a class="listora-dashboard__stat"
+				href="<?php echo esc_url( add_query_arg( 'tab', 'reviews', $stats_base ) ); ?>"
+				data-wp-on--click="actions.switchDashTab"
+				data-wp-context='{"tabId":"reviews"}'
+				aria-label="
+				<?php
+					/* translators: %d: count of reviews */
+					printf( esc_attr__( 'Reviews: %d. Open Reviews tab.', 'wb-listora' ), (int) $review_count );
+				?>
+				">
+				<span class="listora-dashboard__stat-icon listora-dashboard__stat-icon--reviews" aria-hidden="true">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+				</span>
+				<span class="listora-dashboard__stat-content">
+					<span class="listora-dashboard__stat-value"><?php echo esc_html( $review_count ); ?></span>
+					<span class="listora-dashboard__stat-label"><?php esc_html_e( 'Reviews', 'wb-listora' ); ?></span>
+				</span>
+			</a>
+			<a class="listora-dashboard__stat"
+				href="<?php echo esc_url( add_query_arg( 'tab', 'favorites', $stats_base ) ); ?>"
+				data-wp-on--click="actions.switchDashTab"
+				data-wp-context='{"tabId":"favorites"}'
+				aria-label="
+				<?php
+					/* translators: %d: count of saved listings */
+					printf( esc_attr__( 'Saved listings: %d. Open Favorites tab.', 'wb-listora' ), (int) $favorite_count );
+				?>
+				">
+				<span class="listora-dashboard__stat-icon listora-dashboard__stat-icon--saved" aria-hidden="true">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+				</span>
+				<span class="listora-dashboard__stat-content">
+					<span class="listora-dashboard__stat-value"><?php echo esc_html( $favorite_count ); ?></span>
+					<span class="listora-dashboard__stat-label"><?php esc_html_e( 'Saved', 'wb-listora' ); ?></span>
+				</span>
+			</a>
+		</div>
+
+		<?php // ─── Listing Limit Card ─── ?>
+		<?php
+		$limit_classes = 'listora-dashboard__limit';
+		if ( $limit_unlimited ) {
+			$limit_classes .= ' listora-dashboard__limit--unlimited';
+		} elseif ( 0 === $limit_remaining ) {
+			$limit_classes .= ' listora-dashboard__limit--exhausted';
+		} elseif ( $limit_remaining > 0 && $limit_remaining <= 2 ) {
+			$limit_classes .= ' listora-dashboard__limit--low';
+		}
+		?>
+		<div class="<?php echo esc_attr( $limit_classes ); ?>" role="region" aria-labelledby="listora-limit-heading">
+			<div class="listora-dashboard__limit-main">
+				<span class="listora-dashboard__limit-icon" aria-hidden="true">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/>
+					</svg>
+				</span>
+				<div class="listora-dashboard__limit-stats">
+					<h3 id="listora-limit-heading" class="listora-dashboard__limit-title">
+						<?php
+						if ( 'calendar_month' === $limit_period ) {
+							esc_html_e( 'Your listings this month', 'wb-listora' );
+						} elseif ( 'rolling_30d' === $limit_period ) {
+							esc_html_e( 'Your listings (last 30 days)', 'wb-listora' );
+						} else {
+							esc_html_e( 'Your Listings', 'wb-listora' );
+						}
+						?>
+					</h3>
+					<div class="listora-dashboard__limit-grid">
+						<div class="listora-dashboard__limit-metric">
+							<span class="listora-dashboard__limit-value"><?php echo esc_html( (string) $limit_count ); ?></span>
+							<span class="listora-dashboard__limit-label">
+								<?php
+								if ( 'lifetime' === $limit_period ) {
+									esc_html_e( 'Active + Pending', 'wb-listora' );
+								} else {
+									/* translators: period label such as "this month" or "in last 30 days". */
+									printf( esc_html__( 'Used %s', 'wb-listora' ), esc_html( $limit_period_label ) );
+								}
+								?>
+							</span>
+						</div>
+						<div class="listora-dashboard__limit-metric">
+							<span class="listora-dashboard__limit-value">
+								<?php echo $limit_unlimited ? esc_html__( '∞', 'wb-listora' ) : esc_html( (string) $limit_value ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Both branches escaped. ?>
+							</span>
+							<span class="listora-dashboard__limit-label"><?php esc_html_e( 'Limit', 'wb-listora' ); ?></span>
+						</div>
+						<div class="listora-dashboard__limit-metric">
+							<span class="listora-dashboard__limit-value">
+								<?php echo $limit_unlimited ? esc_html__( 'Unlimited', 'wb-listora' ) : esc_html( (string) $limit_remaining ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Both branches escaped. ?>
+							</span>
+							<span class="listora-dashboard__limit-label"><?php esc_html_e( 'Remaining', 'wb-listora' ); ?></span>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<?php if ( ! $limit_unlimited && 0 === $limit_remaining && $limit_can_overflow ) : ?>
+				<div class="listora-dashboard__limit-cta">
+					<p class="listora-dashboard__limit-message">
+						<?php
+						if ( 'lifetime' === $limit_period ) {
+							printf(
+								/* translators: %d: credits cost. */
+								esc_html__( 'You have reached your limit. Submit another listing for %d credits.', 'wb-listora' ),
+								(int) $limit_overflow
+							);
+						} else {
+							printf(
+								/* translators: 1: period label, 2: credits cost. */
+								esc_html__( 'You have reached your limit %1$s. Submit another listing for %2$d credits.', 'wb-listora' ),
+								esc_html( $limit_period_label ),
+								(int) $limit_overflow
+							);
+						}
+						?>
+					</p>
+					<?php if ( $limit_purchase_url ) : ?>
+						<a href="<?php echo esc_url( $limit_purchase_url ); ?>" class="listora-btn listora-btn--secondary listora-btn--sm">
+							<?php esc_html_e( 'Buy Credits', 'wb-listora' ); ?>
+						</a>
+					<?php endif; ?>
+					<a href="<?php echo esc_url( wb_listora_get_submit_url() ); ?>" class="listora-btn listora-btn--primary listora-btn--sm">
+						<?php
+						printf(
+							/* translators: %d: credits cost. */
+							esc_html__( 'Submit for %d credits', 'wb-listora' ),
+							(int) $limit_overflow
+						);
+						?>
+					</a>
+				</div>
+			<?php elseif ( ! $limit_unlimited && 0 === $limit_remaining ) : ?>
+				<div class="listora-dashboard__limit-cta">
+					<p class="listora-dashboard__limit-message">
+						<?php
+						if ( 'lifetime' === $limit_period ) {
+							esc_html_e( 'You have reached your listing limit. Contact an administrator to request more.', 'wb-listora' );
+						} elseif ( 'calendar_month' === $limit_period ) {
+							esc_html_e( 'You have reached your listing limit for this month. It will reset on the 1st.', 'wb-listora' );
+						} else {
+							esc_html_e( 'You have reached your listing limit for the last 30 days. Older listings will roll off the window soon.', 'wb-listora' );
+						}
+						?>
+					</p>
+				</div>
+			<?php endif; ?>
+		</div>
+		</div><?php // close dash-panel-overview ?>
+
+		<?php
+		// ─── My Listings Panel (overridable template) ───
+		if ( $show_listings ) :
+			$listings_view_data              = array(
+				'user_id'        => $user_id,
+				'default_tab'    => $default_tab,
+				'user_listings'  => $user_listings,
+				'status_map'     => $status_map,
+				// Per-listing view counts (analytics-lite), prefetched in one
+				// batched query above. Keyed by listing ID.
+				'listing_views'  => $listing_views,
+				// Credits context — needed to render the "Awaiting Credits"
+				// recovery row for listora_payment listings. Credits are the
+				// ONLY currency in the vendor flow; the row must talk credits,
+				// never currency.
+				'show_credits'   => $show_credits,
+				'credit_balance' => $credit_balance,
+			);
+			$listings_view_data['view_data'] = $listings_view_data;
+			wb_listora_get_template( 'blocks/user-dashboard/tab-listings.php', $listings_view_data );
+		endif;
+		?>
+
+		<?php
+		// ─── Reviews Panel (overridable template) ───
+		if ( $show_reviews ) :
+			$reviews_view_data              = array(
+				'user_id'          => $user_id,
+				'user_reviews'     => $user_reviews,
+				'reviews_received' => $reviews_received,
+			);
+			$reviews_view_data['view_data'] = $reviews_view_data;
+			wb_listora_get_template( 'blocks/user-dashboard/tab-reviews.php', $reviews_view_data );
+		endif;
+		?>
+
+		<?php
+		// ─── Favorites Panel (overridable template) ───
+		if ( $show_favorites ) :
+			$favorites_view_data              = array(
+				'user_id'      => $user_id,
+				'favorite_ids' => $favorite_ids,
+			);
+			$favorites_view_data['view_data'] = $favorites_view_data;
+			wb_listora_get_template( 'blocks/user-dashboard/tab-favorites.php', $favorites_view_data );
+		endif;
+		?>
+
+		<?php
+		// ─── Claims Panel (overridable template) ───
+		if ( $show_claims ) :
+			$claims_view_data              = array(
+				'user_id'            => $user_id,
+				'default_tab'        => $default_tab,
+				'user_claims'        => $user_claims,
+				'claims_page'        => $claims_page,
+				'claims_total_pages' => $claims_total_pages,
+				'claims_total'       => $claims_total,
+			);
+			$claims_view_data['view_data'] = $claims_view_data;
+			wb_listora_get_template( 'blocks/user-dashboard/tab-claims.php', $claims_view_data );
+		endif;
+		?>
+
+		<?php
+		// ─── Credits Panel (overridable template) ───
+		if ( $show_credits ) :
+			// Resolve dashboard URL (for return_url after Stripe/PayPal). Use
+			// the Page Registry so we don't hardcode option names; falls
+			// back to current permalink when registry isn't initialised yet.
+			$direct_return_url = function_exists( 'wb_listora_get_page_url' )
+				? (string) wb_listora_get_page_url( 'dashboard', array( 'tab' => 'credits' ) )
+				: '';
+			if ( '' === $direct_return_url ) {
+				$direct_return_url = (string) get_permalink();
+				if ( '' !== $direct_return_url ) {
+					$direct_return_url = add_query_arg( 'tab', 'credits', $direct_return_url );
+				}
+			}
+
+			// Surface ?wbcom_credits=success/cancel/error so the template can
+			// render a banner above the pack cards. Stripe/PayPal redirect
+			// here after the user completes (or cancels) checkout.
+			$purchase_status  = '';
+			$purchase_credits = 0;
+			$purchase_gateway = '';
+			if ( isset( $_GET['wbcom_credits'] ) ) {
+				$status_raw = sanitize_key( wp_unslash( (string) $_GET['wbcom_credits'] ) );
+				if ( in_array( $status_raw, array( 'success', 'cancel', 'error' ), true ) ) {
+					$purchase_status  = $status_raw;
+					$purchase_credits = isset( $_GET['credits'] ) ? absint( wp_unslash( (string) $_GET['credits'] ) ) : 0;
+					$purchase_gateway = isset( $_GET['gateway'] ) ? sanitize_key( wp_unslash( (string) $_GET['gateway'] ) ) : '';
+				}
+			}
+
+			$credits_view_data              = array(
+				'user_id'              => $user_id,
+				'default_tab'          => $default_tab,
+				'credit_balance'       => $credit_balance,
+				'credit_threshold'     => $credit_threshold,
+				'credit_packs'         => $credit_packs,
+				'credit_ledger'        => $credit_ledger,
+				'credit_purchase_url'  => $credit_purchase_url,
+				'has_payment_gateway'  => $has_payment_gateway,
+				// Direct-gateway purchase wiring (consumed by the template + view.js).
+				'direct_checkout_base' => rest_url( 'wbcom-credits/v1/wb-listora/checkout/' ),
+				'direct_return_url'    => $direct_return_url,
+				'direct_rest_nonce'    => wp_create_nonce( 'wp_rest' ),
+				'purchase_status'      => $purchase_status,
+				'purchase_credits'     => $purchase_credits,
+				'purchase_gateway'     => $purchase_gateway,
+			);
+			$credits_view_data['view_data'] = $credits_view_data;
+			wb_listora_get_template( 'blocks/user-dashboard/tab-credits.php', $credits_view_data );
+		endif;
+		?>
+
+		<?php
+		/**
+		 * Fires after the standard dashboard panels (Listings, Reviews, Favorites).
+		 *
+		 * Pro hooks in here to render additional panels such as Saved Searches and Analytics.
+		 * Each hooked renderer is responsible for outputting both a sidebar nav button
+		 * (ideally via a separate `wb_listora_dashboard_nav_items` action) and the panel
+		 * `<div role="tabpanel">` markup that follows the same conventions as core panels.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param int $user_id Current user ID.
+		 */
+		do_action( 'wb_listora_dashboard_sections', $user_id );
+		?>
+
+		<?php
+		// Pro upsell intentionally NOT rendered on the vendor dashboard.
+		// Pro is sold to site owners; vendors can't buy. The same upsell
+		// content lives in wp-admin (Listora → Upgrade to Pro page,
+		// Dashboard widget, Settings tab banners) where the site owner —
+		// the actual buyer — encounters it. See class-pro-promotion.php
+		// for the admin-only render sites.
+		?>
+
+		<?php
+		// ─── Profile Panel (overridable template) ───
+		if ( $show_profile ) :
+			$profile_view_data              = array(
+				'user_id' => $user_id,
+				'user'    => $user,
+			);
+			$profile_view_data['view_data'] = $profile_view_data;
+			wb_listora_get_template( 'blocks/user-dashboard/tab-profile.php', $profile_view_data );
+		endif;
+		?>
+
+	</div>
+</div>

@@ -1,0 +1,703 @@
+/* ────────────────────────────────────────────────────────────────────────
+ * BuddyNext — Admin Hub chrome (horizontal tab strip)
+ *
+ * Painted by includes/Admin/AdminHub.php which owns every BuddyNext
+ * section page (?page=buddynext, ?page=buddynext-members, etc.).
+ *
+ * Layout:
+ *   .bn-admin-hub
+ *     .bn-admin-hub__header         (page H1)
+ *     .bn-admin-hub__tabs           (horizontal tab strip)
+ *     .bn-admin-hub__main--full     (full-width tab body)
+ *
+ * Sections are capped at a few tabs, so the strip stays on one row and the
+ * body uses the full content width (no wasted left column). Single-tab
+ * sections skip the strip and render the body inside .bn-admin-hub__body.
+ *
+ * Chrome stays neutral: accent only on the active tab + badge. Token-driven.
+ *
+ * Loaded only on Hub-owned pages by AdminHub::enqueue_assets().
+ * ──────────────────────────────────────────────────────────────────────── */
+
+.bn-admin-hub {
+	max-width: none;
+}
+
+.bn-admin-hub__header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--bn-s4);
+	margin: 0 0 var(--bn-s4);
+	padding: var(--bn-s4) 0 0;
+}
+.bn-admin-hub__title {
+	margin: 0;
+	font-family: var(--bn-font-display, var(--bn-font-ui, inherit));
+	font-size: clamp(20px, 2vw, 26px);
+	font-weight: 700;
+	letter-spacing: -0.015em;
+	line-height: 1.2;
+	color: var(--bn-ink, #1f2937);
+	padding: 0;
+}
+
+/* ── Section tab strip (horizontal) ──────────────────────────────────── */
+
+.bn-admin-hub__tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--bn-s1, 4px);
+	margin: 0 0 var(--bn-s4, 16px);
+	border-bottom: 1px solid var(--bn-line);
+}
+
+/* WordPress core `.notice` flash boxes that section pages echo at the top of
+   their content sit directly beneath the section tab strip. Core's zeroed /
+   negative notice margins let them ride up and overlap the tabs (e.g. the Push
+   and Push Preferences tabs vanished behind the "saved" notice). Give echoed
+   notices breathing room and force them to clear so the tab strip stays visible. */
+.bn-admin-hub__main .notice {
+	margin: var(--bn-s3, 12px) 0 var(--bn-s4, 16px);
+	clear: both;
+}
+
+.bn-admin-hub__tab {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+	margin-bottom: -1px;
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: none;
+	font-size: var(--bn-text-sm, 13px);
+	font-weight: var(--bn-fw-medium, 500);
+	line-height: 1.2;
+	color: var(--bn-ink-2);
+	text-decoration: none;
+	transition: color var(--bn-dur-fast, 120ms) var(--bn-ease, ease),
+		border-color var(--bn-dur-fast, 120ms) var(--bn-ease, ease);
+}
+.bn-admin-hub__tab:hover {
+	color: var(--bn-ink);
+}
+.bn-admin-hub__tab:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px color-mix(in oklch, var(--bn-accent) 45%, transparent);
+	border-radius: var(--bn-r-sm, 4px);
+	color: var(--bn-ink);
+}
+.bn-admin-hub__tab.is-active {
+	color: var(--bn-accent);
+	border-bottom-color: var(--bn-accent);
+	font-weight: var(--bn-fw-semibold, 600);
+}
+
+.bn-admin-hub__tab-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	color: var(--bn-ink-3);
+	transition: color var(--bn-dur-fast, 120ms) var(--bn-ease, ease);
+}
+.bn-admin-hub__tab-icon .bn-icon {
+	width: 16px;
+	height: 16px;
+}
+.bn-admin-hub__tab:hover .bn-admin-hub__tab-icon { color: var(--bn-ink-2); }
+.bn-admin-hub__tab.is-active .bn-admin-hub__tab-icon { color: var(--bn-accent); }
+
+.bn-admin-hub__tab-label {
+	white-space: nowrap;
+}
+
+.bn-admin-hub__tab-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 18px;
+	height: 18px;
+	padding: 0 6px;
+	background: var(--bn-accent);
+	color: var(--bn-accent-fg, #fff);
+	border-radius: 999px;
+	font-family: var(--bn-font-mono, var(--bn-font-ui));
+	font-size: 11px;
+	font-weight: var(--bn-fw-semibold, 600);
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+/* ── Main content area ───────────────────────────────────────────────── */
+
+.bn-admin-hub__main {
+	min-width: 0;
+}
+.bn-admin-hub__main--full {
+	width: 100%;
+}
+
+/* Subtitle paragraph emitted by render methods */
+.bn-admin-hub__subtitle {
+	margin: 0 0 var(--bn-s4, 16px);
+	font-size: var(--bn-text-sm, 14px);
+	color: var(--bn-ink-2, #4b5563);
+	line-height: 1.5;
+}
+
+/* ── Standardized sub-header bar ──────────────────────────────────────────
+ *
+ * Emitted by AdminHub::render_subhead() right under the tab strip when the
+ * active tab declares a subtitle and/or a primary action. One consistent bar
+ * on every screen: subtitle left, action(s) right. Reuses .bn-admin-hub__subtitle
+ * for the text (its bottom margin is zeroed here so the bar controls rhythm).
+ * ───────────────────────────────────────────────────────────────────────── */
+
+.bn-admin-hub__subhead {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--bn-s3, 12px);
+	flex-wrap: wrap;
+	margin: 0 0 var(--bn-s4, 16px);
+}
+.bn-admin-hub__subhead .bn-admin-hub__subtitle {
+	margin: 0;
+}
+.bn-admin-hub__subhead-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-s2, 8px);
+	margin-inline-start: auto;
+}
+
+/* ── Shared segmented control (range / segment filters) ───────────────────
+ *
+ * For range or segment filters (7/30/90, All/Active) — NOT navigation. A single
+ * rounded pill-group on a subtle track; the active item is filled with a soft
+ * accent so it reads as a "selected segment", visually distinct from the
+ * underline section tabs (which carry navigation). Token-driven + dark-safe.
+ *
+ * Markup:
+ *   <div class="bn-segment" role="group" aria-label="Range">
+ *     <a class="bn-segment__item is-active" aria-selected="true" ...>30 days</a>
+ *     <a class="bn-segment__item" ...>90 days</a>
+ *   </div>
+ * Items may be <a> or <button>. Active state: .is-active OR [aria-selected="true"].
+ * ───────────────────────────────────────────────────────────────────────── */
+
+.bn-segment {
+	display: inline-flex;
+	align-items: stretch;
+	gap: var(--bn-s1, 4px);
+	padding: var(--bn-s1, 4px);
+	background: var(--bn-sunken);
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-full, 9999px);
+}
+
+.bn-segment__item {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--bn-s1, 4px);
+	padding: 6px 14px;
+	border: 0;
+	background: none;
+	border-radius: var(--bn-r-full, 9999px);
+	font-size: var(--bn-text-sm, 13px);
+	font-weight: var(--bn-fw-medium, 500);
+	line-height: 1.2;
+	color: var(--bn-ink-2);
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition: color var(--bn-dur-fast, 120ms) var(--bn-ease, ease),
+		background-color var(--bn-dur-fast, 120ms) var(--bn-ease, ease);
+}
+.bn-segment__item:hover {
+	color: var(--bn-ink);
+	background: var(--bn-surface);
+}
+.bn-segment__item:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px color-mix(in oklch, var(--bn-accent) 45%, transparent);
+}
+.bn-segment__item.is-active,
+.bn-segment__item[aria-selected="true"] {
+	color: var(--bn-accent-700);
+	background: var(--bn-accent-100);
+	font-weight: var(--bn-fw-semibold, 600);
+}
+.bn-segment__item.is-active:hover,
+.bn-segment__item[aria-selected="true"]:hover {
+	color: var(--bn-accent-700);
+	background: var(--bn-accent-100);
+}
+
+[data-bn-theme="dark"] .bn-segment__item.is-active,
+[data-theme="dark"] .bn-segment__item.is-active,
+[data-bx-mode="dark"] .bn-segment__item.is-active,
+[data-bn-theme="dark"] .bn-segment__item[aria-selected="true"],
+[data-theme="dark"] .bn-segment__item[aria-selected="true"],
+[data-bx-mode="dark"] .bn-segment__item[aria-selected="true"] {
+	color: var(--bn-accent-200);
+	background: color-mix(in oklch, var(--bn-accent) 22%, transparent);
+}
+
+.bn-admin-hub__sub-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--bn-s3, 12px);
+	flex-wrap: wrap;
+	margin: 0 0 var(--bn-s4, 16px);
+}
+.bn-admin-hub__sub-row .bn-admin-hub__subtitle { margin: 0; }
+
+/* Single-tab section fallback (no tab strip) */
+.bn-admin-hub__body { margin-top: 0; }
+
+/* ── Recommended-defaults prompt (General tab) ───────────────────────── */
+
+.bn-recommended-card {
+	margin: 0 0 var(--bn-s4, 16px);
+	padding: var(--bn-s4, 16px) var(--bn-s5, 20px);
+	background: var(--bn-accent-50, var(--bn-sunken));
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-md, 8px);
+}
+.bn-recommended-card__title {
+	margin: 0 0 var(--bn-s2, 8px);
+	font-size: var(--bn-text-md, 15px);
+	font-weight: var(--bn-fw-semibold, 600);
+	color: var(--bn-ink);
+}
+.bn-recommended-card__text {
+	margin: 0 0 var(--bn-s3, 12px);
+	font-size: var(--bn-text-sm, 13px);
+	color: var(--bn-ink-2);
+	line-height: 1.5;
+}
+.bn-recommended-card__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--bn-s2, 8px);
+	margin: 0;
+}
+
+/* ── Auto-card pattern ────────────────────────────────────────────────
+ *
+ * Pro admin pages haven't been migrated to the .bn-settings-card vocabulary
+ * Free Settings uses. Rather than rewriting every render_content() (16
+ * classes, 50+ LOC each), these rules style their bare <h2> + <form> +
+ * .form-table markup to look card-wrapped automatically.
+ *
+ * Scoped tight to .bn-admin-hub__main so non-Hub admin pages aren't
+ * affected. Skill gate F6 — "Auto-card wrapping" — calls for exactly
+ * this pattern.
+ * ───────────────────────────────────────────────────────────────────── */
+
+/* H2 as a section-eyebrow above the card below it. Visually groups with
+   the next form/table without trying to fragile `h2 + form` adjacency
+   tricks (Pro pages mix H2 → form, H2 → p → form, H2 → table). */
+.bn-admin-hub__main h2,
+.bn-admin-hub__main--wide h2 {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: var(--bn-s4, 16px) 0 var(--bn-s2, 8px);
+	padding: 6px 10px;
+	background: var(--bn-sunken);
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-sm, 4px);
+	font-family: var(--bn-font-mono, var(--bn-font-ui));
+	font-size: 11px;
+	font-weight: var(--bn-fw-semibold, 600);
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--bn-ink-2);
+	line-height: 1.2;
+}
+.bn-admin-hub__main h2:first-child,
+.bn-admin-hub__main--wide h2:first-child { margin-top: 0; }
+/* H3 below remains a "subsection title inside the card". */
+.bn-admin-hub__main h3,
+.bn-admin-hub__main--wide h3 {
+	font-size: 14px;
+	font-weight: var(--bn-fw-semibold, 600);
+	color: var(--bn-ink);
+	margin: var(--bn-s4, 16px) 0 var(--bn-s2, 8px);
+}
+
+/* Wrap every <form> + standalone <table.wp-list-table> in a card chrome.
+   Excludes the .bn-admin-hub__picker (the wide-layout select) and the
+   .bn-admin-search stub (handled separately). */
+.bn-admin-hub__main form:not(.bn-admin-hub__form-bare):not(.bn-admin-hub__picker):not(.bn-modal__panel),
+.bn-admin-hub__main--wide form:not(.bn-admin-hub__form-bare):not(.bn-admin-hub__picker):not(.bn-modal__panel),
+.bn-admin-hub__main > table.wp-list-table,
+.bn-admin-hub__main--wide > table.wp-list-table {
+	background: var(--bn-surface, #fff);
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-md, 8px);
+	padding: var(--bn-s4, 16px) var(--bn-s5, 20px);
+	margin: 0 0 var(--bn-s4, 16px);
+	box-shadow: var(--bn-shadow-sm);
+}
+
+/* Tables already inside our card don't get double chrome. */
+.bn-admin-hub__main form .form-table,
+.bn-admin-hub__main form .wp-list-table,
+.bn-admin-hub__main--wide form .form-table,
+.bn-admin-hub__main--wide form .wp-list-table {
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* ── Auto-card corrections ────────────────────────────────────────────────
+ *
+ * The auto-card above is for un-migrated bare Pro forms. Two cases must NOT
+ * get a card, or they look like stray boxes / double containers:
+ *
+ *   1. Action forms — a form whose only controls are buttons (Export, Delete,
+ *      a lone Save). They carry no field inputs, so we detect "no real field"
+ *      via :has() and strip the chrome, laying them out inline instead.
+ *   2. Forms inside our .bn-settings-section card vocabulary — the section is
+ *      already the card; a second card is the "double container" bug.
+ * ───────────────────────────────────────────────────────────────────────── */
+.bn-admin-hub__main form:not(.bn-modal__panel):not(.bn-admin-hub__picker):not(:has(.form-table)):not(:has(textarea)):not(:has(select)):not(:has(input[type="text"])):not(:has(input[type="email"])):not(:has(input[type="url"])):not(:has(input[type="number"])):not(:has(input[type="search"])):not(:has(input[type="password"])):not(:has(input[type="checkbox"])):not(:has(input[type="radio"])):not(:has(input[type="file"])):not(:has(input[type="color"])),
+.bn-admin-hub__main--wide form:not(.bn-modal__panel):not(.bn-admin-hub__picker):not(:has(.form-table)):not(:has(textarea)):not(:has(select)):not(:has(input[type="text"])):not(:has(input[type="email"])):not(:has(input[type="url"])):not(:has(input[type="number"])):not(:has(input[type="search"])):not(:has(input[type="password"])):not(:has(input[type="checkbox"])):not(:has(input[type="radio"])):not(:has(input[type="file"])):not(:has(input[type="color"])) {
+	background: none;
+	border: 0;
+	box-shadow: none;
+	padding: 0;
+	margin: 0 6px 6px 0;
+	display: inline-block;
+	vertical-align: top;
+}
+
+/* Forms inside ANY admin card wrapper already sit in a card — never give them
+   a second one (the "double container" bug). Covers every card vocabulary in
+   use: .bn-settings-section (Settings + new screens), .bn-card / .bn-admin-section
+   (Invites, legacy), .bn-pf-card / .bn-pf-af-panel (Profile Fields, Member Types),
+   .bn-table-wrap (Members, Spaces). */
+.bn-admin-hub .bn-admin-hub__main :is(.bn-settings-section, .bn-card, .bn-admin-section, .bn-pf-card, .bn-pf-af-panel, .bn-table-wrap) form,
+.bn-admin-hub .bn-admin-hub__main--wide :is(.bn-settings-section, .bn-card, .bn-admin-section, .bn-pf-card, .bn-pf-af-panel, .bn-table-wrap) form {
+	background: none;
+	border: 0;
+	box-shadow: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* WP default form-table cell padding is tight — bump for readability. */
+.bn-admin-hub__main .form-table th,
+.bn-admin-hub__main .form-table td,
+.bn-admin-hub__main--wide .form-table th,
+.bn-admin-hub__main--wide .form-table td {
+	padding: var(--bn-s3, 12px) var(--bn-s3, 12px) var(--bn-s3, 12px) 0;
+}
+
+/* Submit row visually separates from the form body. */
+.bn-admin-hub__main p.submit,
+.bn-admin-hub__main--wide p.submit {
+	margin: var(--bn-s4, 16px) 0 0;
+	padding-top: var(--bn-s3, 12px);
+	border-top: 1px solid var(--bn-line);
+}
+
+/* WP default blue primary button → BN accent. Same density / radius as the
+   bn-btn primary so admins don't see two different "Save" buttons depending
+   on which Pro page they're on. */
+.bn-admin-hub__main .button-primary,
+.bn-admin-hub__main--wide .button-primary,
+.bn-admin-hub__main input[type="submit"].button-primary,
+.bn-admin-hub__main--wide input[type="submit"].button-primary {
+	background: var(--bn-accent);
+	border-color: var(--bn-accent);
+	color: var(--bn-accent-fg, #fff);
+	box-shadow: none;
+	text-shadow: none;
+	min-height: 36px;
+	padding: 0 14px;
+	border-radius: var(--bn-r-md, 6px);
+	font-weight: var(--bn-fw-semibold, 600);
+}
+.bn-admin-hub__main .button-primary:hover,
+.bn-admin-hub__main--wide .button-primary:hover,
+.bn-admin-hub__main .button-primary:focus,
+.bn-admin-hub__main--wide .button-primary:focus {
+	background: color-mix(in oklch, var(--bn-accent) 88%, black);
+	border-color: color-mix(in oklch, var(--bn-accent) 88%, black);
+	color: var(--bn-accent-fg, #fff);
+	box-shadow: none;
+}
+.bn-admin-hub__main .button-primary:focus-visible,
+.bn-admin-hub__main--wide .button-primary:focus-visible {
+	box-shadow: 0 0 0 3px color-mix(in oklch, var(--bn-accent) 35%, transparent);
+}
+
+/* Danger / link-delete variant stays red so destruction reads. */
+.bn-admin-hub__main .button-link-delete,
+.bn-admin-hub__main--wide .button-link-delete {
+	color: var(--bn-danger, oklch(58% 0.20 25));
+}
+
+/* ── Wide layout (list-detail editors: Navigation, Email Templates) ─── */
+
+.bn-admin-hub.is-wide {
+	max-width: none;
+}
+
+.bn-admin-hub__main--wide {
+	display: block;
+	width: 100%;
+	min-width: 0;
+}
+
+/* Stat-card rows need breathing room before the panel/table that follows, so
+   the boxes never butt up against each other. */
+.bn-admin-hub .bn-stat-grid {
+	margin-bottom: var(--bn-s4, 16px);
+}
+
+/* ── Mobile — tab strip becomes a horizontal scroller ────────────────── */
+
+@media (max-width: 782px) {
+	.bn-admin-hub__tabs {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+	.bn-admin-hub__tab {
+		flex-shrink: 0;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   Unified left navigation panel (paneled layout)
+   One in-page rail: every section as a group, its tabs as links.
+   -------------------------------------------------------------------------- */
+.bn-admin-hub--paneled .bn-admin-hub__shell {
+	display: grid;
+	grid-template-columns: 236px minmax( 0, 1fr );
+	gap: var(--bn-s5, 20px);
+	align-items: start;
+}
+.bn-admin-hub__panel {
+	position: sticky;
+	top: var(--bn-s8, 32px);
+	align-self: start;
+	max-height: calc( 100vh - 60px );
+	overflow-y: auto;
+	padding: var(--bn-s2, 8px);
+	background: var(--bn-surface);
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-lg, 12px);
+	box-shadow: var(--bn-shadow-xs, 0 1px 2px rgba( 0, 0, 0, 0.04 ));
+	/* Reserve the scrollbar's space so revealing it on hover never shifts the
+	   nav text sideways. */
+	scrollbar-gutter: stable;
+}
+/* The nav (≈18 links across 5 groups) is taller than most laptop viewports, so
+   the sticky panel scrolls on its own to keep every item reachable. Keep that
+   scrollbar subtle — transparent until the panel is hovered/focused — so there
+   is no permanent grey track in the gutter (Linear/Notion-style overlay). */
+.bn-admin-hub__panel {
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+}
+.bn-admin-hub__panel:hover,
+.bn-admin-hub__panel:focus-within {
+	scrollbar-color: var(--bn-line) transparent;
+}
+.bn-admin-hub__panel::-webkit-scrollbar { width: 8px; }
+.bn-admin-hub__panel::-webkit-scrollbar-track { background: transparent; }
+.bn-admin-hub__panel::-webkit-scrollbar-thumb {
+	background: transparent;
+	border-radius: var(--bn-r-full, 9999px);
+}
+.bn-admin-hub__panel:hover::-webkit-scrollbar-thumb,
+.bn-admin-hub__panel:focus-within::-webkit-scrollbar-thumb {
+	background: var(--bn-line);
+}
+.bn-hub-nav-group { margin-bottom: var(--bn-s1, 4px); }
+.bn-hub-nav-group:last-child { margin-bottom: 0; }
+
+/* Collapsible section header (native <details>/<summary> accordion). Only the
+   section owning the current page is open by default, so the panel stays short. */
+.bn-hub-nav-group__label {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--bn-s2, 8px);
+	padding: 7px var(--bn-s2, 8px);
+	border-radius: var(--bn-r-md, 8px);
+	cursor: pointer;
+	color: var(--bn-ink-2);
+	font-size: var(--bn-text-sm);
+	font-weight: var(--bn-fw-semibold, 600);
+	line-height: 1.3;
+	list-style: none;
+	user-select: none;
+}
+.bn-hub-nav-group__label::-webkit-details-marker { display: none; }
+.bn-hub-nav-group__label::marker { content: ''; }
+.bn-hub-nav-group__label:hover { background: var(--bn-sunken); color: var(--bn-ink); }
+.bn-hub-nav-group__label:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px color-mix( in oklch, var(--bn-accent) 45%, transparent );
+}
+.bn-hub-nav-group.is-current > .bn-hub-nav-group__label { color: var(--bn-ink); }
+.bn-hub-nav-group__name {
+	min-width: 0;
+	margin-inline-end: auto; /* icon + name sit left; chevron pushed to the right */
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.bn-hub-nav-group__label svg,
+.bn-hub-nav-group__icon,
+.bn-hub-nav-group__chevron {
+	width: 15px;
+	height: 15px;
+	flex: none;
+	color: var(--bn-ink-3);
+	transition: transform 0.15s ease;
+}
+/* Section icon matches the section state; the chevron stays neutral. */
+.bn-hub-nav-group.is-current > .bn-hub-nav-group__label > .bn-hub-nav-group__icon {
+	color: var(--bn-accent-600, var(--bn-accent));
+}
+/* Only the chevron rotates when the group is open — not the section icon. */
+.bn-hub-nav-group[open] > .bn-hub-nav-group__label > .bn-hub-nav-group__chevron { transform: rotate( 180deg ); }
+.bn-hub-nav-group__items { padding-top: var(--bn-s1, 4px); }
+/* Explicitly collapse closed groups. Giving <summary> display:flex can defeat the
+   UA's native closed-content hiding, so drive it from the [open] state directly. */
+.bn-hub-nav-group:not( [open] ) > .bn-hub-nav-group__items { display: none; }
+.bn-hub-nav-link {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 7px var(--bn-s2, 8px);
+	border-radius: var(--bn-r-md, 8px);
+	color: var(--bn-ink-2);
+	text-decoration: none;
+	font-size: var(--bn-text-sm);
+	font-weight: var(--bn-fw-medium, 500);
+	line-height: 1.3;
+}
+.bn-hub-nav-link:hover { background: var(--bn-sunken); color: var(--bn-ink); }
+.bn-hub-nav-link:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px color-mix( in oklch, var(--bn-accent) 45%, transparent );
+}
+.bn-hub-nav-link.is-active {
+	background: var(--bn-accent-100, var(--bn-sunken));
+	color: var(--bn-accent-700, var(--bn-accent));
+	font-weight: var(--bn-fw-semibold, 600);
+}
+.bn-hub-nav-link svg,
+.bn-hub-nav-link .bn-icon { width: 15px; height: 15px; flex: none; color: var(--bn-ink-3); }
+.bn-hub-nav-link.is-active svg,
+.bn-hub-nav-link.is-active .bn-icon { color: var(--bn-accent-600, var(--bn-accent)); }
+.bn-admin-hub--paneled .bn-admin-hub__header { padding-top: 0; }
+
+/* iPad portrait + narrow: panel stacks above content */
+@media ( max-width: 900px ) {
+	.bn-admin-hub--paneled .bn-admin-hub__shell { grid-template-columns: 1fr; }
+	.bn-admin-hub__panel { position: static; max-height: none; }
+}
+
+/* --------------------------------------------------------------------------
+   Branded top bar (every admin page) — mark + name + version + search
+   -------------------------------------------------------------------------- */
+.bn-admin-hub__brand {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-s3, 12px);
+	padding: var(--bn-s2, 8px) 0 var(--bn-s4, 16px);
+	margin-bottom: var(--bn-s4, 16px);
+	border-bottom: 1px solid var(--bn-line);
+}
+.bn-admin-hub__brand-mark {
+	width: 30px;
+	height: 30px;
+	border-radius: var(--bn-r-md, 8px);
+	display: grid;
+	place-items: center;
+	background: var(--bn-accent);
+	color: var(--bn-accent-fg, #fff);
+	font-family: var(--bn-font-display, var(--bn-font-ui));
+	font-weight: var(--bn-fw-bold, 700);
+	font-size: 12px;
+	letter-spacing: -0.02em;
+}
+.bn-admin-hub__brand-name {
+	font-family: var(--bn-font-display, var(--bn-font-ui));
+	font-weight: var(--bn-fw-bold, 700);
+	font-size: var(--bn-text-lg);
+	letter-spacing: -0.01em;
+	color: var(--bn-ink);
+}
+.bn-admin-hub__brand-ver {
+	font-family: var(--bn-font-mono);
+	font-size: var(--bn-text-xs);
+	color: var(--bn-ink-3);
+	background: var(--bn-sunken);
+	padding: 2px 8px;
+	border-radius: var(--bn-r-full, 999px);
+}
+.bn-admin-hub__brand-spacer { flex: 1; }
+.bn-admin-hub__brand-search,
+.bn-admin-hub__brand-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: var(--bn-text-xs);
+	font-weight: var(--bn-fw-semibold, 600);
+	padding: 6px 11px;
+	border: 1px solid var(--bn-line);
+	border-radius: var(--bn-r-md, 8px);
+	color: var(--bn-ink-2);
+	background: var(--bn-surface);
+	cursor: pointer;
+	text-decoration: none;
+}
+.bn-admin-hub__brand-search:hover,
+.bn-admin-hub__brand-link:hover { background: var(--bn-sunken); color: var(--bn-ink); }
+.bn-admin-hub__brand-search kbd {
+	font-family: var(--bn-font-mono);
+	font-size: 10px;
+	background: var(--bn-sunken);
+	border: 1px solid var(--bn-line);
+	border-radius: 4px;
+	padding: 0 4px;
+	color: var(--bn-ink-3);
+}
+.bn-admin-hub__brand-logo { height: 28px; width: auto; display: block; flex: none; }
+
+/* ── Bulk-select for admin list tables (Members, Spaces) ─────────────── */
+.bn-bulk-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--bn-s2, 8px);
+	margin: 0 0 var(--bn-s3, 12px);
+	flex-wrap: wrap;
+}
+.bn-table__cb {
+	width: 2.5rem;
+}
+.bn-table__cb input[type="checkbox"] {
+	margin: 0;
+	vertical-align: middle;
+}

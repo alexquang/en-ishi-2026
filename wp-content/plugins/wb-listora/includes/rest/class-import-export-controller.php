@@ -1,0 +1,450 @@
+<?php
+/**
+ * REST Import/Export Controller.
+ *
+ * Replaces admin_post_listora_export_csv and admin_post_listora_import_csv
+ * with proper REST endpoints.
+ *
+ * @package WBListora\REST
+ */
+
+namespace WBListora\REST;
+
+defined( 'ABSPATH' ) || exit;
+
+use WP_REST_Controller;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
+use WP_Error;
+use WBListora\ImportExport\CSV_Exporter;
+use WBListora\ImportExport\CSV_Importer;
+use WBListora\ImportExport\JSON_Importer;
+use WBListora\ImportExport\GeoJSON_Importer;
+
+/**
+ * Handles CSV export and import via REST.
+ */
+class Import_Export_Controller extends WP_REST_Controller {
+
+	/**
+	 * REST namespace.
+	 *
+	 * @var string
+	 */
+	protected $namespace = WB_LISTORA_REST_NAMESPACE;
+
+	/**
+	 * Register routes.
+	 */
+	public function register_routes() {
+		// GET /listora/v1/export/csv
+		register_rest_route(
+			$this->namespace,
+			'/export/csv',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'export_csv' ),
+					'permission_callback' => array( $this, 'manage_options_permissions' ),
+					'args'                => array(
+						'type'         => array(
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+							'description'       => 'Listing type slug to filter by.',
+						),
+						'status'       => array(
+							'type'              => 'string',
+							'default'           => 'publish',
+							'sanitize_callback' => 'sanitize_text_field',
+							'description'       => 'Post status to export.',
+						),
+						'category'     => array(
+							'type'              => 'integer',
+							'default'           => 0,
+							'sanitize_callback' => 'absint',
+							'description'       => 'Category term ID to filter by.',
+						),
+						'date_from'    => array(
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+							'description'       => 'Start date for date range filter (YYYY-MM-DD).',
+						),
+						'date_to'      => array(
+							'type'              => 'string',
+							'default'           => '',
+							'sanitize_callback' => 'sanitize_text_field',
+							'description'       => 'End date for date range filter (YYYY-MM-DD).',
+						),
+						'include_meta' => array(
+							'type'        => 'boolean',
+							'default'     => true,
+							'description' => 'Whether to include meta fields in the export.',
+						),
+					),
+				),
+			)
+		);
+
+		// POST /listora/v1/import/csv
+		register_rest_route(
+			$this->namespace,
+			'/import/csv',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'import_csv' ),
+					'permission_callback' => array( $this, 'manage_options_permissions' ),
+					'args'                => array(
+						'type_slug' => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+							'description'       => 'Listing type slug for imported listings.',
+						),
+						'mapping'   => array(
+							// Sent as a JSON-encoded string inside multipart/form-data
+							// (FormData cannot carry a nested object), so accept a
+							// string here and decode it in the handler. Accepting an
+							// object too keeps application/json callers working.
+							'type'        => array( 'string', 'object' ),
+							'required'    => true,
+							'description' => 'Column index to field key mapping, JSON-encoded (e.g. {"0":"title","1":"description"}).',
+						),
+						'dry_run'   => array(
+							'type'        => 'boolean',
+							'default'     => false,
+							'description' => 'If true, validate only without creating listings.',
+						),
+					),
+				),
+			)
+		);
+
+		// POST /listora/v1/import/json
+		register_rest_route(
+			$this->namespace,
+			'/import/json',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'import_json' ),
+					'permission_callback' => array( $this, 'manage_options_permissions' ),
+					'args'                => array(
+						'type_slug' => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+							'description'       => __( 'Listing type slug for imported listings.', 'wb-listora' ),
+						),
+						'dry_run'   => array(
+							'type'        => 'boolean',
+							'default'     => false,
+							'description' => __( 'If true, validate only without creating listings.', 'wb-listora' ),
+						),
+					),
+				),
+			)
+		);
+
+		// POST /listora/v1/import/geojson
+		register_rest_route(
+			$this->namespace,
+			'/import/geojson',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'import_geojson' ),
+					'permission_callback' => array( $this, 'manage_options_permissions' ),
+					'args'                => array(
+						'type_slug' => array(
+							'type'              => 'string',
+							'required'          => true,
+							'sanitize_callback' => 'sanitize_text_field',
+							'description'       => __( 'Listing type slug for imported listings.', 'wb-listora' ),
+						),
+						'dry_run'   => array(
+							'type'        => 'boolean',
+							'default'     => false,
+							'description' => __( 'If true, validate only without creating listings.', 'wb-listora' ),
+						),
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Export listings to CSV and stream as download.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function export_csv( $request ) {
+		$args = array(
+			'type'         => $request->get_param( 'type' ),
+			'status'       => $request->get_param( 'status' ),
+			'category'     => $request->get_param( 'category' ),
+			'date_from'    => $request->get_param( 'date_from' ),
+			'date_to'      => $request->get_param( 'date_to' ),
+			'per_page'     => -1,
+			'include_meta' => $request->get_param( 'include_meta' ),
+		);
+
+		$file_path = CSV_Exporter::export( $args );
+
+		if ( is_wp_error( $file_path ) ) {
+			return new WP_Error(
+				'listora_export_failed',
+				$file_path->get_error_message(),
+				array( 'status' => 400 )
+			);
+		}
+
+		$file_name = basename( $file_path );
+
+		// Read the file contents into memory and clean up the temp file.
+		$contents = file_get_contents( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		wp_delete_file( $file_path );
+
+		if ( false === $contents ) {
+			return new WP_Error(
+				'listora_export_read_failed',
+				__( 'Failed to read export file.', 'wb-listora' ),
+				array( 'status' => 500 )
+			);
+		}
+
+		// Send CSV response with download headers.
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $file_name . '"' );
+		header( 'Content-Length: ' . strlen( $contents ) );
+		header( 'Cache-Control: no-cache, no-store, must-revalidate' );
+
+		echo $contents; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSV binary data.
+		exit;
+	}
+
+	/**
+	 * Import listings from an uploaded CSV file.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function import_csv( $request ) {
+		$files = $request->get_file_params();
+
+		if ( empty( $files['file'] ) || empty( $files['file']['tmp_name'] ) ) {
+			return new WP_Error(
+				'listora_import_no_file',
+				__( 'No CSV file uploaded. Send the file as "file" in multipart/form-data.', 'wb-listora' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$file = $files['file'];
+
+		// Validate file type.
+		$mime_types = array( 'text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel' );
+		if ( ! empty( $file['type'] ) && ! in_array( $file['type'], $mime_types, true ) ) {
+			return new WP_Error(
+				'listora_import_invalid_type',
+				__( 'Invalid file type. Please upload a CSV file.', 'wb-listora' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Validate upload error.
+		if ( ! empty( $file['error'] ) ) {
+			return new WP_Error(
+				'listora_import_upload_error',
+				/* translators: %d: PHP upload error code */
+				sprintf( __( 'File upload error (code %d).', 'wb-listora' ), (int) $file['error'] ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$type_slug = $request->get_param( 'type_slug' );
+		$mapping   = $request->get_param( 'mapping' );
+		$dry_run   = (bool) $request->get_param( 'dry_run' );
+
+		// The mapping arrives as a JSON string when posted via multipart
+		// FormData (the admin UI path); decode it. application/json callers
+		// may pass a ready-made array/object.
+		if ( is_string( $mapping ) ) {
+			$decoded = json_decode( $mapping, true );
+			$mapping = is_array( $decoded ) ? $decoded : array();
+		}
+
+		if ( ! is_array( $mapping ) || empty( $mapping ) ) {
+			return new WP_Error(
+				'listora_import_invalid_mapping',
+				__( 'Invalid or empty column mapping. Map at least one column to a listing field.', 'wb-listora' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Convert mapping keys to integers (JSON objects always have string keys).
+		$int_mapping = array();
+		foreach ( $mapping as $col_idx => $field_key ) {
+			$int_mapping[ (int) $col_idx ] = sanitize_text_field( $field_key );
+		}
+
+		$result = CSV_Importer::import( $file['tmp_name'], $type_slug, $int_mapping, $dry_run );
+
+		return new WP_REST_Response(
+			array(
+				'imported' => $result['imported'],
+				'errors'   => $result['errors'],
+				'skipped'  => $result['skipped'],
+				'messages' => $result['messages'],
+				'dry_run'  => $dry_run,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Import listings from an uploaded JSON file.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function import_json( $request ) {
+		$files = $request->get_file_params();
+
+		if ( empty( $files['file'] ) || empty( $files['file']['tmp_name'] ) ) {
+			return new WP_Error(
+				'listora_import_no_file',
+				__( 'No JSON file uploaded. Send the file as "file" in multipart/form-data.', 'wb-listora' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$file = $files['file'];
+
+		// Validate file type.
+		$mime_types = array( 'application/json', 'text/json', 'text/plain' );
+		if ( ! empty( $file['type'] ) && ! in_array( $file['type'], $mime_types, true ) ) {
+			return new WP_Error(
+				'listora_import_invalid_type',
+				__( 'Invalid file type. Please upload a JSON file.', 'wb-listora' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Validate upload error.
+		if ( ! empty( $file['error'] ) ) {
+			return new WP_Error(
+				'listora_import_upload_error',
+				/* translators: %d: PHP upload error code */
+				sprintf( __( 'File upload error (code %d).', 'wb-listora' ), (int) $file['error'] ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$type_slug = $request->get_param( 'type_slug' );
+		$dry_run   = (bool) $request->get_param( 'dry_run' );
+
+		$result = JSON_Importer::import( $file['tmp_name'], $type_slug, $dry_run );
+
+		return new WP_REST_Response(
+			array(
+				'imported' => $result['imported'],
+				'errors'   => $result['errors'],
+				'skipped'  => $result['skipped'],
+				'messages' => $result['messages'],
+				'dry_run'  => $dry_run,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Import listings from an uploaded GeoJSON file.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function import_geojson( $request ) {
+		$files = $request->get_file_params();
+
+		if ( empty( $files['file'] ) || empty( $files['file']['tmp_name'] ) ) {
+			return new WP_Error(
+				'listora_import_no_file',
+				__( 'No GeoJSON file uploaded. Send the file as "file" in multipart/form-data.', 'wb-listora' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$file = $files['file'];
+
+		// Validate file type.
+		$mime_types = array( 'application/geo+json', 'application/json', 'text/json', 'text/plain' );
+		if ( ! empty( $file['type'] ) && ! in_array( $file['type'], $mime_types, true ) ) {
+			return new WP_Error(
+				'listora_import_invalid_type',
+				__( 'Invalid file type. Please upload a GeoJSON file.', 'wb-listora' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		// Validate upload error.
+		if ( ! empty( $file['error'] ) ) {
+			return new WP_Error(
+				'listora_import_upload_error',
+				/* translators: %d: PHP upload error code */
+				sprintf( __( 'File upload error (code %d).', 'wb-listora' ), (int) $file['error'] ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$type_slug = $request->get_param( 'type_slug' );
+		$dry_run   = (bool) $request->get_param( 'dry_run' );
+
+		$result = GeoJSON_Importer::import( $file['tmp_name'], $type_slug, $dry_run );
+
+		return new WP_REST_Response(
+			array(
+				'imported' => $result['imported'],
+				'errors'   => $result['errors'],
+				'skipped'  => $result['skipped'],
+				'messages' => $result['messages'],
+				'dry_run'  => $dry_run,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Permission check: manage_options.
+	 *
+	 * Returns WP_Error (not bare false) so the JSON error envelope matches
+	 * other Listora REST controllers — `listora_unauthorized` 401 for anon,
+	 * `listora_forbidden` 403 for logged-in users without the cap. Same shape
+	 * as Dashboard_Controller::logged_in_permissions etc. Headless / mobile
+	 * clients reading error.code branch on a single enum across the API.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return true|\WP_Error
+	 */
+	public function manage_options_permissions( $request ) {
+		if ( ! is_user_logged_in() ) {
+			return new \WP_Error(
+				'listora_unauthorized',
+				__( 'You do not have permission to perform this action.', 'wb-listora' ),
+				array( 'status' => 401 )
+			);
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new \WP_Error(
+				'listora_forbidden',
+				__( 'You do not have permission to perform this action.', 'wb-listora' ),
+				array( 'status' => 403 )
+			);
+		}
+		return true;
+	}
+}

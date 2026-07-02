@@ -1,0 +1,11 @@
+{
+    "name": "root/wpnew",
+    "autoload": {
+        "psr-4": {
+            "Root\\Wpnew\\": "src/"
+        }
+    },
+    "require": {
+        "firebase/php-jwt": "^7.1"
+    }
+}
