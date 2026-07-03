@@ -1,0 +1,159 @@
+[02-Jul-2026 08:51:52 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:51:54 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:51:54 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:51:56 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:51:56 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:51:56 UTC] PHP Fatal error:  Uncaught TypeError: Jetonomy\Models\UserProfile::find_by_user(): Return value must be of type ?object, string returned in /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/models/class-user-profile.php:68
+Stack trace:
+#0 /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/class-avatar.php(100): Jetonomy\Models\UserProfile::find_by_user(2)
+#1 /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/class-avatar.php(80): Jetonomy\Avatar::custom_avatar_url(2)
+#2 /var/www/html/wpnew/wp-includes/class-wp-hook.php(341): Jetonomy\Avatar::filter_avatar_data(Array, 2)
+#3 /var/www/html/wpnew/wp-includes/plugin.php(205): WP_Hook->apply_filters(Array, Array)
+#4 /var/www/html/wpnew/wp-includes/link-template.php(4492): apply_filters('pre_get_avatar_...', Array, 2)
+#5 /var/www/html/wpnew/wp-includes/link-template.php(4333): get_avatar_data(2, Array)
+#6 /var/www/html/wpnew/wp-includes/pluggable.php(3262): get_avatar_url(2, Array)
+#7 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Header/HeaderUserSection.php(132): get_avatar(2, 64, '', 'ptquang0941', Array)
+#8 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Header/HeaderUserSection.php(50): BuddyNext\Header\HeaderUserSection::user_menu()
+#9 /var/www/html/wpnew/wp-content/plugins/buddynext/buddynext.php(799): BuddyNext\Header\HeaderUserSection::render()
+#10 /var/www/html/wpnew/wp-content/themes/buddyx/template-parts/header/buddypress-profile.php(22): buddynext_header_user_section()
+#11 /var/www/html/wpnew/wp-includes/template.php(816): require('/var/www/html/w...')
+#12 /var/www/html/wpnew/wp-includes/template.php(749): load_template('/var/www/html/w...', false, Array)
+#13 /var/www/html/wpnew/wp-includes/general-template.php(206): locate_template(Array, true, false, Array)
+#14 /var/www/html/wpnew/wp-content/themes/buddyx/template-parts/header/navigation.php(47): get_template_part('template-parts/...')
+#15 /var/www/html/wpnew/wp-includes/template.php(816): require('/var/www/html/w...')
+#16 /var/www/html/wpnew/wp-includes/template.php(749): load_template('/var/www/html/w...', false, Array)
+#17 /var/www/html/wpnew/wp-includes/general-template.php(206): locate_template(Array, true, false, Array)
+#18 /var/www/html/wpnew/wp-content/themes/buddyx/header.php(48): get_template_part('template-parts/...')
+#19 /var/www/html/wpnew/wp-includes/template.php(814): require_once('/var/www/html/w...')
+#20 /var/www/html/wpnew/wp-includes/template.php(749): load_template('/var/www/html/w...', true, Array)
+#21 /var/www/html/wpnew/wp-includes/general-template.php(48): locate_template(Array, true, true, Array)
+#22 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Core/PageRouter.php(731): get_header()
+#23 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Core/PageRouter.php(695): BuddyNext\Core\PageRouter->render_shell_with_theme_chrome('people', 'profile/view.ph...', Array)
+#24 /var/www/html/wpnew/wp-includes/class-wp-hook.php(341): BuddyNext\Core\PageRouter->dispatch_hub_template('')
+#25 /var/www/html/wpnew/wp-includes/class-wp-hook.php(365): WP_Hook->apply_filters(NULL, Array)
+#26 /var/www/html/wpnew/wp-includes/plugin.php(522): WP_Hook->do_action(Array)
+#27 /var/www/html/wpnew/wp-includes/template-loader.php(23): do_action('template_redire...')
+#28 /var/www/html/wpnew/wp-blog-header.php(19): require_once('/var/www/html/w...')
+#29 /var/www/html/wpnew/index.php(17): require('/var/www/html/w...')
+#30 {main}
+  thrown in /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/models/class-user-profile.php on line 68
+[02-Jul-2026 08:51:58 UTC] PHP Fatal error:  Uncaught TypeError: Jetonomy\Models\UserProfile::find_by_user(): Return value must be of type ?object, string returned in /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/models/class-user-profile.php:68
+Stack trace:
+#0 /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/class-avatar.php(100): Jetonomy\Models\UserProfile::find_by_user(2)
+#1 /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/class-avatar.php(80): Jetonomy\Avatar::custom_avatar_url(2)
+#2 /var/www/html/wpnew/wp-includes/class-wp-hook.php(341): Jetonomy\Avatar::filter_avatar_data(Array, 2)
+#3 /var/www/html/wpnew/wp-includes/plugin.php(205): WP_Hook->apply_filters(Array, Array)
+#4 /var/www/html/wpnew/wp-includes/link-template.php(4492): apply_filters('pre_get_avatar_...', Array, 2)
+#5 /var/www/html/wpnew/wp-includes/link-template.php(4333): get_avatar_data(2, Array)
+#6 /var/www/html/wpnew/wp-includes/pluggable.php(3262): get_avatar_url(2, Array)
+#7 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Header/HeaderUserSection.php(132): get_avatar(2, 64, '', 'ptquang0941', Array)
+#8 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Header/HeaderUserSection.php(50): BuddyNext\Header\HeaderUserSection::user_menu()
+#9 /var/www/html/wpnew/wp-content/plugins/buddynext/buddynext.php(799): BuddyNext\Header\HeaderUserSection::render()
+#10 /var/www/html/wpnew/wp-content/themes/buddyx/template-parts/header/buddypress-profile.php(22): buddynext_header_user_section()
+#11 /var/www/html/wpnew/wp-includes/template.php(816): require('/var/www/html/w...')
+#12 /var/www/html/wpnew/wp-includes/template.php(749): load_template('/var/www/html/w...', false, Array)
+#13 /var/www/html/wpnew/wp-includes/general-template.php(206): locate_template(Array, true, false, Array)
+#14 /var/www/html/wpnew/wp-content/themes/buddyx/template-parts/header/navigation.php(47): get_template_part('template-parts/...')
+#15 /var/www/html/wpnew/wp-includes/template.php(816): require('/var/www/html/w...')
+#16 /var/www/html/wpnew/wp-includes/template.php(749): load_template('/var/www/html/w...', false, Array)
+#17 /var/www/html/wpnew/wp-includes/general-template.php(206): locate_template(Array, true, false, Array)
+#18 /var/www/html/wpnew/wp-content/themes/buddyx/header.php(48): get_template_part('template-parts/...')
+#19 /var/www/html/wpnew/wp-includes/template.php(814): require_once('/var/www/html/w...')
+#20 /var/www/html/wpnew/wp-includes/template.php(749): load_template('/var/www/html/w...', true, Array)
+#21 /var/www/html/wpnew/wp-includes/general-template.php(48): locate_template(Array, true, true, Array)
+#22 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Core/PageRouter.php(731): get_header()
+#23 /var/www/html/wpnew/wp-content/plugins/buddynext/includes/Core/PageRouter.php(695): BuddyNext\Core\PageRouter->render_shell_with_theme_chrome('people', 'profile/view.ph...', Array)
+#24 /var/www/html/wpnew/wp-includes/class-wp-hook.php(341): BuddyNext\Core\PageRouter->dispatch_hub_template('')
+#25 /var/www/html/wpnew/wp-includes/class-wp-hook.php(365): WP_Hook->apply_filters(NULL, Array)
+#26 /var/www/html/wpnew/wp-includes/plugin.php(522): WP_Hook->do_action(Array)
+#27 /var/www/html/wpnew/wp-includes/template-loader.php(23): do_action('template_redire...')
+#28 /var/www/html/wpnew/wp-blog-header.php(19): require_once('/var/www/html/w...')
+#29 /var/www/html/wpnew/index.php(17): require('/var/www/html/w...')
+#30 {main}
+  thrown in /var/www/html/wpnew/wp-content/plugins/jetonomy/includes/models/class-user-profile.php on line 68
+[02-Jul-2026 08:51:58 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:52:00 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:52:54 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:52:57 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:01 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:01 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:01 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:02 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:05 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:09 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:10 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:11 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:11 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:11 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:14 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:14 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:17 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:20 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:21 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:22 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:23 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:26 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:31 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:32 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:32 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:32 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:34 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:36 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:36 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:36 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:37 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:37 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:38 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:38 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:39 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:40 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:40 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:40 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:53:42 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:44 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:45 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:45 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:45 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:47 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:47 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:48 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:48 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:51 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:53 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:54 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:55 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:55 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:55 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:56 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:57 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:53:59 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:54:00 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:00 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:00 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:05 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:54:05 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:54:06 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:06 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:06 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:08 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:54:08 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:54:09 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:09 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:09 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:12 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:54:28 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:54:29 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:29 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:29 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:54:32 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:55:31 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:55:31 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:55:32 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:55:54 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:57:03 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:57:04 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:57:05 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
+[02-Jul-2026 08:57:06 UTC] PHP Warning:  Undefined property: BP_Notifications_Component::$query_loop in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:57:06 UTC] PHP Warning:  Attempt to read property "notification" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:57:06 UTC] PHP Warning:  Attempt to read property "id" on null in /var/www/html/wpnew/wp-content/plugins/buddypress/bp-notifications/bp-notifications-template.php on line 314
+[02-Jul-2026 08:57:09 UTC] [wb_gam] WARN ManifestLoader: trigger superseded by a canonical sibling — skipped. {"action_id":"bp_publish_post"}
