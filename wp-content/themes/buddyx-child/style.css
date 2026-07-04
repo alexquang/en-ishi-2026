@@ -38,3 +38,148 @@ textarea,
 .VIpgJd-ZVi9od-aZ2wEe-wOHMyf{
     display:none !important;
 }
+.pmpro_btn {
+    background-color: #ffffff !important;
+}
+.bn-auth-social {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.bn-auth-social .social-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+
+    height: 52px;
+    padding: 0 12px;
+
+    border: 1px solid #d9dde5;
+    border-radius: 10px;
+    background: #fff;
+
+    text-decoration: none;
+}
+
+.bn-auth-social .social-icon {
+    width: 36px;
+    min-width: 36px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding-right: 12px;
+    margin-right: 12px;
+
+    border-right: 1px solid #e5e7eb;
+}
+
+.bn-auth-social .social-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.social-google i {
+    color: #ea4335;
+}
+
+.social-facebook i {
+    color: #1877f2;
+}
+
+.social-x i {
+    color: #000;
+}
+.social-text {
+    white-space: nowrap;
+}
+.bn-auth-social {
+    flex-wrap: nowrap;
+}
+@media (max-width: 768px) {
+
+    .bn-auth-social {
+        flex-direction: column;
+    }
+
+    .social-btn {
+        width: 100%;
+    }
+
+}
+
+.social-divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.social-divider::before,
+.social-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.social-divider span {
+    padding: 0 12px;
+    white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+
+    .bn-auth-social {
+        flex-direction: row !important;
+        gap: 8px;
+    }
+
+    .social-btn {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 6px;
+    }
+
+    .social-icon {
+        margin-right: 4px;
+    }
+
+    .social-text {
+        font-size: 13px;
+    }
+
+}
+
+@media (max-width: 768px) {
+
+    .bn-auth-social {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .social-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+}
+
+@media (max-width: 768px) {
+
+    .social-text {
+        display: none;
+    }
+
+    .social-icon {
+        margin-right: 0;
+    }
+
+}
+

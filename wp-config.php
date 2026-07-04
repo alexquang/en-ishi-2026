@@ -92,6 +92,12 @@ define('WP_DEBUG_DISPLAY', false);
 @ini_set('display_errors', 0);
 define('FS_METHOD', 'direct');
 
+define('WP_REDIS_HOST', '45.117.170.72');
+define('WP_REDIS_PORT', 6379);
+define('WP_REDIS_DATABASE', 1);
+define('WP_CACHE_KEY_SALT', 'dev_pt_solution_');
+
+
 /* Add any custom values between this line and the "stop editing" line. */
 
 

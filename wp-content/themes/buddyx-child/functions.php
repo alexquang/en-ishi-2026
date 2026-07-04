@@ -18,6 +18,40 @@
  * @link https://developer.wordpress.org/themes/advanced-topics/child-themes/
  */
 
+
+add_action('wp_enqueue_scripts', function () {
+
+    if (! is_page('maps')) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'enishi-maps',
+        get_stylesheet_directory_uri() . '/assets-enishi/css/google-map-home.css',
+        [],
+        filemtime(
+            get_stylesheet_directory() . '/assets-enishi/css/google-map-home.css'
+        )
+    );
+
+    wp_enqueue_style(
+        'font-awesome',
+        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css',
+        array(),
+        '6.7.2'
+    );
+
+    wp_enqueue_script(
+        'enishi-maps',
+        get_stylesheet_directory_uri() . '/assets-enishi/js/google-map-home.js',
+        ['jquery'],
+        filemtime(
+            get_stylesheet_directory() . '/assets-enishi/js/google-map-home.js'
+        ),
+        true
+    );
+}, 20);
+
 function buddyx_child_enqueue_styles()
 {
     wp_enqueue_style('buddyx-style', get_template_directory_uri() . '/style.css');
@@ -105,3 +139,218 @@ add_action('wp_footer', function () {
     </script>
 <?php
 });
+
+add_filter('login_redirect', function ($redirect_to, $requested_redirect_to, $user) {
+
+    if (!empty($user) && !is_wp_error($user)) {
+        return home_url('/maps/');
+    }
+
+    return $redirect_to;
+}, 999, 3);
+
+add_action('rest_api_init', function () {
+
+    register_rest_route('enishi/v1', '/livekit-token', [
+        'methods' => 'GET',
+        'permission_callback' => '__return_true',
+        'callback' => function ($request) {
+
+            $room = sanitize_text_field(
+                $request->get_param('room')
+            );
+
+            $user = wp_get_current_user();
+
+            return [
+                'url' => 'wss://live.pt-solution.vn',
+                'token' => enishi_generate_livekit_token(
+                    $room,
+                    (string)$user->ID
+                )
+            ];
+        }
+    ]);
+});
+
+function enishi_generate_livekit_token($room, $identity)
+{
+    $apiKey = 'ENISHI';
+    $apiSecret = 'd8f8d3f9a2f4a3c8e7b1d5f6a9c2e4b7d1f8c3a6e9b2f5d7a4c1e8f6b3d9a2';
+
+    $header = [
+        'alg' => 'HS256',
+        'typ' => 'JWT'
+    ];
+
+    $payload = [
+        'iss' => $apiKey,
+        'sub' => $identity,
+        'nbf' => time(),
+        'exp' => time() + 3600,
+        'video' => [
+            'roomJoin'     => true,
+            'room'         => $room,
+            'canPublish'   => true,
+            'canSubscribe' => true
+        ]
+    ];
+
+    $headerEncoded = rtrim(
+        strtr(base64_encode(json_encode($header)), '+/', '-_'),
+        '='
+    );
+
+    $payloadEncoded = rtrim(
+        strtr(base64_encode(json_encode($payload)), '+/', '-_'),
+        '='
+    );
+
+    $signature = hash_hmac(
+        'sha256',
+        $headerEncoded . '.' . $payloadEncoded,
+        $apiSecret,
+        true
+    );
+
+    $signatureEncoded = rtrim(
+        strtr(base64_encode($signature), '+/', '-_'),
+        '='
+    );
+
+    return $headerEncoded . '.' . $payloadEncoded . '.' . $signatureEncoded;
+}
+
+add_action('wp_ajax_upload_place_photo', 'upload_place_photo');
+
+function upload_place_photo()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error('Vui lòng đăng nhập');
+    }
+
+    if (empty($_FILES['photo'])) {
+        wp_send_json_error('Không có file');
+    }
+
+    $user = wp_get_current_user();
+
+    $username = sanitize_file_name(
+        $user->user_login
+    );
+
+    $place_id = sanitize_text_field($_POST['place_id'] ?? '');
+    
+
+    add_filter(
+        'upload_dir',
+        function ($dirs) use ($username) {
+
+            $subdir =
+                '/place-media/' .
+                $username . '/' . $place_id;
+
+            $dirs['subdir'] = $subdir;
+            $dirs['path']   = $dirs['basedir'] . $subdir;
+            $dirs['url']    = $dirs['baseurl'] . $subdir;
+
+            return $dirs;
+        }
+    );
+
+    // Không tạo thumbnail
+    add_filter(
+        'intermediate_image_sizes_advanced',
+        '__return_empty_array'
+    );
+
+    // Không tạo file -scaled
+    add_filter(
+        'big_image_size_threshold',
+        '__return_false'
+    );
+
+    // Đổi tên file random
+    add_filter(
+        'wp_handle_upload_prefilter',
+        function ($file) {
+
+            $ext = pathinfo(
+                $file['name'],
+                PATHINFO_EXTENSION
+            );
+
+            $file['name'] =
+                wp_generate_password(
+                    20,
+                    false,
+                    false
+                ) .
+                '.' .
+                strtolower($ext);
+
+            return $file;
+        }
+    );
+
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+
+    $attachment_id =
+        media_handle_upload(
+            'photo',
+            0
+        );
+
+    remove_all_filters('upload_dir');
+
+    if (is_wp_error($attachment_id)) {
+
+        wp_send_json_error(
+            $attachment_id->get_error_message()
+        );
+
+    }
+
+    wp_send_json_success([
+        'attachment_id' => $attachment_id,
+        'url' => wp_get_attachment_url($attachment_id)
+    ]);
+}
+
+add_action('wp_ajax_get_user_photos', 'get_user_photos');
+
+function get_user_photos()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error('Login required');
+    }
+
+    $user = wp_get_current_user();
+
+    $upload_dir = wp_upload_dir();
+
+    $folder_path = $upload_dir['basedir'] .
+        '/place-media/' . $user->user_login;
+
+    $folder_url = $upload_dir['baseurl'] .
+        '/place-media/' . $user->user_login;
+
+    $photos = [];
+
+    if (is_dir($folder_path)) {
+
+        $files = glob($folder_path . '/*.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}', GLOB_BRACE);
+
+        foreach ($files as $file) {
+
+            $photos[] = [
+                'name' => basename($file),
+                'url'  => $folder_url . '/' . basename($file)
+            ];
+        }
+    }
+
+    wp_send_json_success($photos);
+}

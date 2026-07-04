@@ -268,6 +268,41 @@ $signup_url = \BuddyNext\Core\PageRouter::signup_url();
 					</button>
 				</div>
 			</section>
+
+			<div class="social-divider">
+    			<span>or continue with</span>
+			</div>
+			<div class="bn-auth-social-wrap">
+			<div class="bn-auth-social">
+
+				<a class="social-btn social-google"
+				href="<?php echo esc_url(home_url('/wp-login.php?loginSocial=google')); ?>">
+
+					<span class="social-icon">
+						<i class="fab fa-google"></i>
+					</span>
+
+					<span class="social-text">Google</span>
+				</a>
+
+				<a class="social-btn social-facebook" href="#">
+					<span class="social-icon">
+						<i class="fab fa-facebook-f"></i>
+					</span>
+
+					<span class="social-text">Facebook</span>
+				</a>
+
+				<a class="social-btn social-x" href="#">
+					<span class="social-icon">
+						<i class="fa-brands fa-x-twitter"></i>
+					</span>
+
+					<span class="social-text">X</span>
+				</a>
+
+			</div>
+		</div>
 		</div>
 	</div>
 	</div>
