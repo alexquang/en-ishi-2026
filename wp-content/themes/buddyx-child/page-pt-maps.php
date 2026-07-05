@@ -54,9 +54,22 @@ get_header();
 
         </div>
 
-        <div class="result-panel" id="result-panel">
+<div class="search-wrapper">
+    <div class="result-wrapper">
+
+        <div id="result-panel">
+
             <div id="results"></div>
+
         </div>
+
+        <button id="toggle-results">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+    </div>
+
+</div>
 
         <div id="map"></div>
 
@@ -137,6 +150,5 @@ get_header();
     </div>
 
 </div> -->
-<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA5ip29G4RoZ_NHgOZYgKoGNb_e0JYl4wQ&libraries=places&loading=async&callback=initMap"></script>
 
 <?php get_footer(); ?>
