@@ -50,6 +50,15 @@ add_action('wp_enqueue_scripts', function () {
         ),
         true
     );
+
+
+    wp_enqueue_script(
+        'google-maps',
+        'https://maps.googleapis.com/maps/api/js?key=AIzaSyA5ip29G4RoZ_NHgOZYgKoGNb_e0JYl4wQ&libraries=places&callback=initMap',
+        [],
+        null,
+        true
+    );
 }, 20);
 
 function buddyx_child_enqueue_styles()
@@ -90,6 +99,7 @@ add_filter('register_url', function ($register_url) {
     return home_url('/login/signup/');
 });
 add_filter('show_admin_bar', '__return_false');
+
 add_action('template_redirect', function () {
 
     if (is_front_page() || is_home()) {
@@ -240,7 +250,7 @@ function upload_place_photo()
     );
 
     $place_id = sanitize_text_field($_POST['place_id'] ?? '');
-    
+
 
     add_filter(
         'upload_dir',
@@ -310,7 +320,6 @@ function upload_place_photo()
         wp_send_json_error(
             $attachment_id->get_error_message()
         );
-
     }
 
     wp_send_json_success([
@@ -354,3 +363,17 @@ function get_user_photos()
 
     wp_send_json_success($photos);
 }
+add_filter('login_url', function ($login_url, $redirect) {
+
+    $url = home_url('/login/');
+
+    if (!empty($redirect)) {
+        $url = add_query_arg(
+            'redirect_to',
+            urlencode($redirect),
+            $url
+        );
+    }
+
+    return $url;
+}, 10, 2);

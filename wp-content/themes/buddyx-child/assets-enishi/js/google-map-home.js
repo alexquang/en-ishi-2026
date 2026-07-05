@@ -7,6 +7,7 @@ let infoWindow = null;
 let trafficLayer;
 let transitLayer;
 let bikeLayer;
+let layerControlsInitialized = false;
 
 function getBrowserCountry() {
   const locale = navigator.language || navigator.userLanguage || "en-US";
@@ -16,27 +17,125 @@ function getBrowserCountry() {
   return parts.length > 1 ? parts[1].toLowerCase() : "us";
 }
 
-function initMap() {
+function showRestaurantMarkers(results) {
+
+  clearMarkers();
+
+  results.slice(0, 20).forEach(function (place) {
+
+    const mapMarker =
+      new google.maps.Marker({
+        map: map,
+        position: place.geometry.location,
+        title: place.name
+      });
+
+    markers.push(mapMarker);
+
+    mapMarker.addListener("click", function () {
+      loadPlaceDetails(
+        place.place_id,
+        mapMarker
+      );
+    });
+
+  });
+
+}
+
+function loadNearbyPlaces(lat, lng) {
+
+  const types = [
+    "restaurant",
+    "cafe",
+    "lodging"
+  ];
+
+  const service =
+    new google.maps.places.PlacesService(map);
+
+  const allPlaces = new Map();
+
+  types.forEach(type => {
+
+    service.nearbySearch(
+      {
+        location: new google.maps.LatLng(lat, lng),
+        radius: 50000,
+        type: type
+      },
+      function (results, status) {
+
+        if (
+          status !==
+          google.maps.places.PlacesServiceStatus.OK
+        ) {
+          return;
+        }
+
+        results.forEach(place => {
+
+          allPlaces.set(
+            place.place_id,
+            place
+          );
+
+        });
+
+        showRestaurantMarkers(
+          [...allPlaces.values()]
+        );
+
+      }
+    );
+
+  });
+
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  navigator.geolocation.getCurrentPosition(
+    function (position) {
+
+      initMap(
+        position.coords.latitude,
+        position.coords.longitude
+      );
+
+    },
+    function () {
+
+      initMap(
+        10.8231,
+        106.6297
+      );
+
+    }
+  );
+
+});
+
+async function initMap(userLat, userLng) {
   const center = {
-    lat: 11.0645,
-    lng: 106.72,
+    lat: userLat,
+    lng: userLng,
   };
 
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: center,
-    zoom: 13,
-    mapTypeControl: false,
-  });
+
+  map = new google.maps.Map(
+    document.getElementById("map"),
+    {
+      center: center,
+      zoom: 12,
+      mapTypeControl: false
+    }
+  );
 
   marker = new google.maps.Marker({
-    position: center,
+    center: center,
     map: map,
   });
-
-  trafficLayer = new google.maps.TrafficLayer();
-  transitLayer = new google.maps.TransitLayer();
-  bikeLayer = new google.maps.BicyclingLayer();
-  initLayerControls();
 
   const input = document.getElementById("pac-input");
 
@@ -47,6 +146,7 @@ function initMap() {
   autocomplete.bindTo("bounds", map);
 
   autocomplete.addListener("place_changed", function () {
+
     const place = autocomplete.getPlace();
 
     if (!place.geometry || !place.geometry.location) {
@@ -54,21 +154,70 @@ function initMap() {
       return;
     }
 
+    // Xóa toàn bộ marker kết quả cũ
+    clearMarkers();
+
+    // Xóa marker đang chọn
+    if (selectedMarker) {
+      selectedMarker.setMap(null);
+      selectedMarker = null;
+    }
+
+    // Xóa marker GPS hiện tại
+    if (marker) {
+      marker.setMap(null);
+    }
+
     if (place.geometry.viewport) {
       map.fitBounds(place.geometry.viewport);
     } else {
       map.setCenter(place.geometry.location);
-      map.setZoom(17);
+      map.setZoom(15);
     }
-
-    marker.setMap(null);
 
     marker = new google.maps.Marker({
       position: place.geometry.location,
       map: map,
       title: place.name,
+      animation: google.maps.Animation.DROP
     });
+
+    // Tự tìm quanh vị trí mới
+    loadNearbyPlaces(
+      place.geometry.location.lat(),
+      place.geometry.location.lng()
+    );
+
   });
+
+  google.maps.event.addListenerOnce(
+    map,
+    "idle",
+    function () {
+
+      loadNearbyPlaces(
+        userLat,
+        userLng
+      );
+
+    }
+  );
+
+  if (!map) {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat, lng },
+      zoom: 15
+    });
+
+    trafficLayer = new google.maps.TrafficLayer();
+    transitLayer = new google.maps.TransitLayer();
+    bikeLayer = new google.maps.BicyclingLayer();
+  }
+
+  if (!layerControlsInitialized) {
+    initLayerControls();
+    layerControlsInitialized = true;
+  }
 }
 
 window.initMap = initMap;
@@ -88,9 +237,12 @@ function initLayerControls() {
   const toggleBtn = document.getElementById("layers-toggle");
 
   const menu = document.getElementById("layers-menu");
+  console.log(menu);
 
   toggleBtn.addEventListener("click", function () {
     menu.classList.toggle("show");
+
+    console.log("show");
   });
 
   document
@@ -128,25 +280,33 @@ function initLayerControls() {
   });
 }
 
-function searchPlaces(keyword) {
-  const service = new google.maps.places.PlacesService(map);
+function searchPlaces(question) {
+
+  clearMarkers();
+
+  const service =
+    new google.maps.places.PlacesService(map);
 
   service.textSearch(
     {
-      query: keyword,
+      query: question
     },
-    (results, status) => {
+    function (results, status) {
+
       if (status !== google.maps.places.PlacesServiceStatus.OK) {
         return;
       }
 
       renderResults(results);
-    }
-  );
+    });
+
 }
 
 function renderResults(results) {
   clearMarkers();
+
+  document.getElementById("result-panel").classList.add("show");
+  document.getElementById("toggle-results").classList.add("show");
 
   const bounds = new google.maps.LatLngBounds();
 
@@ -194,9 +354,8 @@ function renderResults(results) {
                     <h3>${place.name}</h3>
 
                     <div class="rating">
-                        <i class="fa-solid fa-star" style="color: #ff7200;"></i> ${
-                          place.rating || "-"
-                        }
+                        <i class="fa-solid fa-star" style="color: #ff7200;"></i> ${place.rating || "-"
+      }
                     </div>
 
                     <div class="address">
@@ -265,7 +424,7 @@ function searchByType(type) {
   service.nearbySearch(
     {
       location: map.getCenter(),
-      radius: 10000,
+      radius: 50000,
       type: type,
     },
     function (results, status) {
@@ -322,9 +481,8 @@ function loadPlaceDetails(placeId, marker) {
 
                 <div style="width:380px">
 
-                    ${
-                      photo
-                        ? `<img
+                    ${photo
+            ? `<img
                             src="${photo}"
                             style="
                                 width:100%;
@@ -333,8 +491,8 @@ function loadPlaceDetails(placeId, marker) {
                                 border-radius:10px;
                                 margin-bottom:10px;
                             ">`
-                        : ""
-                    }
+            : ""
+          }
 
                     <h3 style="
                         margin:0 0 10px;
@@ -344,29 +502,25 @@ function loadPlaceDetails(placeId, marker) {
                     </h3>
 
                     <div style="margin-bottom:8px">
-                        <i class="fa-solid fa-star" style="color: #ff7200;"></i> &nbsp; ${
-                          place.rating || "-"
-                        }
+                        <i class="fa-solid fa-star" style="color: #ff7200;"></i> &nbsp; ${place.rating || "-"
+          }
                         (${place.user_ratings_total || 0} reviews)
                     </div>
 
                     <div style="margin-bottom:8px">
-                        <i class="fa-solid fa-map" style="color: #ff7200;"></i> &nbsp; ${
-                          place.formatted_address || ""
-                        }
+                        <i class="fa-solid fa-map" style="color: #ff7200;"></i> &nbsp; ${place.formatted_address || ""
+          }
                     </div>
 
-                   ${
-                     place.formatted_phone_number
-                       ? `<div style="margin-bottom:8px"> <i class="fa-solid fa-phone" style="color: #ff7200;"></i> &nbsp;  
+                   ${place.formatted_phone_number
+            ? `<div style="margin-bottom:8px"> <i class="fa-solid fa-phone" style="color: #ff7200;"></i> &nbsp;  
                             ${place.formatted_phone_number}
                          </div>`
-                       : ""
-                   }
+            : ""
+          }
 
-                   ${
-                     place.website
-                       ? `<div style="margin-bottom:8px">
+                   ${place.website
+            ? `<div style="margin-bottom:8px">
                             <i class="fa-solid fa-globe" style="color: #ff7200;"></i>&nbsp;  
                             <a
                                 href="${place.website}"
@@ -374,12 +528,11 @@ function loadPlaceDetails(placeId, marker) {
                                 Website
                             </a>
                          </div>`
-                       : ""
-                   }
+            : ""
+          }
 
-                    ${
-                      place.opening_hours
-                        ? `<div style="
+                    ${place.opening_hours
+            ? `<div style="
                             max-height:120px;
                             overflow:auto;
                             margin-bottom:10px;
@@ -387,8 +540,8 @@ function loadPlaceDetails(placeId, marker) {
                         ">
                             ${place.opening_hours.weekday_text.join("<br>")}
                          </div>`
-                        : ""
-                    }
+            : ""
+          }
 
                     <a
                         target="_blank"
@@ -416,9 +569,7 @@ function loadPlaceDetails(placeId, marker) {
 
                 </div>
 
-                </div>
-
-                `,
+                </div>`,
       });
 
       infoWindow.open({
@@ -495,26 +646,26 @@ document.addEventListener("change", function (e) {
 
 document.addEventListener("click", function (e) {
 
-    const photoBtn = e.target.closest("#photo-btn");
+  const photoBtn = e.target.closest("#photo-btn");
 
-    
 
-    if (photoBtn) {
 
-        const placeId11 = photoBtn.dataset.placeid;
+  if (photoBtn) {
 
-        console.log(placeId11);
+    const placeId11 = photoBtn.dataset.placeid;
 
-        let dialog =
-            document.getElementById(
-                "photo-dialog"
-            );
+    console.log(placeId11);
 
-        if (!dialog) {
+    let dialog =
+      document.getElementById(
+        "photo-dialog"
+      );
 
-            document.body.insertAdjacentHTML(
-                "beforeend",
-                `
+    if (!dialog) {
+
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `
                 <div id="photo-dialog" class="photo-modal" >
 
                     <div class="photo-modal-content" id="photo-modal-content" data-placeid="${placeId11}">
@@ -551,46 +702,46 @@ document.addEventListener("click", function (e) {
 
                 </div>
                 `
-            );
-
-        }
-
-        const placeId =
-            photoBtn.dataset.placeid;
-
-        document
-            .getElementById("photo-dialog")
-            .classList.add("show");
-
-        loadUserPhotos(placeId);
-
-        return;
-    }
-
-    if (
-        e.target.closest(
-            "#close-photo-dialog"
-        )
-    ) {
-
-        document
-            .getElementById("photo-dialog")
-            ?.classList.remove("show");
-
-        return;
-    }
-
-    if (
-        e.target.closest(
-            "#btn-upload"
-        )
-    ) {
-
-        document
-            .getElementById("photo-upload")
-            ?.click();
+      );
 
     }
+
+    const placeId =
+      photoBtn.dataset.placeid;
+
+    document
+      .getElementById("photo-dialog")
+      .classList.add("show");
+
+    loadUserPhotos(placeId);
+
+    return;
+  }
+
+  if (
+    e.target.closest(
+      "#close-photo-dialog"
+    )
+  ) {
+
+    document
+      .getElementById("photo-dialog")
+      ?.classList.remove("show");
+
+    return;
+  }
+
+  if (
+    e.target.closest(
+      "#btn-upload"
+    )
+  ) {
+
+    document
+      .getElementById("photo-upload")
+      ?.click();
+
+  }
 
 });
 
@@ -625,3 +776,48 @@ function loadUserPhotos(placeId) {
       document.getElementById("photo-list").innerHTML = html;
     });
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const wrapper =
+    document.querySelector(".search-wrapper");
+
+  document.getElementById("result-panel").classList.remove("show");
+  document.getElementById("toggle-results").classList.remove("show");
+
+  const btn =
+    document.getElementById(
+      "toggle-results"
+    );
+
+  if (!btn) {
+    return;
+  }
+
+  btn.addEventListener("click", function () {
+
+    wrapper.classList.toggle(
+      "collapsed"
+    );
+
+    const icon =
+      this.querySelector("i");
+
+    if (
+      wrapper.classList.contains(
+        "collapsed"
+      )
+    ) {
+
+      icon.className =
+        "fa-solid fa-chevron-right";
+
+    } else {
+
+      icon.className =
+        "fa-solid fa-chevron-left";
+    }
+
+  });
+
+});
