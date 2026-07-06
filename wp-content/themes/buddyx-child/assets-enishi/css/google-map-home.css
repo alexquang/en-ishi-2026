@@ -808,3 +808,6 @@
     #toggle-results.show {
         display: block;
     }
+    select, .buddypress-wrap .select-wrap select, body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select, .buddypress-wrap #notification-select, .buddypress-wrap .standard-form select {
+        -webkit-appearance: auto !important
+    }

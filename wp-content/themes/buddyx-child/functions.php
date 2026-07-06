@@ -18,6 +18,21 @@
  * @link https://developer.wordpress.org/themes/advanced-topics/child-themes/
  */
 
+
+add_action('wp_footer', function () {
+?>
+    <script>
+    window.gtranslateSettings = {
+        default_language: "en",
+        native_language_names: true,
+        flag_style: "2d",
+        wrapper_selector: ".gtranslate_wrapper"
+    };
+    </script>
+    <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
+<?php
+});
+
 add_action('wp_enqueue_scripts', function () {
 
     if (! is_page('maps')) {
@@ -393,4 +408,8 @@ function get_live_status()
         )
     );
 }
+add_action('wp_footer', function () {
+?>
 
+<?php
+});

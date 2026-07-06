@@ -122,7 +122,11 @@ $nav_class = 'main-navigation nav--toggle-sub nav--toggle-small';
 
 	<div class="primary-menu-container buddyx-desktop-menu">
 		<?php buddyx()->display_primary_nav_menu( array( 'menu_id' => 'primary-menu' ) ); ?>
+		<div class="pt-header-language">
+        	<div class="gtranslate_wrapper"></div>
+    	</div>
 	</div>
+	
 	<div class="buddypress-icons-wrapper">
 		<div class="desktop-icons">
 			<?php buddyx_site_menu_icon(); ?>
