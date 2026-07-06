@@ -18,7 +18,6 @@
  * @link https://developer.wordpress.org/themes/advanced-topics/child-themes/
  */
 
-
 add_action('wp_enqueue_scripts', function () {
 
     if (! is_page('maps')) {
@@ -377,3 +376,21 @@ add_filter('login_url', function ($login_url, $redirect) {
 
     return $url;
 }, 10, 2);
+add_action('wp_ajax_get_live_status', 'get_live_status');
+add_action('wp_ajax_nopriv_get_live_status', 'get_live_status');
+
+function get_live_status()
+{
+    $response = wp_remote_get(
+        'https://live.pt-solution.vn/api/status',
+        ['sslverify' => false]
+    );
+
+    wp_send_json(
+        json_decode(
+            wp_remote_retrieve_body($response),
+            true
+        )
+    );
+}
+

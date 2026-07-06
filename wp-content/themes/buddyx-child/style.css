@@ -10,6 +10,20 @@
 .buddypress-wrap * {
     font-family: inherit !important;
 }
+
+.fa,
+.fas,
+.far,
+.fal,
+.fab,
+.fa:before,
+.fas:before,
+.far:before,
+.fal:before,
+.fab:before {
+    font-family: FontAwesome !important;
+}
+
 /* Đồng bộ font toàn site */
 body,
 button,

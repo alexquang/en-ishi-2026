@@ -121,34 +121,4 @@ get_header();
     </div>
 </div>
 
-<!-- <div id="photo-dialog" class="photo-modal">
-
-    <div class="photo-modal-content">
-
-        <div class="modal-header">
-            <h3>Pictures</h3>
-
-            <button id="close-photo-dialog">
-                X
-            </button>
-        </div>
-
-        <div id="photo-list" class="photo-grid">
-        </div>
-
-        <div class="modal-footer">
-            <button id="btn-upload">
-                📤 Upload
-            </button>
-
-            <input type="file"
-                   id="photo-upload"
-                   hidden
-                   accept="image/*">
-        </div>
-
-    </div>
-
-</div> -->
-
 <?php get_footer(); ?>

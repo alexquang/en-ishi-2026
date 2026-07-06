@@ -71,6 +71,13 @@ $bn_rail_items = array(
 		'show'  => true,
 	),
 	array(
+		'key'   => 'group',
+		'label' => __( 'Groups', 'buddynext' ),
+		'url'   => home_url('/groups/'),
+		'icon'  => 'link',
+		'show'  => true,
+	),
+	array(
 		'key'   => 'spaces',
 		'label' => __( 'Spaces', 'buddynext' ),
 		'url'   => PageRouter::spaces_url(),
