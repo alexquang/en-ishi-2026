@@ -18,6 +18,13 @@
  * @link https://developer.wordpress.org/themes/advanced-topics/child-themes/
  */
 
+wp_localize_script(
+    'google-map-home',
+    'ptMap',
+    [
+        'isLoggedIn' => is_user_logged_in()
+    ]
+);
 
 add_action('wp_footer', function () {
 ?>
@@ -29,7 +36,10 @@ add_action('wp_footer', function () {
         wrapper_selector: ".gtranslate_wrapper"
     };
     </script>
-    <script src="https://cdn.gtranslate.net/widgets/latest/dropdown.js" defer></script>
+<script
+    src="<?php echo get_stylesheet_directory_uri(); ?>/assets-enishi/js/dropdown.js"
+    defer>
+</script>
 <?php
 });
 
@@ -244,104 +254,6 @@ function enishi_generate_livekit_token($room, $identity)
 
     return $headerEncoded . '.' . $payloadEncoded . '.' . $signatureEncoded;
 }
-
-add_action('wp_ajax_upload_place_photo', 'upload_place_photo');
-
-function upload_place_photo()
-{
-    if (!is_user_logged_in()) {
-        wp_send_json_error('Vui lòng đăng nhập');
-    }
-
-    if (empty($_FILES['photo'])) {
-        wp_send_json_error('Không có file');
-    }
-
-    $user = wp_get_current_user();
-
-    $username = sanitize_file_name(
-        $user->user_login
-    );
-
-    $place_id = sanitize_text_field($_POST['place_id'] ?? '');
-
-
-    add_filter(
-        'upload_dir',
-        function ($dirs) use ($username) {
-
-            $subdir =
-                '/place-media/' .
-                $username . '/' . $place_id;
-
-            $dirs['subdir'] = $subdir;
-            $dirs['path']   = $dirs['basedir'] . $subdir;
-            $dirs['url']    = $dirs['baseurl'] . $subdir;
-
-            return $dirs;
-        }
-    );
-
-    // Không tạo thumbnail
-    add_filter(
-        'intermediate_image_sizes_advanced',
-        '__return_empty_array'
-    );
-
-    // Không tạo file -scaled
-    add_filter(
-        'big_image_size_threshold',
-        '__return_false'
-    );
-
-    // Đổi tên file random
-    add_filter(
-        'wp_handle_upload_prefilter',
-        function ($file) {
-
-            $ext = pathinfo(
-                $file['name'],
-                PATHINFO_EXTENSION
-            );
-
-            $file['name'] =
-                wp_generate_password(
-                    20,
-                    false,
-                    false
-                ) .
-                '.' .
-                strtolower($ext);
-
-            return $file;
-        }
-    );
-
-    require_once ABSPATH . 'wp-admin/includes/file.php';
-    require_once ABSPATH . 'wp-admin/includes/image.php';
-    require_once ABSPATH . 'wp-admin/includes/media.php';
-
-    $attachment_id =
-        media_handle_upload(
-            'photo',
-            0
-        );
-
-    remove_all_filters('upload_dir');
-
-    if (is_wp_error($attachment_id)) {
-
-        wp_send_json_error(
-            $attachment_id->get_error_message()
-        );
-    }
-
-    wp_send_json_success([
-        'attachment_id' => $attachment_id,
-        'url' => wp_get_attachment_url($attachment_id)
-    ]);
-}
-
 add_action('wp_ajax_get_user_photos', 'get_user_photos');
 
 function get_user_photos()
@@ -413,3 +325,95 @@ add_action('wp_footer', function () {
 
 <?php
 });
+
+
+/* Upload image */
+add_action(
+    'wp_ajax_upload_place_photo',
+    'upload_place_photo'
+);
+
+function upload_place_photo()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error('Login required');
+    }
+
+    $place_id =
+        sanitize_text_field(
+            $_POST['place_id'] ?? ''
+        );
+
+    if (!$place_id) {
+        wp_send_json_error('Place ID missing');
+    }
+
+    require_once ABSPATH .
+        'wp-admin/includes/file.php';
+
+    require_once ABSPATH .
+        'wp-admin/includes/media.php';
+
+    require_once ABSPATH .
+        'wp-admin/includes/image.php';
+
+    $attachment_id =
+        media_handle_upload(
+            'photo',
+            0
+        );
+
+    if (is_wp_error($attachment_id)) {
+
+        wp_send_json_error(
+            $attachment_id->get_error_message()
+        );
+
+    }
+
+    update_post_meta(
+        $attachment_id,
+        'place_id',
+        $place_id
+    );
+
+    wp_send_json_success([
+        'id' => $attachment_id,
+        'url' => wp_get_attachment_url(
+            $attachment_id
+        )
+    ]);
+}
+add_action(
+    'wp_ajax_get_place_uploads',
+    'get_place_uploads'
+);
+function get_place_uploads()
+{
+    $place_id =
+        sanitize_text_field(
+            $_GET['place_id'] ?? ''
+        );
+
+    $photos = get_posts([
+        'post_type'      => 'attachment',
+        'post_status'    => 'inherit',
+        'posts_per_page' => -1,
+        'meta_key'       => 'place_id',
+        'meta_value'     => $place_id
+    ]);
+
+    $data = [];
+
+    foreach ($photos as $photo) {
+
+        $data[] = [
+            'id'  => $photo->ID,
+            'url' => wp_get_attachment_url(
+                $photo->ID
+            )
+        ];
+    }
+
+    wp_send_json_success($data);
+}

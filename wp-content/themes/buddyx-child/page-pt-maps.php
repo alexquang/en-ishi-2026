@@ -121,4 +121,51 @@ get_header();
     </div>
 </div>
 
+
+<div id="gmPictureDialog" class="gm-picture-dialog">
+
+    <div class="gm-picture-modal">
+
+        <div class="gm-picture-header">
+
+            <h3>
+                <i class="fa-solid fa-images"></i>
+                Place Pictures
+            </h3>
+<?php if (is_user_logged_in()) : ?>
+            <button
+                    id="gmUploadPhotoBtn"
+                    class="gm-upload-btn">
+                    <i class="fa-solid fa-upload"></i>
+                    Upload
+                </button>
+
+                <input
+                    type="file"
+                    id="gmUploadPhotoFile"
+                    accept="image/*"
+                    hidden>
+<?php endif; ?>
+            <button id="gmPictureClose">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+        </div>
+
+        <div class="gm-picture-body">
+
+            <div id="gmPictureContent">
+
+                <div class="gm-empty">
+                    No pictures loaded
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 <?php get_footer(); ?>
