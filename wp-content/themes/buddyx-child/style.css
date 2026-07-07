@@ -10,6 +10,20 @@
 .buddypress-wrap * {
     font-family: inherit !important;
 }
+
+.fa,
+.fas,
+.far,
+.fal,
+.fab,
+.fa:before,
+.fas:before,
+.far:before,
+.fal:before,
+.fab:before {
+    font-family: FontAwesome !important;
+}
+
 /* Đồng bộ font toàn site */
 body,
 button,
@@ -182,4 +196,37 @@ textarea,
     }
 
 }
+.primary-menu-container{
+    display:flex;
+    align-items:center;
+}
 
+.pt-header-language{
+    margin-left:20px;
+    display:flex;
+    align-items:center;
+}
+
+.pt-header-language .gt_selector{
+    border:none!important;
+    background:transparent!important;
+    width: 100px !important;
+}
+
+.gtranslate_wrapper img,
+.gt_selector img,
+.gtranslate_wrapper .gt_flag {
+    display:inline-block !important;
+    width:18px !important;
+    height:auto !important;
+    opacity:1 !important;
+    visibility:visible !important;
+}
+.gtranslate_wrapper button {
+    border: none !important;
+    background: transparent !important;
+}
+
+.gtranslate_wrapper .gt_switcher-arrow {
+    display: none !important;
+}

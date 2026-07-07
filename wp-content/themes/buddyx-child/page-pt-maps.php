@@ -121,34 +121,51 @@ get_header();
     </div>
 </div>
 
-<!-- <div id="photo-dialog" class="photo-modal">
 
-    <div class="photo-modal-content">
+<div id="gmPictureDialog" class="gm-picture-dialog">
 
-        <div class="modal-header">
-            <h3>Pictures</h3>
+    <div class="gm-picture-modal">
 
-            <button id="close-photo-dialog">
-                X
+        <div class="gm-picture-header">
+
+            <h3>
+                <i class="fa-solid fa-images"></i>
+                Place Pictures
+            </h3>
+<?php if (is_user_logged_in()) : ?>
+            <button
+                    id="gmUploadPhotoBtn"
+                    class="gm-upload-btn">
+                    <i class="fa-solid fa-upload"></i>
+                    Upload
+                </button>
+
+                <input
+                    type="file"
+                    id="gmUploadPhotoFile"
+                    accept="image/*"
+                    hidden>
+<?php endif; ?>
+            <button id="gmPictureClose">
+                <i class="fa-solid fa-xmark"></i>
             </button>
+
         </div>
 
-        <div id="photo-list" class="photo-grid">
-        </div>
+        <div class="gm-picture-body">
 
-        <div class="modal-footer">
-            <button id="btn-upload">
-                📤 Upload
-            </button>
+            <div id="gmPictureContent">
 
-            <input type="file"
-                   id="photo-upload"
-                   hidden
-                   accept="image/*">
+                <div class="gm-empty">
+                    No pictures loaded
+                </div>
+
+            </div>
+
         </div>
 
     </div>
 
-</div> -->
+</div>
 
 <?php get_footer(); ?>
