@@ -16,7 +16,9 @@ get_header();
                 id="pac-input"
                 type="text"
                 placeholder="Search now...">
-
+            <label class="gemini-check">
+                <input type="checkbox" id="googleSearchMode">
+            </label>
             <button class="find-btn" id="find-btn">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </button>
@@ -54,21 +56,34 @@ get_header();
 
         </div>
 
-<div class="search-wrapper">
-    <div class="result-wrapper">
+        <div class="search-wrapper" id="search-wrapper">
+            <div class="result-wrapper">
 
-        <div id="result-panel">
+                <div id="result-panel">
 
-            <div id="results"></div>
+                    <div id="results"></div>
+
+                </div>
+
+                <button id="toggle-results">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+
+            </div>
 
         </div>
 
-        <button id="toggle-results">
-            <i class="fa-solid fa-chevron-left"></i>
-        </button>
+        <div id="ai-result-panel" style="display:none;">
+            <div class="ai-header">
+                ✨ AI Search
+                <span id="ai-close">✕</span>
+            </div>
 
-    </div>
-
+    <div id="ai-result-content"></div>
+    <div id="ai-loading" style="display:none;">
+    <div class="ai-spinner"></div>
+    <div>Gemini đang phân tích...</div>
+</div>
 </div>
 
         <div id="map"></div>
@@ -132,8 +147,8 @@ get_header();
                 <i class="fa-solid fa-images"></i>
                 Place Pictures
             </h3>
-<?php if (is_user_logged_in()) : ?>
-            <button
+            <?php if (is_user_logged_in()) : ?>
+                <button
                     id="gmUploadPhotoBtn"
                     class="gm-upload-btn">
                     <i class="fa-solid fa-upload"></i>
@@ -145,7 +160,7 @@ get_header();
                     id="gmUploadPhotoFile"
                     accept="image/*"
                     hidden>
-<?php endif; ?>
+            <?php endif; ?>
             <button id="gmPictureClose">
                 <i class="fa-solid fa-xmark"></i>
             </button>

@@ -78,7 +78,7 @@ add_action('wp_enqueue_scripts', function () {
 
     wp_enqueue_script(
         'google-maps',
-        'https://maps.googleapis.com/maps/api/js?key=AIzaSyA5ip29G4RoZ_NHgOZYgKoGNb_e0JYl4wQ&libraries=places&callback=initMap',
+        'https://maps.googleapis.com/maps/api/js?key='. GOOGLE_MAPS_API_KEY . '&libraries=places&callback=initMap',
         [],
         null,
         true
@@ -416,4 +416,133 @@ function get_place_uploads()
     }
 
     wp_send_json_success($data);
+}
+add_action('wp_ajax_pt_ai_search', 'pt_ai_search');
+add_action('wp_ajax_nopriv_pt_ai_search', 'pt_ai_search');
+
+function pt_ai_search()
+{
+    $question = sanitize_text_field(
+        $_POST['question'] ?? ''
+    );
+
+    if (empty($question)) {
+        wp_send_json_error([
+            'message' => 'Question empty'
+        ]);
+    }
+
+    $api_gemini_key = GEMINI_API_KEY;
+
+    $response = wp_remote_post(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $api_gemini_key,
+        [
+            'timeout' => 30,
+            'headers' => [
+                'Content-Type' => 'application/json'
+            ],
+            'body' => wp_json_encode([
+                'contents' => [
+                    [
+                        'parts' => [
+                            [
+                                'text' => $question
+                            ]
+                        ]
+                    ]
+                ]
+            ])
+        ]
+    );
+
+    if (is_wp_error($response)) {
+        wp_send_json_error([
+            'message' => $response->get_error_message()
+        ]);
+    }
+
+    $status = wp_remote_retrieve_response_code($response);
+
+    $body = json_decode(
+        wp_remote_retrieve_body($response),
+        true
+    );
+
+    if ($status !== 200) {
+        wp_send_json_error([
+            'message' => 'Gemini API Error',
+            'status'  => $status,
+            'response' => $body
+        ]);
+    }
+
+    $answer = '';
+
+    if (!empty($body['candidates'][0]['content']['parts'])) {
+        foreach (
+            $body['candidates'][0]['content']['parts']
+            as $part
+        ) {
+            $answer .= $part['text'] ?? '';
+        }
+    }
+
+    wp_send_json_success([
+        'answer' => nl2br($answer ?: 'Không tìm thấy kết quả')
+    ]);
+}
+function pt_get_member_level_name( $user_id = 0 ) {
+
+    global $wpdb;
+
+    if ( ! $user_id ) {
+        $user_id = get_current_user_id();
+    }
+
+    // Chưa đăng nhập
+    if ( ! $user_id ) {
+        return false;
+    }
+
+    $level_name = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT l.name
+             FROM {$wpdb->prefix}pmpro_memberships_users mu
+             INNER JOIN {$wpdb->prefix}pmpro_membership_levels l
+                ON mu.membership_id = l.id
+             WHERE mu.user_id = %d
+               AND mu.status = 'active'
+             ORDER BY mu.id DESC
+             LIMIT 1",
+            $user_id
+        )
+    );
+
+    return ! empty( $level_name ) ? $level_name : 'Free';
+}
+
+add_filter( 'gettext', 'pt_rename_buddymeet', 20, 3 );
+
+function pt_rename_buddymeet( $translated, $text, $domain ) {
+
+    if ( $translated === 'BuddyMeet' ) {
+        return 'Meet';
+    }
+
+    if ( $text === 'BuddyMeet' ) {
+        return 'Meet';
+    }
+
+    return $translated;
+}
+
+add_filter( 'gettext_with_context', 'pt_rename_buddymeet_context', 20, 4 );
+
+function pt_rename_buddymeet_context( $translated, $text, $context, $domain ) {
+
+    if ( $translated === 'BuddyMeet' || $text === 'BuddyMeet' ) {
+        return 'Meet';
+    }
+
+    return $translated;
 }

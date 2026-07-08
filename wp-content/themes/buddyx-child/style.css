@@ -54,6 +54,7 @@ textarea,
 }
 .pmpro_btn {
     background-color: #ffffff !important;
+    color:#012068 !important;
 }
 .bn-auth-social {
     display: flex;
@@ -202,7 +203,7 @@ textarea,
 }
 
 .pt-header-language{
-    margin-left:20px;
+    margin: 0px 10px;
     display:flex;
     align-items:center;
 }
@@ -229,4 +230,34 @@ textarea,
 
 .gtranslate_wrapper .gt_switcher-arrow {
     display: none !important;
+}
+.pt-member-level{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 70px;
+    height: 34px;
+    padding: 0 14px;
+    margin: 0px 10px 0px 10px;
+
+    background: linear-gradient(135deg,#ff9800,#ff6d00);
+    color: #fff;
+
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 34px;
+    white-space: nowrap;
+
+    box-shadow: 0 2px 8px rgba(255,152,0,.25);
+    transition: all .25s ease;
+    cursor: default;
+}
+
+.pt-member-level:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255,152,0,.35);
+}
+.pt-member-level a {
+    color: #fff !important;
 }
