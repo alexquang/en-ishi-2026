@@ -123,8 +123,12 @@ $nav_class = 'main-navigation nav--toggle-sub nav--toggle-small';
 	<div class="primary-menu-container buddyx-desktop-menu">
 		<?php buddyx()->display_primary_nav_menu( array( 'menu_id' => 'primary-menu' ) ); ?>
 		<div class="pt-header-language">
-        	<div class="gtranslate_wrapper"></div>
+			<?php if ( is_user_logged_in() ) { ?>
+			<div class="pt-member-level"><a href="https://dev.pt-solution.vn/membership-account/"><i class="fa-solid fa-medal"></i> <?php echo esc_html( pt_get_member_level_name() ); ?></a></div>
+        	<?php } ?>
+			<div class="gtranslate_wrapper"></div>
     	</div>
+
 	</div>
 	
 	<div class="buddypress-icons-wrapper">

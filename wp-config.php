@@ -85,8 +85,8 @@ $table_prefix = 'eni_';
  *
  * @link https://developer.wordpress.org/advanced-administration/debug/debug-wordpress/
  */
-define('WP_DEBUG', false);
-define('WP_DEBUG_LOG', false);
+define('WP_DEBUG', true);
+define('WP_DEBUG_LOG', true);
 define('WP_DEBUG_DISPLAY', false);
 
 @ini_set('display_errors', 0);
@@ -97,6 +97,15 @@ define('WP_REDIS_PORT', 6379);
 define('WP_REDIS_DATABASE', 1);
 define('WP_CACHE_KEY_SALT', 'dev_pt_solution_');
 
+/**
+ * Google Maps API
+ */
+define('GOOGLE_MAPS_API_KEY', 'AIzaSyA5ip29G4RoZ_NHgOZYgKoGNb_e0JYl4wQ');
+
+/**
+ * Gemini API
+ */
+define('GEMINI_API_KEY', 'AQ.Ab8RN6IOS1LNq3HL-oSymkR5ODvf1PANtrWKYjkfwnxTJCS99Q');
 
 /* Add any custom values between this line and the "stop editing" line. */
 

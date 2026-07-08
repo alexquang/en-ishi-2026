@@ -78,8 +78,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 async function initMap(userLat, userLng) {
   const center = {
-    lat: userLat,
-    lng: userLng,
+    lat: userLat ?? 0,
+    lng: userLng ?? 0,
   };
 
   map = new google.maps.Map(document.getElementById("map"), {
@@ -170,13 +170,58 @@ async function initMap(userLat, userLng) {
 window.initMap = initMap;
 
 document.getElementById("find-btn").addEventListener("click", function () {
+  
   const keyword = document.getElementById("pac-input").value.trim();
+  const googleMode = document.getElementById("googleSearchMode").checked;
 
   if (!keyword) {
     alert("Enter a keyword.");
     return;
   }
 
+if (googleMode) {
+  
+    document.getElementById("search-wrapper").style.display = "none";
+
+    document.getElementById("ai-result-panel").style.display = "block";
+
+    document.getElementById("ai-loading").style.display = "flex";
+
+    document.getElementById("ai-result-content").innerHTML = "";
+
+    fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            action: "pt_ai_search",
+            question: keyword
+        })
+    })
+    .then(r => r.json())
+    .then(res => {
+
+        document.getElementById("ai-loading").style.display = "none";
+
+        document.getElementById("ai-result-content").innerHTML =
+            res.data.answer;
+
+    })
+    .catch(err => {
+
+        document.getElementById("ai-loading").style.display = "none";
+
+        document.getElementById("ai-result-content").innerHTML =
+            "❌ Không thể kết nối Gemini";
+
+        console.error(err);
+    });
+
+    return;
+}
+  document.getElementById("search-wrapper").style.display = "block";
+  document.getElementById("ai-result-panel").style.display = "none";
   searchPlaces(keyword);
 });
 
@@ -184,8 +229,7 @@ function initLayerControls() {
   const toggleBtn = document.getElementById("layers-toggle");
 
   const menu = document.getElementById("layers-menu");
-  console.log(menu);
-
+  
   toggleBtn.addEventListener("click", function () {
     menu.classList.toggle("show");
 
@@ -228,7 +272,6 @@ function initLayerControls() {
 }
 
 function searchPlaces() {
-
   const keyword = document
     .getElementById("pac-input")
     .value
@@ -247,12 +290,10 @@ function searchPlaces() {
     },
     function (results, status) {
 
-      if (
-        status !== google.maps.places.PlacesServiceStatus.OK
-      ) {
-        console.log(status);
-        return;
-      }
+if (status !== google.maps.places.PlacesServiceStatus.OK) {
+    console.error("Places Error:", status);
+    return;
+}
 
       // Xóa marker cũ
       markers.forEach(marker => {
@@ -404,8 +445,8 @@ function bindPlaces() {
       const lng = parseFloat(this.dataset.lng);
 
       const position = {
-        lat: lat,
-        lng: lng,
+        lat: lat ?? 0,
+        lng: lng ?? 0,
       };
 
       map.setCenter(position);
@@ -820,82 +861,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
-
-// document.addEventListener("click", function(e){
-
-//     const tab = e.target.closest(".gm-tab");
-
-//     if(!tab){
-//         return;
-//     }
-
-//     // Active tab
-//     document
-//         .querySelectorAll(".gm-tab")
-//         .forEach(item => item.classList.remove("active"));
-
-//     tab.classList.add("active");
-
-//     // Active content
-//     document
-//         .querySelectorAll(".gm-pane")
-//         .forEach(item => item.classList.remove("active"));
-
-//     const tabName = tab.dataset.tab;
-
-//     const pane = document.getElementById("tab-" + tabName);
-
-//     if(pane){
-//         pane.classList.add("active");
-//     }
-
-// });
-
-// document.addEventListener("click", function(e){
-
-//     const tab = e.target.closest(".gm-tab");
-
-//     if(!tab) return;
-
-//     const tabName = tab.dataset.tab;
-
-//     if(tabName === "picture"){
-
-//         const placeId = tab.dataset.placeid;
-
-//         //loadPlacePhotos(placeId);
-//     }
-
-// });
-
-
-// function loadPlacePhotos(placeId) {
-
-//   const service =
-//     new google.maps.places.PlacesService(map);
-
-//   service.getDetails({
-
-//     placeId: placeId,
-
-//     fields: [
-//       "name",
-//       "photos"
-//     ]
-
-//   }, function (place, status) {
-
-//     if (
-//       status !== google.maps.places.PlacesServiceStatus.OK
-//     ) {
-//       return;
-//     }
-
-//     renderPhotos(place);
-
-//   });
-
-// }
 function loadPlacePhotos(placeId){
 
     const service =
@@ -996,47 +961,6 @@ function renderPhotos(
     container.innerHTML = html;
 
 }
-
-// function renderPhotos(place) {
-
-//   const container =
-//     document.getElementById(
-//       "gmPictureContent"
-//     );
-
-//   if (
-//     !place.photos ||
-//     !place.photos.length
-//   ) {
-//     container.innerHTML =
-//       "No photos";
-//     return;
-//   }
-
-//   let html = "";
-
-//   place.photos.forEach(photo => {
-
-//     const url =
-//       photo.getUrl({
-//         maxWidth: 1200
-//       });
-
-//     html += `
-//             <img
-//                 src="${url}"
-//                 style="
-//                     width:250px;
-//                     margin:10px;
-//                     border-radius:10px;
-//                 ">
-//         `;
-
-//   });
-
-//   container.innerHTML = html;
-// }
-
 function normalizeSearch() {
 
   return document
@@ -1129,68 +1053,70 @@ document.addEventListener("click", function (e) {
     e.target.id === "gmUploadPhotoBtn" ||
     e.target.closest("#gmUploadPhotoBtn")
   ) {
-
-    document
-      .getElementById("gmUploadPhotoFile")
-      .click();
-
+    document.getElementById("gmUploadPhotoFile").click();
   }
 
 });
 
+const uploadInput = document.getElementById("gmUploadPhotoFile");
+if (uploadInput) { 
+  document.getElementById("gmUploadPhotoFile").addEventListener("change", function () {
 
-document
-  .getElementById("gmUploadPhotoFile")
-  .addEventListener("change", function () {
+      const file = this.files[0];
 
-    const file = this.files[0];
-
-    if (!file) {
-      return;
-    }
-
-    const placeId =
-      document
-        .getElementById("gmPictureDialog")
-        .dataset.placeid;
-
-    const formData = new FormData();
-
-    formData.append(
-      "action",
-      "upload_place_photo"
-    );
-
-    formData.append(
-      "place_id",
-      placeId
-    );
-
-    formData.append(
-      "photo",
-      file
-    );
-
-    fetch(
-      "https://dev.pt-solution.vn/wp-admin/admin-ajax.php",
-      {
-        method: "POST",
-        body: formData
+      if (!file) {
+        return;
       }
-    )
-      .then(r => r.json())
-      .then(res => {
 
-        if (res.success) {
+      const placeId = document.getElementById("gmPictureDialog").dataset.placeid;
 
-          loadPlacePhotos(placeId);
+      const formData = new FormData();
 
-        } else {
+      formData.append(
+        "action",
+        "upload_place_photo"
+      );
 
-          alert(res.data);
+      formData.append(
+        "place_id",
+        placeId
+      );
 
+      formData.append(
+        "photo",
+        file
+      );
+
+      fetch(
+        "https://dev.pt-solution.vn/wp-admin/admin-ajax.php",
+        {
+          method: "POST",
+          body: formData
         }
+      )
+        .then(r => r.json())
+        .then(res => {
 
-      });
+          if (res.success) {
 
-  });
+            loadPlacePhotos(placeId);
+
+          } else {
+
+            alert(res.data);
+
+          }
+
+        });
+
+    });
+}
+document.getElementById("ai-close").addEventListener("click", function () {
+
+    document.getElementById("ai-result-panel").style.display = "none";
+
+    document.getElementById("ai-loading").style.display = "none";
+
+    document.getElementById("ai-result-content").innerHTML = "";
+
+});
