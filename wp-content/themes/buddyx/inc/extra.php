@@ -81,7 +81,7 @@ if ( ! function_exists( 'buddyx_sub_header' ) ) {
 		}
 		?>
 		<div class="site-sub-header">
-			<div class="container">
+			<div class="container-fluid">
 				<?php
 				// Handle search results separately
 				if ( is_search() ) {

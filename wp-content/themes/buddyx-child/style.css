@@ -206,6 +206,8 @@ textarea,
     margin: 0px 10px;
     display:flex;
     align-items:center;
+    flex-wrap:nowrap;      /* Không xuống dòng */
+    white-space:nowrap;
 }
 
 .pt-header-language .gt_selector{
@@ -260,4 +262,83 @@ textarea,
 }
 .pt-member-level a {
     color: #fff !important;
+}
+/* ===== Layout ===== */
+
+.pt-layout{
+
+    display:grid;
+
+    grid-template-columns:250px minmax(0,1fr) 320px;
+
+    width:100%;
+
+    min-height:calc(100vh - 72px);
+
+    margin:0;
+
+    gap:0;
+
+}
+
+/* LEFT */
+
+.pt-sidebar-left{
+
+    border-right:1px solid #eceff5;
+
+    background:#fff;
+
+    min-height:100%;
+
+}
+
+.pt-nav ul{
+
+    margin:0;
+
+    padding:25px 0;
+
+    list-style:none;
+
+}
+
+.pt-nav li{
+
+    margin:0;
+
+}
+
+.pt-nav a{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:14px;
+
+    height:48px;
+
+    padding:0 25px;
+
+    color:#173b75;
+
+    text-decoration:none;
+
+    font-weight:500;
+
+}
+
+.pt-nav li.active a{
+
+    color:#0a55d4;
+
+    font-weight:700;
+
+}
+
+.pt-nav li:hover{
+
+    background:#f7f9fc;
+
 }
