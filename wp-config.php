@@ -100,7 +100,7 @@ define('WP_CACHE_KEY_SALT', 'dev_pt_solution_');
 /**
  * Google Maps API
  */
-define('GOOGLE_MAPS_API_KEY', 'AIzaSyA5ip29G4RoZ_NHgOZYgKoGNb_e0JYl4wQ');
+define('GOOGLE_MAPS_API_KEY', 'AIzaSyC2g_OrJO_rFwZF52hyhTDDmTQsifO19-A');
 
 /**
  * Gemini API
