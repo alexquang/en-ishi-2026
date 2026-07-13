@@ -103,7 +103,7 @@ class BuddyMeet_Component extends BP_Component {
             $budddymeet_link = trailingslashit($group_link . $slug);
 
             $sub_nav[] = array(
-                'name' => _x('Meet the Group', 'BuddyMeet group call screen sub nav', 'buddymeet'),
+                'name' => _x('Public Meeting', 'BuddyMeet group call screen sub nav', 'buddymeet'),
                 'slug' => 'group',
                 'parent_url' => $budddymeet_link,
                 'parent_slug' => $slug,
@@ -113,7 +113,7 @@ class BuddyMeet_Component extends BP_Component {
             );
 
             $sub_nav[] = array(
-                'name' => _x('Meet Members', 'BuddyMeet members call screen sub nav', 'buddymeet'),
+                'name' => _x('Private Meeting', 'BuddyMeet members call screen sub nav', 'buddymeet'),
                 'slug' => 'members',
                 'parent_url' => $budddymeet_link,
                 'parent_slug' => $slug,

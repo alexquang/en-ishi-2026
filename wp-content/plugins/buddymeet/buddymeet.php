@@ -298,7 +298,8 @@ class BuddyMeet {
             wp_enqueue_script('jquery-ui-autocomplete');
             wp_enqueue_script( 'buddymeet-invites-js', buddymeet_get_plugin_url()  . 'assets/js/invites.js', array( 'jquery-ui-autocomplete' ) );
             wp_localize_script('buddymeet-invites-js', 'args', array(
-                'ajaxurl' =>  admin_url( 'admin-ajax.php', 'relative' )
+                'ajaxurl' =>  admin_url( 'admin-ajax.php', 'relative' ),
+                'groupId' => bp_get_current_group_id()
             ));
 
             $handle = 'buddymeet-jitsi-js';
