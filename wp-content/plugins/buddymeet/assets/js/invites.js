@@ -190,6 +190,22 @@ jQuery(document).ready( function() {
 		if(typeof(api) != "undefined"){
 			jQuery( '#stopCall' ).prop( 'disabled', false ).removeClass( 'submit-disabled' );
 			jQuery( '#room_name' ).prop( 'disabled', true );
+
+			api.addListener('videoConferenceJoined', function(){
+				saveMeetingStatus(args.groupId);
+			});
+
+			api.addListener("videoConferenceLeft", function () {
+				 leaveMeeting(args.groupId);
+				const url = window.location.href;
+
+				const index = url.indexOf("/buddymeet/");
+
+				if (index !== -1) {
+					window.location.href = url.substring(0, index + "/buddymeet/".length);
+				}
+
+			});
 		} else {
 			jQuery( '#stopCall' ).prop( 'disabled', true ).addClass( 'submit-disabled' );
 			jQuery( '#room_name' ).prop( 'disabled', false );
@@ -198,3 +214,36 @@ jQuery(document).ready( function() {
 });
 
 
+function saveMeetingStatus(groupId) {
+
+    fetch('https://dev.pt-solution.vn/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            action: 'pt_join_meeting',
+            group_id: groupId   // groupId lấy từ URL hoặc PHP truyền sang JS
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        console.log(data);
+    });
+
+}
+
+function leaveMeeting(groupId) {
+
+    fetch('https://dev.pt-solution.vn/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            action: 'pt_leave_meeting',
+            group_id: groupId
+        })
+    });
+
+}

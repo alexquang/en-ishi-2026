@@ -340,5 +340,12 @@ textarea,
 .pt-nav li:hover{
 
     background:#f7f9fc;
-
+}
+.buddypress-wrap .bp-feedback span.bp-icon {
+    font-family: dashicons !important;
+}
+.bp-feedback.loading .bp-icon {
+    display: flex !important;
+    align-items: center !important;
+    align-self: stretch !important;
 }

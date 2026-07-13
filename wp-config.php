@@ -100,12 +100,12 @@ define('WP_CACHE_KEY_SALT', 'dev_pt_solution_');
 /**
  * Google Maps API
  */
-define('GOOGLE_MAPS_API_KEY', 'AIzaSyC2g_OrJO_rFwZF52hyhTDDmTQsifO19-A');
+define('GOOGLE_MAPS_API_KEY', 'AIzaSyC9MdEE5EDSyBpKWTKijDBtiIA9oPnwBrQ');
 
 /**
  * Gemini API
  */
-define('GEMINI_API_KEY', 'AQ.Ab8RN6IOS1LNq3HL-oSymkR5ODvf1PANtrWKYjkfwnxTJCS99Q');
+define('GEMINI_API_KEY', 'AQ.Ab8RN6JTrahULOegF15qq4FJgHHHB1Cptqxgl7CWLlUHdWbaoQ');
 
 /* Add any custom values between this line and the "stop editing" line. */
 
