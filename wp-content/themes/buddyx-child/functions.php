@@ -546,3 +546,80 @@ function pt_rename_buddymeet_context( $translated, $text, $context, $domain ) {
 
     return $translated;
 }
+
+add_filter( 'bp_nouveau_get_nav_link_text', function( $link_text, $nav_item, $displayed_nav ) {
+
+    if ( $displayed_nav === 'groups'
+         && isset( $nav_item->slug )
+         && $nav_item->slug === 'admin' ) {
+
+        return 'Settings';
+    }
+
+    return $link_text;
+
+}, 10, 3 );
+
+add_action('wp_ajax_pt_join_meeting', 'pt_join_meeting');
+
+function pt_join_meeting(){
+
+    global $wpdb;
+
+    $group_id = intval($_POST['group_id']);
+    $user_id  = get_current_user_id();
+
+    //Nếu đã có thì update
+    $exists = $wpdb->get_var($wpdb->prepare(
+        "SELECT id
+        FROM {$wpdb->prefix}group_live_status
+        WHERE group_id=%d
+        AND user_id=%d
+        AND status=1",
+        $group_id,
+        $user_id
+    ));
+
+    if(!$exists){
+
+        $wpdb->insert(
+            "{$wpdb->prefix}group_live_status",
+            [
+                'group_id'=>$group_id,
+                'user_id'=>$user_id,
+                'status'=>1,
+                'started_at'=>current_time('mysql')
+            ]
+        );
+
+    }
+
+    wp_send_json_success();
+}
+
+add_action('wp_ajax_pt_leave_meeting', 'pt_leave_meeting');
+
+function pt_leave_meeting(){
+
+    global $wpdb;
+
+    $group_id = intval($_POST['group_id']);
+    $user_id  = get_current_user_id();
+
+    $wpdb->update(
+        $wpdb->prefix . 'group_live_status',
+        [
+            'status'   => 0,
+            'ended_at' => current_time('mysql')
+        ],
+        [
+            'group_id' => $group_id,
+            'user_id'  => $user_id,
+            'status'   => 1
+        ]
+    );
+
+    wp_send_json_success([
+        'message' => 'Left meeting'
+    ]);
+}

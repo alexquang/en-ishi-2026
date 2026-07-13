@@ -169,6 +169,19 @@ bp_nouveau_before_groups_directory_content();
         max-width: 100% !important;
     }
 }
+.pt-group-actions a {
+    border: 0px !important;
+    font-weight: normal !important;
+    font-size: 12px !important;
+}
+
+.pt-live-btn{
+    position: relative;
+    overflow: hidden;
+
+    background:#012068 !important;
+    color:#fff !important;
+}
 </style>
 
 <div class="pt-groups-wrapper">
