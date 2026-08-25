@@ -579,3 +579,29 @@ function pt_leave_meeting(){
         'message' => 'Left meeting'
     ]);
 }
+add_filter('logout_redirect', function ($redirect_to, $requested_redirect_to, $user) {
+    return home_url('/maps');
+}, 10, 3);
+
+add_action('template_redirect', function () {
+
+    if (
+        !is_admin() &&
+        !is_user_logged_in() &&
+        $_SERVER['REQUEST_URI'] === '/'
+    ) {
+        wp_safe_redirect(home_url('/maps/'));
+        exit;
+    }
+
+});
+
+add_filter('nsl_login_redirect', function ($url, $provider) {
+
+    if ($provider === 'google') {
+        return home_url('/maps/');
+    }
+
+    return $url;
+
+}, 10, 2);
