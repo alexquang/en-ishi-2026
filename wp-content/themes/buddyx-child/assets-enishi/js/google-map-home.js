@@ -9,6 +9,7 @@ let transitLayer;
 let bikeLayer;
 let layerControlsInitialized = false;
 let service;
+let photoCarouselPlaces = [];
 
 function getBrowserCountry() {
   const locale = navigator.language || navigator.userLanguage || "en-US";
@@ -65,16 +66,534 @@ function loadNearbyPlaces(lat, lng) {
   });
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  navigator.geolocation.getCurrentPosition(
-    function (position) {
-      initMap(position.coords.latitude, position.coords.longitude);
+const majorCities = {
+    VN: {
+        name: "Ho Chi Minh City",
+        lat: 10.8231,
+        lng: 106.6297,
+        zoom: 8
     },
-    function () {
-      initMap(10.8231, 106.6297);
+
+    JP: {
+        name: "Tokyo",
+        lat: 35.6762,
+        lng: 139.6503,
+        zoom: 8
+    },
+
+    KR: {
+        name: "Seoul",
+        lat: 37.5665,
+        lng: 126.9780,
+        zoom: 8
+    },
+
+    TH: {
+        name: "Bangkok",
+        lat: 13.7563,
+        lng: 100.5018,
+        zoom: 8
+    },
+
+    SG: {
+        name: "Singapore",
+        lat: 1.3521,
+        lng: 103.8198,
+        zoom: 11
+    },
+
+    MY: {
+        name: "Kuala Lumpur",
+        lat: 3.1390,
+        lng: 101.6869,
+        zoom: 9
+    },
+
+    ID: {
+        name: "Jakarta",
+        lat: -6.2088,
+        lng: 106.8456,
+        zoom: 8
+    },
+
+    PH: {
+        name: "Manila",
+        lat: 14.5995,
+        lng: 120.9842,
+        zoom: 9
+    },
+
+    CN: {
+        name: "Shanghai",
+        lat: 31.2304,
+        lng: 121.4737,
+        zoom: 7
+    },
+
+    US: {
+        name: "New York",
+        lat: 40.7128,
+        lng: -74.0060,
+        zoom: 8
+    },
+
+    CA: {
+        name: "Toronto",
+        lat: 43.6532,
+        lng: -79.3832,
+        zoom: 8
+    },
+
+    GB: {
+        name: "London",
+        lat: 51.5074,
+        lng: -0.1278,
+        zoom: 9
+    },
+
+    FR: {
+        name: "Paris",
+        lat: 48.8566,
+        lng: 2.3522,
+        zoom: 9
+    },
+
+    DE: {
+        name: "Berlin",
+        lat: 52.5200,
+        lng: 13.4050,
+        zoom: 8
+    },
+
+    AU: {
+        name: "Sydney",
+        lat: -33.8688,
+        lng: 151.2093,
+        zoom: 8
     }
-  );
-});
+};
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        navigator.geolocation.getCurrentPosition(
+
+            // =====================================
+            // GPS SUCCESS
+            // =====================================
+
+            function (position) {
+
+                const lat =
+                    position.coords.latitude;
+
+                const lng =
+                    position.coords.longitude;
+
+                console.log(
+                    "GPS:",
+                    lat,
+                    lng
+                );
+
+                const geocoder =
+                    new google.maps.Geocoder();
+
+
+                // =====================================
+                // REVERSE GEOCODE
+                // =====================================
+
+                geocoder.geocode(
+                    {
+                        location: {
+                            lat: lat,
+                            lng: lng
+                        }
+                    },
+
+                    function (
+                        results,
+                        status
+                    ) {
+
+                        if (
+                            status !== "OK" ||
+                            !results ||
+                            !results.length
+                        ) {
+
+                            console.log(
+                                "Không xác định được quốc gia"
+                            );
+
+                            // ==========================
+                            // FALLBACK VIỆT NAM
+                            // ==========================
+
+                            initMapByCountry(
+                                14.0583,
+                                108.2772,
+                                "VN"
+                            );
+
+                            return;
+                        }
+
+
+                        // =================================
+                        // TÌM COUNTRY
+                        // =================================
+
+                        const countryResult =
+                            results.find(
+                                function (result) {
+
+                                    return (
+                                        result.types &&
+                                        result.types.includes(
+                                            "country"
+                                        )
+                                    );
+
+                                }
+                            );
+
+
+                        if (!countryResult) {
+
+                            console.log(
+                                "Không tìm thấy country"
+                            );
+
+                            initMapByCountry(
+                                14.0583,
+                                108.2772,
+                                "VN"
+                            );
+
+                            return;
+                        }
+
+
+                        // =================================
+                        // COUNTRY NAME + CODE
+                        // =================================
+
+                        let countryName = "";
+
+                        let countryCode = "";
+
+
+                        countryResult
+                            .address_components
+                            .forEach(
+                                function (component) {
+
+                                    if (
+                                        component.types &&
+                                        component.types.includes(
+                                            "country"
+                                        )
+                                    ) {
+
+                                        countryName =
+                                            component.long_name;
+
+                                        countryCode =
+                                            component.short_name;
+
+                                    }
+
+                                }
+                            );
+
+
+                        // =================================
+                        // COUNTRY LOCATION
+                        // =================================
+
+                        const location =
+                            countryResult
+                                .geometry
+                                .location;
+
+
+                        const countryLat =
+                            location.lat();
+
+
+                        const countryLng =
+                            location.lng();
+
+
+                        console.log(
+                            "Country:",
+                            countryName
+                        );
+
+                        console.log(
+                            "Country Code:",
+                            countryCode
+                        );
+
+                        console.log(
+                            "Country Center:",
+                            countryLat,
+                            countryLng
+                        );
+
+
+                        // =================================
+                        // INIT MAP
+                        // =================================
+
+                        initMapByCountry(
+
+                            countryLat,
+
+                            countryLng,
+
+                            countryCode
+
+                        );
+
+                    }
+                );
+            },
+
+
+            // =====================================
+            // GPS ERROR
+            // =====================================
+
+            function (error) {
+
+                console.log(
+                    "Không lấy được GPS:",
+                    error.message
+                );
+
+
+                // =================================
+                // FALLBACK VIỆT NAM
+                // =================================
+
+                initMapByCountry(
+                    14.0583,
+                    108.2772,
+                    "VN"
+                );
+
+            },
+
+
+            // =====================================
+            // GPS OPTIONS
+            // =====================================
+
+            {
+                enableHighAccuracy: false,
+
+                timeout: 10000,
+
+                maximumAge: 300000
+            }
+
+        );
+
+    }
+);
+
+async function initMapByCountry(countryLat, countryLng, countryCode) {
+
+    let center = {
+        lat: Number(countryLat),
+        lng: Number(countryLng)
+    };
+
+    let zoom = 7;
+
+    // Thành phố lớn/đại diện của quốc gia
+    const city = majorCities[countryCode];
+
+    if (city) {
+
+        center = {
+            lat: city.lat,
+            lng: city.lng
+        };
+
+        zoom = city.zoom;
+
+        console.log(
+            "Major city:",
+            city.name
+        );
+    }
+
+    map = new google.maps.Map(
+        document.getElementById("map"),
+        {
+            center: center,
+
+            zoom: zoom,
+
+            mapTypeControl: false,
+
+            gestureHandling: "greedy",
+
+            scrollwheel: true,
+
+            draggable: true,
+
+            streetViewControl: false,
+
+            fullscreenControl: false
+        }
+    );
+
+    service =
+        new google.maps.places.PlacesService(map);
+
+    // Không tạo GPS marker
+    marker = null;
+
+    trafficLayer =
+        new google.maps.TrafficLayer();
+
+    transitLayer =
+        new google.maps.TransitLayer();
+
+    bikeLayer =
+        new google.maps.BicyclingLayer();
+
+    if (!layerControlsInitialized) {
+
+        initLayerControls();
+
+        layerControlsInitialized = true;
+    }
+}
+
+
+async function initMapByCountry(
+    countryLat,
+    countryLng,
+    countryCode
+) {
+
+    // =========================
+    // MẶC ĐỊNH
+    // =========================
+
+    let center = {
+        lat: Number(countryLat),
+        lng: Number(countryLng)
+    };
+
+    let zoom = 6;
+
+    // =========================
+    // TÌM THÀNH PHỐ MẶC ĐỊNH
+    // =========================
+
+    const city = majorCities[countryCode];
+
+    if (city) {
+
+        center = {
+            lat: city.lat,
+            lng: city.lng
+        };
+
+        zoom = city.zoom;
+
+        console.log(
+            "Default city:",
+            city.name
+        );
+
+    } else {
+
+        console.log(
+            "Không có thành phố mặc định cho:",
+            countryCode
+        );
+
+    }
+
+    // =========================
+    // CREATE MAP
+    // =========================
+
+    map = new google.maps.Map(
+        document.getElementById("map"),
+        {
+
+            center: center,
+
+            zoom: zoom,
+
+            mapTypeControl: false,
+
+            gestureHandling: "greedy",
+
+            scrollwheel: true,
+
+            draggable: true,
+
+            streetViewControl: false,
+
+            fullscreenControl: false
+        }
+    );
+
+    // =========================
+    // PLACES SERVICE
+    // =========================
+
+    service =
+        new google.maps.places.PlacesService(map);
+
+    // =========================
+    // KHÔNG TẠO GPS MARKER
+    // =========================
+
+    marker = null;
+
+    // =========================
+    // LAYERS
+    // =========================
+
+    trafficLayer =
+        new google.maps.TrafficLayer();
+
+    transitLayer =
+        new google.maps.TransitLayer();
+
+    bikeLayer =
+        new google.maps.BicyclingLayer();
+
+    // =========================
+    // LAYER CONTROL
+    // =========================
+
+    if (!layerControlsInitialized) {
+
+        initLayerControls();
+
+        layerControlsInitialized = true;
+    }
+
+    console.log(
+        "Map initialized:",
+        countryCode,
+        center,
+        zoom
+    );
+}
 
 async function initMap(userLat, userLng) {
   const center = {
@@ -86,6 +605,9 @@ async function initMap(userLat, userLng) {
     center: center,
     zoom: 12,
     mapTypeControl: false,
+    gestureHandling: "greedy",
+    scrollwheel: true,
+    draggable: true
   });
 
   service = new google.maps.places.PlacesService(map);
@@ -154,6 +676,9 @@ async function initMap(userLat, userLng) {
     map = new google.maps.Map(document.getElementById("map"), {
       center: { lat, lng },
       zoom: 15,
+      gestureHandling: "greedy",
+      scrollwheel: true,
+      draggable: true
     });
 
     trafficLayer = new google.maps.TrafficLayer();
@@ -172,56 +697,56 @@ window.initMap = initMap;
 document.getElementById("find-btn").addEventListener("click", function () {
   
   const keyword = document.getElementById("pac-input").value.trim();
-  const googleMode = document.getElementById("googleSearchMode").checked;
+  // const googleMode = document.getElementById("googleSearchMode").checked;
 
   if (!keyword) {
     alert("Enter a keyword.");
     return;
   }
 
-if (googleMode) {
+// if (googleMode) {
   
-    document.getElementById("search-wrapper").style.display = "none";
+//     document.getElementById("search-wrapper").style.display = "none";
 
-    document.getElementById("ai-result-panel").style.display = "block";
+//     document.getElementById("ai-result-panel").style.display = "block";
 
-    document.getElementById("ai-loading").style.display = "flex";
+//     document.getElementById("ai-loading").style.display = "flex";
 
-    document.getElementById("ai-result-content").innerHTML = "";
+//     document.getElementById("ai-result-content").innerHTML = "";
 
-    fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: new URLSearchParams({
-            action: "pt_ai_search",
-            question: keyword
-        })
-    })
-    .then(r => r.json())
-    .then(res => {
+//     fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
+//         method: "POST",
+//         headers: {
+//             "Content-Type": "application/x-www-form-urlencoded"
+//         },
+//         body: new URLSearchParams({
+//             action: "pt_ai_search",
+//             question: keyword
+//         })
+//     })
+//     .then(r => r.json())
+//     .then(res => {
 
-        document.getElementById("ai-loading").style.display = "none";
+//         document.getElementById("ai-loading").style.display = "none";
 
-        document.getElementById("ai-result-content").innerHTML =
-            res.data.answer;
+//         document.getElementById("ai-result-content").innerHTML =
+//             res.data.answer;
 
-    })
-    .catch(err => {
+//     })
+//     .catch(err => {
 
-        document.getElementById("ai-loading").style.display = "none";
+//         document.getElementById("ai-loading").style.display = "none";
 
-        document.getElementById("ai-result-content").innerHTML =
-            "❌ Không thể kết nối Gemini";
+//         document.getElementById("ai-result-content").innerHTML =
+//             "❌ Không thể kết nối Gemini";
 
-        console.error(err);
-    });
+//         console.error(err);
+//     });
 
-    return;
-}
+//     return;
+// }
   document.getElementById("search-wrapper").style.display = "block";
-  document.getElementById("ai-result-panel").style.display = "none";
+  // document.getElementById("ai-result-panel").style.display = "none";
   searchPlaces(keyword);
 });
 
@@ -1111,12 +1636,13 @@ if (uploadInput) {
 
     });
 }
-document.getElementById("ai-close").addEventListener("click", function () {
 
-    document.getElementById("ai-result-panel").style.display = "none";
+// document.getElementById("ai-close").addEventListener("click", function () {
 
-    document.getElementById("ai-loading").style.display = "none";
+//     document.getElementById("ai-result-panel").style.display = "none";
 
-    document.getElementById("ai-result-content").innerHTML = "";
+//     document.getElementById("ai-loading").style.display = "none";
 
-});
+//     document.getElementById("ai-result-content").innerHTML = "";
+
+// });

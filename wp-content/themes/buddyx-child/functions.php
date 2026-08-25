@@ -118,30 +118,8 @@ if (get_stylesheet() !== get_template()) {
     );
 }
 
-// Register URL
-add_filter('register_url', function ($register_url) {
-    return home_url('/login/signup/');
-});
 add_filter('show_admin_bar', '__return_false');
 
-add_action('template_redirect', function () {
-
-    if (is_front_page() || is_home()) {
-        wp_redirect(home_url('/maps/'), 301);
-        exit;
-    }
-});
-
-/**
- * Redirect sau khi logout
- */
-add_action('wp_logout', 'pts_logout_redirect');
-
-function pts_logout_redirect()
-{
-    wp_safe_redirect('/maps/');
-    exit;
-}
 add_action('wp_footer', function () {
 ?>
     <script>
@@ -173,15 +151,6 @@ add_action('wp_footer', function () {
     </script>
 <?php
 });
-
-add_filter('login_redirect', function ($redirect_to, $requested_redirect_to, $user) {
-
-    if (!empty($user) && !is_wp_error($user)) {
-        return home_url('/maps/');
-    }
-
-    return $redirect_to;
-}, 999, 3);
 
 add_action('rest_api_init', function () {
 
@@ -289,20 +258,7 @@ function get_user_photos()
 
     wp_send_json_success($photos);
 }
-add_filter('login_url', function ($login_url, $redirect) {
 
-    $url = home_url('/login/');
-
-    if (!empty($redirect)) {
-        $url = add_query_arg(
-            'redirect_to',
-            urlencode($redirect),
-            $url
-        );
-    }
-
-    return $url;
-}, 10, 2);
 add_action('wp_ajax_get_live_status', 'get_live_status');
 add_action('wp_ajax_nopriv_get_live_status', 'get_live_status');
 

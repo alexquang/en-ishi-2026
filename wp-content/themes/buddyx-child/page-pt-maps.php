@@ -8,22 +8,6 @@ get_header();
 <div class="google-map-section">
 
     <div class="google-map-container">
-
-
-        <div class="map-search-box">
-
-            <input
-                id="pac-input"
-                type="text"
-                placeholder="Search now...">
-            <label class="gemini-check">
-                <input type="checkbox" id="googleSearchMode">
-            </label>
-            <button class="find-btn" id="find-btn">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-
-        </div>
         <div class="top-categories">
 
             <button class="cat-btn" data-type="restaurant">
@@ -56,12 +40,28 @@ get_header();
 
         </div>
 
+
+
         <div class="search-wrapper" id="search-wrapper">
+
+        
+            <div class="map-search-box">
+
+                <input
+                    id="pac-input"
+                    type="text"
+                    placeholder="Search Google Maps"
+                    autocomplete="off"
+                >
+                <button class="find-btn" id="find-btn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </div>
             <div class="result-wrapper">
 
                 <div id="result-panel">
 
-                    <div id="results"></div>
+                    <div id="results" class="results-style"></div>
 
                 </div>
 
@@ -73,17 +73,18 @@ get_header();
 
         </div>
 
-        <div id="ai-result-panel" style="display:none;">
+        <!-- <div id="ai-result-panel" style="display:none;">
             <div class="ai-header">
                 ✨ AI Search
                 <span id="ai-close">✕</span>
             </div>
 
-    <div id="ai-result-content"></div>
-    <div id="ai-loading" style="display:none;">
-    <div class="ai-spinner"></div>
-    <div>Gemini đang phân tích...</div>
-</div>
+            <div id="ai-result-content"></div>
+            <div id="ai-loading" style="display:none;">
+            <div class="ai-spinner"></div>
+            <div>Gemini đang phân tích...</div>
+
+        </div> -->
 </div>
 
         <div id="map"></div>
@@ -133,6 +134,7 @@ get_header();
                 </label>
             </div>
         </div>
+        
     </div>
 </div>
 
