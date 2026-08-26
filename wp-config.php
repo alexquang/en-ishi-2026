@@ -105,7 +105,7 @@ define('GOOGLE_MAPS_API_KEY', 'AIzaSyAFdjOyxzpFFiiPDU1rRrbqRlB2Y-Mb3zA');
 /**
  * Gemini API
  */
-define('GEMINI_API_KEY', 'AQ.Ab8RN6JTrahULOegF15qq4FJgHHHB1Cptqxgl7CWLlUHdWbaoQ');
+define('GEMINI_API_KEY', 'AQ.Ab8RN6IW_wrAedX_ZadZqlV7syF96Vsuz4Go5FYIZnKywelh1w');
 
 /* Add any custom values between this line and the "stop editing" line. */
 

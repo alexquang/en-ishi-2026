@@ -697,6 +697,7 @@ window.initMap = initMap;
 document.getElementById("find-btn").addEventListener("click", function () {
   
   const keyword = document.getElementById("pac-input").value.trim();
+  const aiPanel = document.getElementById('ai-result-panel');
   // const googleMode = document.getElementById("googleSearchMode").checked;
 
   if (!keyword) {
@@ -747,6 +748,17 @@ document.getElementById("find-btn").addEventListener("click", function () {
 // }
   document.getElementById("search-wrapper").style.display = "block";
   // document.getElementById("ai-result-panel").style.display = "none";
+
+  const resultWrapper = document.querySelector('.result-wrapper');
+
+  if (resultWrapper) {
+      resultWrapper.style.display = 'block';
+  }
+
+  if (aiPanel) {
+      aiPanel.style.display = 'none';
+  }
+
   searchPlaces(keyword);
 });
 
@@ -1646,3 +1658,248 @@ if (uploadInput) {
 //     document.getElementById("ai-result-content").innerHTML = "";
 
 // });
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    const aiButton = document.getElementById('ai-search-btn');
+    const searchInput = document.getElementById('pac-input');
+
+    const aiPanel = document.getElementById('ai-result-panel');
+    const aiContent = document.getElementById('ai-result-content');
+    const closeButton = document.getElementById('close-ai-result');
+
+
+    if (!aiButton) {
+        console.warn('ai-search-btn not found');
+        return;
+    }
+
+
+    /*
+     * CLICK SEARCH WITH GEMINI
+     */
+    aiButton.addEventListener('click', function (e) {
+
+        e.preventDefault();
+
+
+        const resultWrapper = document.querySelector('.result-wrapper');
+
+        if (resultWrapper) {
+            resultWrapper.style.display = 'none';
+        }
+
+        if (aiPanel) {
+            aiPanel.style.display = 'block';
+        }
+
+        console.log('Gemini button clicked');
+
+
+        /*
+         * Lấy nội dung từ Search Google Maps
+         */
+        const query = searchInput
+            ? searchInput.value.trim()
+            : '';
+
+
+        console.log('AI Search:', query);
+
+
+        /*
+         * Không có nội dung
+         */
+        if (!query) {
+
+            if (searchInput) {
+                searchInput.focus();
+            }
+
+            return;
+        }
+
+
+        /*
+         * Hiện AI result panel
+         */
+        if (aiPanel) {
+            aiPanel.style.display = 'block';
+        }
+
+
+        /*
+         * Loading
+         */
+        if (aiContent) {
+
+            aiContent.innerHTML = `
+                <div class="ai-loading">
+
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+
+                    <span>
+                        Gemini is searching...
+                    </span>
+
+                </div>
+            `;
+
+        }
+
+
+        /*
+         * Disable button
+         */
+        aiButton.disabled = true;
+
+
+        /*
+         * CALL WORDPRESS AJAX
+         */
+        fetch(
+            'https://dev.pt-solution.vn/wp-admin/admin-ajax.php',
+            {
+
+                method: 'POST',
+
+                headers: {
+                    'Content-Type':
+                        'application/x-www-form-urlencoded; charset=UTF-8'
+                },
+
+                body: new URLSearchParams({
+                    action: 'pt_ai_search',
+                    query: query
+
+                }),
+                // 1000 giây
+                signal: AbortSignal.timeout(10000)
+            }
+        )
+
+
+        /*
+         * Response
+         */
+        .then(function (response) {
+
+            return response.json();
+
+        })
+
+
+        /*
+         * Gemini result
+         */
+.then(function (data) {
+
+    console.log('Gemini result:', data);
+
+    /*
+     * ERROR
+     */
+    if (!data.success) {
+
+        aiContent.innerHTML = `
+            <div class="ai-error">
+                <i class="fa-solid fa-circle-exclamation"></i>
+
+                <span>
+                    ${
+                        data.data?.message ||
+                        'Gemini search failed.'
+                    }
+                </span>
+            </div>
+        `;
+
+        // Đảm bảo panel vẫn hiện để thấy lỗi
+        if (aiPanel) {
+            aiPanel.style.display = 'block';
+        }
+
+        return;
+    }
+
+
+    /*
+     * LẤY CONTENT GEMINI
+     */
+    const html = data.data?.html || 'No result.';
+
+
+    /*
+     * HIỂN THỊ CONTENT
+     */
+    aiContent.innerHTML = html;
+
+
+    /*
+     * HIỆN PANEL
+     */
+    if (aiPanel) {
+        aiPanel.style.display = 'block';
+    }
+
+})
+
+
+        /*
+         * Network error
+         */
+        .catch(function (error) {
+
+            console.error(
+                'Gemini AJAX error:',
+                error
+            );
+
+
+            aiContent.innerHTML = `
+                <div class="ai-error">
+
+                    <i class="fa-solid fa-circle-exclamation"></i>
+
+                    <span>
+                        Unable to connect to Gemini.
+                    </span>
+
+                </div>
+            `;
+
+        })
+
+
+        /*
+         * Finish
+         */
+        .finally(function () {
+
+            aiButton.disabled = false;
+
+        });
+
+    });
+
+
+    /*
+     * CLOSE AI RESULT
+     */
+    if (closeButton) {
+
+        closeButton.addEventListener(
+            'click',
+            function () {
+
+                if (aiPanel) {
+                    aiPanel.style.display = 'none';
+                }
+
+            }
+        );
+
+    }
+
+});
+/* END GEMINI SEARCH */
