@@ -61,538 +61,393 @@ function loadNearbyPlaces(lat, lng) {
         });
 
         showRestaurantMarkers([...allPlaces.values()]);
-      }
+      },
     );
   });
 }
 
 const majorCities = {
-    VN: {
-        name: "Ho Chi Minh City",
-        lat: 10.8231,
-        lng: 106.6297,
-        zoom: 8
-    },
+  VN: {
+    name: "Ho Chi Minh City",
+    lat: 10.8231,
+    lng: 106.6297,
+    zoom: 8,
+  },
 
-    JP: {
-        name: "Tokyo",
-        lat: 35.6762,
-        lng: 139.6503,
-        zoom: 8
-    },
+  JP: {
+    name: "Tokyo",
+    lat: 35.6762,
+    lng: 139.6503,
+    zoom: 8,
+  },
 
-    KR: {
-        name: "Seoul",
-        lat: 37.5665,
-        lng: 126.9780,
-        zoom: 8
-    },
+  KR: {
+    name: "Seoul",
+    lat: 37.5665,
+    lng: 126.978,
+    zoom: 8,
+  },
 
-    TH: {
-        name: "Bangkok",
-        lat: 13.7563,
-        lng: 100.5018,
-        zoom: 8
-    },
+  TH: {
+    name: "Bangkok",
+    lat: 13.7563,
+    lng: 100.5018,
+    zoom: 8,
+  },
 
-    SG: {
-        name: "Singapore",
-        lat: 1.3521,
-        lng: 103.8198,
-        zoom: 11
-    },
+  SG: {
+    name: "Singapore",
+    lat: 1.3521,
+    lng: 103.8198,
+    zoom: 11,
+  },
 
-    MY: {
-        name: "Kuala Lumpur",
-        lat: 3.1390,
-        lng: 101.6869,
-        zoom: 9
-    },
+  MY: {
+    name: "Kuala Lumpur",
+    lat: 3.139,
+    lng: 101.6869,
+    zoom: 9,
+  },
 
-    ID: {
-        name: "Jakarta",
-        lat: -6.2088,
-        lng: 106.8456,
-        zoom: 8
-    },
+  ID: {
+    name: "Jakarta",
+    lat: -6.2088,
+    lng: 106.8456,
+    zoom: 8,
+  },
 
-    PH: {
-        name: "Manila",
-        lat: 14.5995,
-        lng: 120.9842,
-        zoom: 9
-    },
+  PH: {
+    name: "Manila",
+    lat: 14.5995,
+    lng: 120.9842,
+    zoom: 9,
+  },
 
-    CN: {
-        name: "Shanghai",
-        lat: 31.2304,
-        lng: 121.4737,
-        zoom: 7
-    },
+  CN: {
+    name: "Shanghai",
+    lat: 31.2304,
+    lng: 121.4737,
+    zoom: 7,
+  },
 
-    US: {
-        name: "New York",
-        lat: 40.7128,
-        lng: -74.0060,
-        zoom: 8
-    },
+  US: {
+    name: "New York",
+    lat: 40.7128,
+    lng: -74.006,
+    zoom: 8,
+  },
 
-    CA: {
-        name: "Toronto",
-        lat: 43.6532,
-        lng: -79.3832,
-        zoom: 8
-    },
+  CA: {
+    name: "Toronto",
+    lat: 43.6532,
+    lng: -79.3832,
+    zoom: 8,
+  },
 
-    GB: {
-        name: "London",
-        lat: 51.5074,
-        lng: -0.1278,
-        zoom: 9
-    },
+  GB: {
+    name: "London",
+    lat: 51.5074,
+    lng: -0.1278,
+    zoom: 9,
+  },
 
-    FR: {
-        name: "Paris",
-        lat: 48.8566,
-        lng: 2.3522,
-        zoom: 9
-    },
+  FR: {
+    name: "Paris",
+    lat: 48.8566,
+    lng: 2.3522,
+    zoom: 9,
+  },
 
-    DE: {
-        name: "Berlin",
-        lat: 52.5200,
-        lng: 13.4050,
-        zoom: 8
-    },
+  DE: {
+    name: "Berlin",
+    lat: 52.52,
+    lng: 13.405,
+    zoom: 8,
+  },
 
-    AU: {
-        name: "Sydney",
-        lat: -33.8688,
-        lng: 151.2093,
-        zoom: 8
-    }
+  AU: {
+    name: "Sydney",
+    lat: -33.8688,
+    lng: 151.2093,
+    zoom: 8,
+  },
 };
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+document.addEventListener("DOMContentLoaded", function () {
+  navigator.geolocation.getCurrentPosition(
+    // =====================================
+    // GPS SUCCESS
+    // =====================================
 
-        navigator.geolocation.getCurrentPosition(
+    function (position) {
+      const lat = position.coords.latitude;
 
-            // =====================================
-            // GPS SUCCESS
-            // =====================================
+      const lng = position.coords.longitude;
 
-            function (position) {
+      console.log("GPS:", lat, lng);
 
-                const lat =
-                    position.coords.latitude;
+      const geocoder = new google.maps.Geocoder();
 
-                const lng =
-                    position.coords.longitude;
+      // =====================================
+      // REVERSE GEOCODE
+      // =====================================
 
-                console.log(
-                    "GPS:",
-                    lat,
-                    lng
-                );
+      geocoder.geocode(
+        {
+          location: {
+            lat: lat,
+            lng: lng,
+          },
+        },
 
-                const geocoder =
-                    new google.maps.Geocoder();
+        function (results, status) {
+          if (status !== "OK" || !results || !results.length) {
+            console.log("Không xác định được quốc gia");
 
+            // ==========================
+            // FALLBACK VIỆT NAM
+            // ==========================
 
-                // =====================================
-                // REVERSE GEOCODE
-                // =====================================
+            initMapByCountry(14.0583, 108.2772, "VN");
 
-                geocoder.geocode(
-                    {
-                        location: {
-                            lat: lat,
-                            lng: lng
-                        }
-                    },
+            return;
+          }
 
-                    function (
-                        results,
-                        status
-                    ) {
+          // =================================
+          // TÌM COUNTRY
+          // =================================
 
-                        if (
-                            status !== "OK" ||
-                            !results ||
-                            !results.length
-                        ) {
+          const countryResult = results.find(function (result) {
+            return result.types && result.types.includes("country");
+          });
 
-                            console.log(
-                                "Không xác định được quốc gia"
-                            );
+          if (!countryResult) {
+            console.log("Không tìm thấy country");
 
-                            // ==========================
-                            // FALLBACK VIỆT NAM
-                            // ==========================
+            initMapByCountry(14.0583, 108.2772, "VN");
 
-                            initMapByCountry(
-                                14.0583,
-                                108.2772,
-                                "VN"
-                            );
+            return;
+          }
 
-                            return;
-                        }
+          // =================================
+          // COUNTRY NAME + CODE
+          // =================================
 
+          let countryName = "";
 
-                        // =================================
-                        // TÌM COUNTRY
-                        // =================================
+          let countryCode = "";
 
-                        const countryResult =
-                            results.find(
-                                function (result) {
+          countryResult.address_components.forEach(function (component) {
+            if (component.types && component.types.includes("country")) {
+              countryName = component.long_name;
 
-                                    return (
-                                        result.types &&
-                                        result.types.includes(
-                                            "country"
-                                        )
-                                    );
-
-                                }
-                            );
-
-
-                        if (!countryResult) {
-
-                            console.log(
-                                "Không tìm thấy country"
-                            );
-
-                            initMapByCountry(
-                                14.0583,
-                                108.2772,
-                                "VN"
-                            );
-
-                            return;
-                        }
-
-
-                        // =================================
-                        // COUNTRY NAME + CODE
-                        // =================================
-
-                        let countryName = "";
-
-                        let countryCode = "";
-
-
-                        countryResult
-                            .address_components
-                            .forEach(
-                                function (component) {
-
-                                    if (
-                                        component.types &&
-                                        component.types.includes(
-                                            "country"
-                                        )
-                                    ) {
-
-                                        countryName =
-                                            component.long_name;
-
-                                        countryCode =
-                                            component.short_name;
-
-                                    }
-
-                                }
-                            );
-
-
-                        // =================================
-                        // COUNTRY LOCATION
-                        // =================================
-
-                        const location =
-                            countryResult
-                                .geometry
-                                .location;
-
-
-                        const countryLat =
-                            location.lat();
-
-
-                        const countryLng =
-                            location.lng();
-
-
-                        console.log(
-                            "Country:",
-                            countryName
-                        );
-
-                        console.log(
-                            "Country Code:",
-                            countryCode
-                        );
-
-                        console.log(
-                            "Country Center:",
-                            countryLat,
-                            countryLng
-                        );
-
-
-                        // =================================
-                        // INIT MAP
-                        // =================================
-
-                        initMapByCountry(
-
-                            countryLat,
-
-                            countryLng,
-
-                            countryCode
-
-                        );
-
-                    }
-                );
-            },
-
-
-            // =====================================
-            // GPS ERROR
-            // =====================================
-
-            function (error) {
-
-                console.log(
-                    "Không lấy được GPS:",
-                    error.message
-                );
-
-
-                // =================================
-                // FALLBACK VIỆT NAM
-                // =================================
-
-                initMapByCountry(
-                    14.0583,
-                    108.2772,
-                    "VN"
-                );
-
-            },
-
-
-            // =====================================
-            // GPS OPTIONS
-            // =====================================
-
-            {
-                enableHighAccuracy: false,
-
-                timeout: 10000,
-
-                maximumAge: 300000
+              countryCode = component.short_name;
             }
+          });
 
-        );
+          // =================================
+          // COUNTRY LOCATION
+          // =================================
 
-    }
-);
+          const location = countryResult.geometry.location;
+
+          const countryLat = location.lat();
+
+          const countryLng = location.lng();
+
+          console.log("Country:", countryName);
+
+          console.log("Country Code:", countryCode);
+
+          console.log("Country Center:", countryLat, countryLng);
+
+          // =================================
+          // INIT MAP
+          // =================================
+
+          initMapByCountry(
+            countryLat,
+
+            countryLng,
+
+            countryCode,
+          );
+        },
+      );
+    },
+
+    // =====================================
+    // GPS ERROR
+    // =====================================
+
+    function (error) {
+      console.log("Không lấy được GPS:", error.message);
+
+      // =================================
+      // FALLBACK VIỆT NAM
+      // =================================
+
+      initMapByCountry(14.0583, 108.2772, "VN");
+    },
+
+    // =====================================
+    // GPS OPTIONS
+    // =====================================
+
+    {
+      enableHighAccuracy: false,
+
+      timeout: 10000,
+
+      maximumAge: 300000,
+    },
+  );
+});
 
 async function initMapByCountry(countryLat, countryLng, countryCode) {
+  let center = {
+    lat: Number(countryLat),
+    lng: Number(countryLng),
+  };
 
-    let center = {
-        lat: Number(countryLat),
-        lng: Number(countryLng)
+  let zoom = 7;
+
+  // Thành phố lớn/đại diện của quốc gia
+  const city = majorCities[countryCode];
+
+  if (city) {
+    center = {
+      lat: city.lat,
+      lng: city.lng,
     };
 
-    let zoom = 7;
+    zoom = city.zoom;
 
-    // Thành phố lớn/đại diện của quốc gia
-    const city = majorCities[countryCode];
+    console.log("Major city:", city.name);
+  }
 
-    if (city) {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: center,
 
-        center = {
-            lat: city.lat,
-            lng: city.lng
-        };
+    zoom: zoom,
 
-        zoom = city.zoom;
+    mapTypeControl: false,
 
-        console.log(
-            "Major city:",
-            city.name
-        );
-    }
+    gestureHandling: "greedy",
 
-    map = new google.maps.Map(
-        document.getElementById("map"),
-        {
-            center: center,
+    scrollwheel: true,
 
-            zoom: zoom,
+    draggable: true,
 
-            mapTypeControl: false,
+    streetViewControl: false,
 
-            gestureHandling: "greedy",
+    fullscreenControl: false,
+  });
 
-            scrollwheel: true,
+  service = new google.maps.places.PlacesService(map);
 
-            draggable: true,
+  // Không tạo GPS marker
+  marker = null;
 
-            streetViewControl: false,
+  trafficLayer = new google.maps.TrafficLayer();
 
-            fullscreenControl: false
-        }
-    );
+  transitLayer = new google.maps.TransitLayer();
 
-    service =
-        new google.maps.places.PlacesService(map);
+  bikeLayer = new google.maps.BicyclingLayer();
 
-    // Không tạo GPS marker
-    marker = null;
+  if (!layerControlsInitialized) {
+    initLayerControls();
 
-    trafficLayer =
-        new google.maps.TrafficLayer();
-
-    transitLayer =
-        new google.maps.TransitLayer();
-
-    bikeLayer =
-        new google.maps.BicyclingLayer();
-
-    if (!layerControlsInitialized) {
-
-        initLayerControls();
-
-        layerControlsInitialized = true;
-    }
+    layerControlsInitialized = true;
+  }
 }
 
+async function initMapByCountry(countryLat, countryLng, countryCode) {
+  // =========================
+  // MẶC ĐỊNH
+  // =========================
 
-async function initMapByCountry(
-    countryLat,
-    countryLng,
-    countryCode
-) {
+  let center = {
+    lat: Number(countryLat),
+    lng: Number(countryLng),
+  };
 
-    // =========================
-    // MẶC ĐỊNH
-    // =========================
+  let zoom = 6;
 
-    let center = {
-        lat: Number(countryLat),
-        lng: Number(countryLng)
+  // =========================
+  // TÌM THÀNH PHỐ MẶC ĐỊNH
+  // =========================
+
+  const city = majorCities[countryCode];
+
+  if (city) {
+    center = {
+      lat: city.lat,
+      lng: city.lng,
     };
 
-    let zoom = 6;
+    zoom = city.zoom;
 
-    // =========================
-    // TÌM THÀNH PHỐ MẶC ĐỊNH
-    // =========================
+    console.log("Default city:", city.name);
+  } else {
+    console.log("Không có thành phố mặc định cho:", countryCode);
+  }
 
-    const city = majorCities[countryCode];
+  // =========================
+  // CREATE MAP
+  // =========================
 
-    if (city) {
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: center,
 
-        center = {
-            lat: city.lat,
-            lng: city.lng
-        };
+    zoom: zoom,
 
-        zoom = city.zoom;
+    mapTypeControl: false,
 
-        console.log(
-            "Default city:",
-            city.name
-        );
+    gestureHandling: "greedy",
 
-    } else {
+    scrollwheel: true,
 
-        console.log(
-            "Không có thành phố mặc định cho:",
-            countryCode
-        );
+    draggable: true,
 
-    }
+    streetViewControl: false,
 
-    // =========================
-    // CREATE MAP
-    // =========================
+    fullscreenControl: false,
+  });
 
-    map = new google.maps.Map(
-        document.getElementById("map"),
-        {
+  // =========================
+  // PLACES SERVICE
+  // =========================
 
-            center: center,
+  service = new google.maps.places.PlacesService(map);
 
-            zoom: zoom,
+  // =========================
+  // KHÔNG TẠO GPS MARKER
+  // =========================
 
-            mapTypeControl: false,
+  marker = null;
 
-            gestureHandling: "greedy",
+  // =========================
+  // LAYERS
+  // =========================
 
-            scrollwheel: true,
+  trafficLayer = new google.maps.TrafficLayer();
 
-            draggable: true,
+  transitLayer = new google.maps.TransitLayer();
 
-            streetViewControl: false,
+  bikeLayer = new google.maps.BicyclingLayer();
 
-            fullscreenControl: false
-        }
-    );
+  // =========================
+  // LAYER CONTROL
+  // =========================
 
-    // =========================
-    // PLACES SERVICE
-    // =========================
+  if (!layerControlsInitialized) {
+    initLayerControls();
 
-    service =
-        new google.maps.places.PlacesService(map);
+    layerControlsInitialized = true;
+  }
 
-    // =========================
-    // KHÔNG TẠO GPS MARKER
-    // =========================
-
-    marker = null;
-
-    // =========================
-    // LAYERS
-    // =========================
-
-    trafficLayer =
-        new google.maps.TrafficLayer();
-
-    transitLayer =
-        new google.maps.TransitLayer();
-
-    bikeLayer =
-        new google.maps.BicyclingLayer();
-
-    // =========================
-    // LAYER CONTROL
-    // =========================
-
-    if (!layerControlsInitialized) {
-
-        initLayerControls();
-
-        layerControlsInitialized = true;
-    }
-
-    console.log(
-        "Map initialized:",
-        countryCode,
-        center,
-        zoom
-    );
+  console.log("Map initialized:", countryCode, center, zoom);
 }
 
 async function initMap(userLat, userLng) {
@@ -607,7 +462,7 @@ async function initMap(userLat, userLng) {
     mapTypeControl: false,
     gestureHandling: "greedy",
     scrollwheel: true,
-    draggable: true
+    draggable: true,
   });
 
   service = new google.maps.places.PlacesService(map);
@@ -664,7 +519,7 @@ async function initMap(userLat, userLng) {
     // Tự tìm quanh vị trí mới
     loadNearbyPlaces(
       place.geometry.location.lat(),
-      place.geometry.location.lng()
+      place.geometry.location.lng(),
     );
   });
 
@@ -678,7 +533,7 @@ async function initMap(userLat, userLng) {
       zoom: 15,
       gestureHandling: "greedy",
       scrollwheel: true,
-      draggable: true
+      draggable: true,
     });
 
     trafficLayer = new google.maps.TrafficLayer();
@@ -695,9 +550,8 @@ async function initMap(userLat, userLng) {
 window.initMap = initMap;
 
 document.getElementById("find-btn").addEventListener("click", function () {
-  
   const keyword = document.getElementById("pac-input").value.trim();
-  const aiPanel = document.getElementById('ai-result-panel');
+  const aiPanel = document.getElementById("ai-result-panel");
   // const googleMode = document.getElementById("googleSearchMode").checked;
 
   if (!keyword) {
@@ -705,58 +559,58 @@ document.getElementById("find-btn").addEventListener("click", function () {
     return;
   }
 
-// if (googleMode) {
-  
-//     document.getElementById("search-wrapper").style.display = "none";
+  // if (googleMode) {
 
-//     document.getElementById("ai-result-panel").style.display = "block";
+  //     document.getElementById("search-wrapper").style.display = "none";
 
-//     document.getElementById("ai-loading").style.display = "flex";
+  //     document.getElementById("ai-result-panel").style.display = "block";
 
-//     document.getElementById("ai-result-content").innerHTML = "";
+  //     document.getElementById("ai-loading").style.display = "flex";
 
-//     fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/x-www-form-urlencoded"
-//         },
-//         body: new URLSearchParams({
-//             action: "pt_ai_search",
-//             question: keyword
-//         })
-//     })
-//     .then(r => r.json())
-//     .then(res => {
+  //     document.getElementById("ai-result-content").innerHTML = "";
 
-//         document.getElementById("ai-loading").style.display = "none";
+  //     fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
+  //         method: "POST",
+  //         headers: {
+  //             "Content-Type": "application/x-www-form-urlencoded"
+  //         },
+  //         body: new URLSearchParams({
+  //             action: "pt_ai_search",
+  //             question: keyword
+  //         })
+  //     })
+  //     .then(r => r.json())
+  //     .then(res => {
 
-//         document.getElementById("ai-result-content").innerHTML =
-//             res.data.answer;
+  //         document.getElementById("ai-loading").style.display = "none";
 
-//     })
-//     .catch(err => {
+  //         document.getElementById("ai-result-content").innerHTML =
+  //             res.data.answer;
 
-//         document.getElementById("ai-loading").style.display = "none";
+  //     })
+  //     .catch(err => {
 
-//         document.getElementById("ai-result-content").innerHTML =
-//             "❌ Không thể kết nối Gemini";
+  //         document.getElementById("ai-loading").style.display = "none";
 
-//         console.error(err);
-//     });
+  //         document.getElementById("ai-result-content").innerHTML =
+  //             "❌ Không thể kết nối Gemini";
 
-//     return;
-// }
+  //         console.error(err);
+  //     });
+
+  //     return;
+  // }
   document.getElementById("search-wrapper").style.display = "block";
   // document.getElementById("ai-result-panel").style.display = "none";
 
-  const resultWrapper = document.querySelector('.result-wrapper');
+  const resultWrapper = document.querySelector(".result-wrapper");
 
   if (resultWrapper) {
-      resultWrapper.style.display = 'block';
+    resultWrapper.style.display = "block";
   }
 
   if (aiPanel) {
-      aiPanel.style.display = 'none';
+    aiPanel.style.display = "none";
   }
 
   searchPlaces(keyword);
@@ -766,7 +620,7 @@ function initLayerControls() {
   const toggleBtn = document.getElementById("layers-toggle");
 
   const menu = document.getElementById("layers-menu");
-  
+
   toggleBtn.addEventListener("click", function () {
     menu.classList.toggle("show");
 
@@ -809,88 +663,65 @@ function initLayerControls() {
 }
 
 function searchPlaces() {
-  const keyword = document
-    .getElementById("pac-input")
-    .value
-    .trim();
+  const keyword = document.getElementById("pac-input").value.trim();
 
   if (!keyword) {
     return;
   }
 
-  const service =
-    new google.maps.places.PlacesService(map);
+  const service = new google.maps.places.PlacesService(map);
 
   service.textSearch(
     {
-      query: keyword
+      query: keyword,
     },
     function (results, status) {
-
-if (status !== google.maps.places.PlacesServiceStatus.OK) {
-    console.error("Places Error:", status);
-    return;
-}
+      if (status !== google.maps.places.PlacesServiceStatus.OK) {
+        console.error("Places Error:", status);
+        return;
+      }
 
       // Xóa marker cũ
-      markers.forEach(marker => {
+      markers.forEach((marker) => {
         marker.setMap(null);
       });
 
       markers = [];
 
-      const bounds =
-        new google.maps.LatLngBounds();
+      const bounds = new google.maps.LatLngBounds();
 
-      results.forEach(place => {
-
+      results.forEach((place) => {
         if (!place.geometry) {
           return;
         }
 
-        const marker =
-          new google.maps.Marker({
-            position:
-              place.geometry.location,
-            map: map,
-            title: place.name
-          });
+        const marker = new google.maps.Marker({
+          position: place.geometry.location,
+          map: map,
+          title: place.name,
+        });
 
         markers.push(marker);
 
-        bounds.extend(
-          place.geometry.location
-        );
+        bounds.extend(place.geometry.location);
 
         marker.addListener("click", () => {
-
-          loadPlaceDetails(
-            place.place_id
-          );
-
+          loadPlaceDetails(place.place_id);
         });
-
       });
 
       // Zoom về khu vực kết quả
       if (results.length > 1) {
-
         map.fitBounds(bounds);
-
       } else {
-
-        map.setCenter(
-          results[0].geometry.location
-        );
+        map.setCenter(results[0].geometry.location);
 
         map.setZoom(16);
-
       }
 
       // Render list bên trái
       renderResults(results);
-
-    }
+    },
   );
 }
 
@@ -946,8 +777,9 @@ function renderResults(results) {
                     <h3>${place.name}</h3>
 
                     <div class="rating">
-                        <i class="fa-solid fa-star" style="color: #ff7200;"></i> ${place.rating || "-"
-      }
+                        <i class="fa-solid fa-star" style="color: #ff7200;"></i> ${
+                          place.rating || "-"
+                        }
                     </div>
 
                     <div class="address">
@@ -1023,7 +855,7 @@ function searchByType(type) {
       if (status === google.maps.places.PlacesServiceStatus.OK) {
         renderResults(results);
       }
-    }
+    },
   );
 }
 
@@ -1035,176 +867,701 @@ document.querySelectorAll(".cat-btn[data-type]").forEach((btn) => {
   });
 });
 
+
+
+
+
 function loadPlaceDetails(placeId, marker) {
-  const service = new google.maps.places.PlacesService(map);
 
-  service.getDetails(
-    {
-      placeId: placeId,
+    const service =
+        new google.maps.places.PlacesService(map);
 
-      fields: [
-        "name",
-        "formatted_address",
-        "formatted_phone_number",
-        "website",
-        "rating",
-        "user_ratings_total",
-        "opening_hours",
-        "photos",
-        "url",
-      ],
-    },
-    function (place, status) {
-      if (status !== google.maps.places.PlacesServiceStatus.OK) {
-        return;
-      }
+    service.getDetails(
+        {
+            placeId: placeId,
 
-      const photo = place.photos?.[0]
-        ? place.photos[0].getUrl({
-          maxWidth: 800,
-          maxHeight: 400,
-        })
-        : "";
+            fields: [
+                "name",
+                "formatted_address",
+                "formatted_phone_number",
+                "website",
+                "rating",
+                "user_ratings_total",
+                "opening_hours",
+                "photos",
+                "url",
+                "types"
+            ]
+        },
 
-      if (infoWindow) {
-        infoWindow.close();
-      }
+        function (place, status) {
 
-      infoWindow = new google.maps.InfoWindow({
-        maxWidth: 700,
-        content: `
-<div class="gm-place-card">
+            if (
+                status !==
+                google.maps.places.PlacesServiceStatus.OK
+            ) {
+                console.error(
+                    "Place details error:",
+                    status
+                );
 
-    ${photo ? `
-    <div class="gm-cover">
-        <img src="${photo}">
-    </div>
-    ` : ""}
+                return;
+            }
 
-    <div class="gm-body">
 
-        <h2 class="gm-title">
-            ${place.name}
-        </h2>
+            /*
+             * RESULT PANEL
+             */
+            const resultPanel =
+                document.querySelector(".result-wrapper");
 
-        <div class="gm-rating">
-            <i class="fa-solid fa-star"></i>
-            <span>${place.rating || "-"}</span>
-            <small>
-                (${place.user_ratings_total || 0} reviews)
-            </small>
-        </div>
+            if (!resultPanel) {
 
-        <div class="gm-address">
-            <i class="fa-solid fa-location-dot"></i>
-            <span>${place.formatted_address || ""}</span>
-        </div>
+                console.error(
+                    ".result-wrapper not found"
+                );
 
-        <div class="gm-tabs">
+                return;
+            }
 
-            <button
-                class="gm-tab active"
-                data-tab="info">
-                Info
-            </button>
 
-            <button
-                class="gm-tab gm-picture-btn"
-                data-tab="picture"
-                data-placeid="${placeId}">
-                Picture
-            </button>
+            /*
+             * LẤY / TẠO POPUP
+             */
+            let popup =
+                document.getElementById(
+                    "gm-place-popup"
+                );
 
-            <button
-                class="gm-tab"
-                data-tab="video"
-                data-placeid="${placeId}">
-                Video
-            </button>
 
-            <button
-                class="gm-tab"
-                data-tab="live"
-                data-placeid="${placeId}">
-                Live
-            </button>
+            if (!popup) {
 
-        </div>
+                popup =
+                    document.createElement("div");
 
-        <div class="gm-tab-content">
+                popup.id =
+                    "gm-place-popup";
 
-            <div id="tab-info" class="gm-pane active">
+                popup.className =
+                    "gm-place-popup";
 
-                ${place.website
-            ? `
-                    <div class="gm-link">
+                resultPanel.appendChild(popup);
+            }
+
+
+            /*
+             * PHOTO
+             */
+            const photo =
+                place.photos?.[0]
+                    ? place.photos[0].getUrl({
+                        maxWidth: 800,
+                        maxHeight: 500
+                    })
+                    : "";
+
+
+            /*
+             * TYPE
+             */
+            let placeType = "Place";
+
+            if (place.types?.length) {
+
+                const type =
+                    place.types.find(
+                        t =>
+                            ![
+                                "point_of_interest",
+                                "establishment"
+                            ].includes(t)
+                    );
+
+                if (type) {
+
+                    placeType =
+                        type
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, c =>
+                                c.toUpperCase()
+                            );
+                }
+            }
+
+
+            /*
+             * OPENING HOURS
+             */
+            let hoursHTML = "";
+
+            if (
+                place.opening_hours &&
+                place.opening_hours.weekday_text
+            ) {
+
+                hoursHTML = `
+                    <div class="gm-popup-row">
+
+                        <i class="fa-regular fa-clock"></i>
+
+                        <div>
+
+                            ${place.opening_hours.weekday_text
+                                .map(day => `
+                                    <div>
+                                        ${day}
+                                    </div>
+                                `)
+                                .join("")
+                            }
+
+                        </div>
+
+                    </div>
+                `;
+            }
+
+
+            /*
+             * WEBSITE
+             */
+            const websiteHTML =
+                place.website
+                    ? `
+                    <div class="gm-popup-row">
+
                         <i class="fa-solid fa-globe"></i>
-                        <a href="${place.website}" target="_blank">
-                            Website
-                        </a>
+
+                        <div>
+
+                            <a
+                                href="${place.website}"
+                                target="_blank"
+                                rel="noopener">
+                                ${place.website}
+                            </a>
+
+                        </div>
+
                     </div>
                     `
-            : ""
-          }
+                    : "";
 
-                ${place.opening_hours
-            ? `
-                    <div class="gm-hours">
-                        ${place.opening_hours.weekday_text
-              .map(
-                item => `
-                            <div class="gm-hour-row">
-                                ${item}
+
+            /*
+             * PHONE
+             */
+            const phoneHTML =
+                place.formatted_phone_number
+                    ? `
+                    <div class="gm-popup-row">
+
+                        <i class="fa-solid fa-phone"></i>
+
+                        <div>
+                            ${place.formatted_phone_number}
+                        </div>
+
+                    </div>
+                    `
+                    : "";
+
+
+            /*
+             * RENDER POPUP
+             */
+            popup.innerHTML = `
+
+                <button
+                    type="button"
+                    class="gm-popup-close"
+                    id="gm-popup-close">
+
+                    <i class="fa-solid fa-xmark"></i>
+
+                </button>
+
+
+                ${
+                    photo
+                        ? `
+                        <div class="gm-popup-cover">
+
+                            <img
+                                src="${photo}"
+                                alt="${place.name}">
+
+                        </div>
+                        `
+                        : ""
+                }
+
+
+                <div class="gm-popup-body">
+
+
+                    <!-- TITLE -->
+
+                    <h2 class="gm-popup-title">
+                        ${place.name}
+                    </h2>
+
+
+                    <!-- RATING -->
+
+                    <div class="gm-popup-rating">
+
+                        <span>
+                            ${place.rating || "-"}
+                        </span>
+
+                        <i class="fa-solid fa-star"></i>
+
+                        <span>
+                            ${place.user_ratings_total || 0}
+                        </span>
+
+                    </div>
+
+
+                    <!-- TYPE -->
+
+                    <div class="gm-popup-type">
+                        ${placeType}
+                    </div>
+
+
+                    <!-- TABS -->
+
+                    <div class="gm-popup-tabs">
+
+                        <button
+                            class="gm-popup-tab active"
+                            data-popup-tab="overview">
+
+                            Overview
+
+                        </button>
+
+                        <button
+                            class="gm-popup-tab"
+                            data-popup-tab="picture">
+
+                            Picture
+
+                        </button>
+
+                        <button
+                            class="gm-popup-tab"
+                            data-popup-tab="video">
+
+                            Video
+
+                        </button>
+
+                        <button
+                            class="gm-popup-tab"
+                            data-popup-tab="live">
+
+                            Live
+
+                        </button>
+
+                    </div>
+
+
+                    <!-- ACTIONS -->
+
+                    <div class="gm-popup-actions">
+
+
+                        <div class="gm-popup-action">
+
+                            <div class="gm-popup-action-icon">
+
+                                <i class="fa-solid fa-diamond-turn-right"></i>
+
                             </div>
-                            `
-              )
-              .join("")}
+
+                            Directions
+
+                        </div>
+
+
+                        <div class="gm-popup-action">
+
+                            <div class="gm-popup-action-icon">
+
+                                <i class="fa-regular fa-bookmark"></i>
+
+                            </div>
+
+                            Save
+
+                        </div>
+
+
+                        <div class="gm-popup-action">
+
+                            <div class="gm-popup-action-icon">
+
+                                <i class="fa-solid fa-location-crosshairs"></i>
+
+                            </div>
+
+                            Nearby
+
+                        </div>
+
+
+                        <div class="gm-popup-action">
+
+                            <div class="gm-popup-action-icon">
+
+                                <i class="fa-solid fa-share-nodes"></i>
+
+                            </div>
+
+                            Share
+
+                        </div>
+
+
                     </div>
-                    `
-            : ""
-          }
 
-                <div class="gm-map-link">
-                    <a href="${place.url}" target="_blank">
-                        View on Google Maps
-                    </a>
+
+                    <!-- INFO -->
+
+                    <div class="gm-popup-info">
+
+
+                        <!-- ADDRESS -->
+
+                        <div class="gm-popup-row">
+
+                            <i class="fa-solid fa-location-dot"></i>
+
+                            <div>
+                                ${place.formatted_address || ""}
+                            </div>
+
+                        </div>
+
+
+                        <!-- PHONE -->
+
+                        ${phoneHTML}
+
+
+                        <!-- WEBSITE -->
+
+                        ${websiteHTML}
+
+
+                        <!-- HOURS -->
+
+                        ${hoursHTML}
+
+
+                        <!-- GOOGLE MAP -->
+
+                        ${
+                            place.url
+                                ? `
+                                <div class="gm-popup-row">
+
+                                    <i class="fa-solid fa-map"></i>
+
+                                    <div>
+
+                                        <a
+                                            href="${place.url}"
+                                            target="_blank"
+                                            rel="noopener">
+
+                                            View on Google Maps
+
+                                        </a>
+
+                                    </div>
+
+                                </div>
+                                `
+                                : ""
+                        }
+
+
+                    </div>
+
                 </div>
 
-            </div>
+            `;
 
-            <div id="tab-picture" class="gm-pane">
-                <div class="gm-loading">
-                    Click Picture to load photos
-                </div>
-            </div>
 
-            <div id="tab-video" class="gm-pane">
-                <div class="gm-loading">
-                    No videos yet
-                </div>
-            </div>
+            /*
+             * HIỆN POPUP
+             */
+            popup.classList.add("show");
 
-            <div id="tab-live" class="gm-pane">
-                <div class="gm-loading">
-                    No livestream
-                </div>
-            </div>
 
-        </div>
+            /*
+             * CLOSE
+             */
+            const closeBtn =
+                document.getElementById(
+                    "gm-popup-close"
+                );
 
-    </div>
 
-</div>
-`
-      });
+            if (closeBtn) {
 
-      infoWindow.open({
-        anchor: marker,
-        map: map,
-      });
-    }
-  );
+                closeBtn.addEventListener(
+                    "click",
+                    function () {
+
+                        popup.classList.remove(
+                            "show"
+                        );
+
+                    }
+                );
+
+            }
+
+
+            /*
+             * TAB
+             */
+            popup
+                .querySelectorAll(
+                    ".gm-popup-tab"
+                )
+                .forEach(function (tab) {
+
+                    tab.addEventListener(
+                        "click",
+                        function () {
+
+                            popup
+                                .querySelectorAll(
+                                    ".gm-popup-tab"
+                                )
+                                .forEach(t =>
+                                    t.classList.remove(
+                                        "active"
+                                    )
+                                );
+
+                            this.classList.add(
+                                "active"
+                            );
+
+
+                            const tabName =
+                                this.dataset.popupTab;
+
+
+                            console.log(
+                                "Selected tab:",
+                                tabName
+                            );
+
+                        }
+                    );
+
+                });
+
+
+            /*
+             * CENTER MAP VÀO MARKER
+             */
+            if (marker) {
+
+                map.panTo(
+                    marker.getPosition()
+                );
+
+            }
+
+        }
+    );
 }
+// function loadPlaceDetails(placeId, marker) {
+//   const service = new google.maps.places.PlacesService(map);
+
+//   service.getDetails(
+//     {
+//       placeId: placeId,
+
+//       fields: [
+//         "name",
+//         "formatted_address",
+//         "formatted_phone_number",
+//         "website",
+//         "rating",
+//         "user_ratings_total",
+//         "opening_hours",
+//         "photos",
+//         "url",
+//       ],
+//     },
+//     function (place, status) {
+//       if (status !== google.maps.places.PlacesServiceStatus.OK) {
+//         return;
+//       }
+
+//       const photo = place.photos?.[0]
+//         ? place.photos[0].getUrl({
+//             maxWidth: 800,
+//             maxHeight: 400,
+//           })
+//         : "";
+
+//       if (infoWindow) {
+//         infoWindow.close();
+//       }
+
+//       infoWindow = new google.maps.InfoWindow({
+//         maxWidth: 700,
+//         content: `
+//       <div class="gm-place-card">
+
+//     ${
+//       photo
+//         ? `
+//     <div class="gm-cover">
+//         <img src="${photo}">
+//     </div>
+//     `
+//         : ""
+//     }
+
+//     <div class="gm-body">
+
+//         <h2 class="gm-title">
+//             ${place.name}
+//         </h2>
+
+//         <div class="gm-rating">
+//             <i class="fa-solid fa-star"></i>
+//             <span>${place.rating || "-"}</span>
+//             <small>
+//                 (${place.user_ratings_total || 0} reviews)
+//             </small>
+//         </div>
+
+//         <div class="gm-address">
+//             <i class="fa-solid fa-location-dot"></i>
+//             <span>${place.formatted_address || ""}</span>
+//         </div>
+
+//         <div class="gm-tabs">
+
+//             <button
+//                 class="gm-tab active"
+//                 data-tab="info">
+//                 Info
+//             </button>
+
+//             <button
+//                 class="gm-tab gm-picture-btn"
+//                 data-tab="picture"
+//                 data-placeid="${placeId}">
+//                 Picture
+//             </button>
+
+//             <button
+//                 class="gm-tab"
+//                 data-tab="video"
+//                 data-placeid="${placeId}">
+//                 Video
+//             </button>
+
+//             <button
+//                 class="gm-tab"
+//                 data-tab="live"
+//                 data-placeid="${placeId}">
+//                 Live
+//             </button>
+
+//         </div>
+
+//         <div class="gm-tab-content">
+
+//             <div id="tab-info" class="gm-pane active">
+
+//                 ${
+//                   place.website
+//                     ? `
+//                     <div class="gm-link">
+//                         <i class="fa-solid fa-globe"></i>
+//                         <a href="${place.website}" target="_blank">
+//                             Website
+//                         </a>
+//                     </div>
+//                     `
+//                     : ""
+//                 }
+
+//                 ${
+//                   place.opening_hours
+//                     ? `
+//                     <div class="gm-hours">
+//                         ${place.opening_hours.weekday_text
+//                           .map(
+//                             (item) => `
+//                             <div class="gm-hour-row">
+//                                 ${item}
+//                             </div>
+//                             `,
+//                           )
+//                           .join("")}
+//                     </div>
+//                     `
+//                     : ""
+//                 }
+
+//                 <div class="gm-map-link">
+//                     <a href="${place.url}" target="_blank">
+//                         View on Google Maps
+//                     </a>
+//                 </div>
+
+//             </div>
+
+//             <div id="tab-picture" class="gm-pane">
+//                 <div class="gm-loading">
+//                     Click Picture to load photos
+//                 </div>
+//             </div>
+
+//             <div id="tab-video" class="gm-pane">
+//                 <div class="gm-loading">
+//                     No videos yet
+//                 </div>
+//             </div>
+
+//             <div id="tab-live" class="gm-pane">
+//                 <div class="gm-loading">
+//                     No livestream
+//                 </div>
+//             </div>
+
+//         </div>
+
+//     </div>
+
+// </div>
+// `,
+//       });
+
+//       infoWindow.open({
+//         anchor: marker,
+//         map: map,
+//       });
+//     },
+//   );
+// }
 
 document.querySelectorAll('input[name="maptype"]').forEach((radio) => {
   radio.addEventListener("change", function () {
@@ -1318,7 +1675,7 @@ document.addEventListener("click", function (e) {
                     </div>
 
                 </div>
-                `
+                `,
       );
     }
 
@@ -1398,70 +1755,45 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
-function loadPlacePhotos(placeId){
+function loadPlacePhotos(placeId) {
+  const service = new google.maps.places.PlacesService(map);
 
-    const service =
-        new google.maps.places.PlacesService(map);
+  service.getDetails(
+    {
+      placeId: placeId,
 
-    service.getDetails({
+      fields: ["name", "photos"],
+    },
+    function (place, status) {
+      if (status !== google.maps.places.PlacesServiceStatus.OK) {
+        return;
+      }
 
-        placeId: placeId,
-
-        fields:[
-            "name",
-            "photos"
-        ]
-
-    }, function(place,status){
-
-        if(
-            status !==
-            google.maps.places
-            .PlacesServiceStatus.OK
-        ){
-            return;
-        }
-
-        fetch(
-            "https://dev.pt-solution.vn/wp-admin/admin-ajax.php?action=get_place_uploads&place_id="
-            + placeId
-        )
-        .then(r=>r.json())
-        .then(res=>{
-
-            renderPhotos(
-                place,
-                res.data || []
-            );
-
+      fetch(
+        "https://dev.pt-solution.vn/wp-admin/admin-ajax.php?action=get_place_uploads&place_id=" +
+          placeId,
+      )
+        .then((r) => r.json())
+        .then((res) => {
+          renderPhotos(place, res.data || []);
         });
-
-    });
-
+    },
+  );
 }
 
-function renderPhotos(
-    place,
-    uploads
-){
+function renderPhotos(place, uploads) {
+  const container = document.getElementById("gmPictureContent");
 
-    const container =
-        document.getElementById(
-            "gmPictureContent"
-        );
+  let html = "";
 
-    let html = '';
-
-    if(place.photos){
-
-        place.photos.forEach(photo => {
-
-            html += `
+  if (place.photos) {
+    place.photos.forEach((photo) => {
+      html += `
                 <div class="gm-photo-item">
 
                     <img
                         src="${photo.getUrl({
-                            maxWidth:1200
+                          maxWidth: 1200,
                         })}">
 
                     <span class="gm-badge">
@@ -1470,14 +1802,11 @@ function renderPhotos(
 
                 </div>
             `;
+    });
+  }
 
-        });
-
-    }
-
-    uploads.forEach(item => {
-
-        html += `
+  uploads.forEach((item) => {
+    html += `
             <div class="gm-photo-item">
 
                 <img
@@ -1492,160 +1821,103 @@ function renderPhotos(
 
             </div>
         `;
+  });
 
-    });
-
-    container.innerHTML = html;
-
+  container.innerHTML = html;
 }
 function normalizeSearch() {
-
-  return document
-    .getElementById("pac-input")
-    .value
-    .trim();
-
+  return document.getElementById("pac-input").value.trim();
 }
 
 document.addEventListener("click", function (e) {
-
-  const pictureBtn =
-    e.target.closest(".gm-picture-btn");
+  const pictureBtn = e.target.closest(".gm-picture-btn");
 
   if (!pictureBtn) {
     return;
   }
 
-  const placeId =
-    pictureBtn.dataset.placeid;
+  const placeId = pictureBtn.dataset.placeid;
 
   openPlacePictureDialog(placeId);
-
 });
 
 function openPlacePictureDialog(placeId) {
+  const dialog = document.getElementById("gmPictureDialog");
 
-  const dialog =
-    document.getElementById(
-      "gmPictureDialog"
-    );
-
-  dialog.dataset.placeid =
-    placeId;
+  dialog.dataset.placeid = placeId;
 
   dialog.classList.add("show");
 
-  document.getElementById(
-    "gmPictureContent"
-  ).innerHTML = `
+  document.getElementById("gmPictureContent").innerHTML = `
         <div class="gm-empty">
             Loading pictures...
         </div>
     `;
 
-  console.log(
-    "Open Picture Dialog:",
-    placeId
-  );
+  console.log("Open Picture Dialog:", placeId);
 
   loadPlacePhotos(placeId);
-
 }
 document.addEventListener("click", function (e) {
-
-  if (
-    e.target.id === "gmPictureClose" ||
-    e.target.closest("#gmPictureClose")
-  ) {
-
-    document
-      .getElementById(
-        "gmPictureDialog"
-      )
-      .classList.remove("show");
+  if (e.target.id === "gmPictureClose" || e.target.closest("#gmPictureClose")) {
+    document.getElementById("gmPictureDialog").classList.remove("show");
   }
-
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-
   document
     .getElementById("pac-input")
     .addEventListener("keypress", function (e) {
-
       if (e.key === "Enter") {
-
         searchPlaces();
-
       }
-
     });
-
 });
 
 /* Upload file */
 document.addEventListener("click", function (e) {
-
   if (
     e.target.id === "gmUploadPhotoBtn" ||
     e.target.closest("#gmUploadPhotoBtn")
   ) {
     document.getElementById("gmUploadPhotoFile").click();
   }
-
 });
 
 const uploadInput = document.getElementById("gmUploadPhotoFile");
-if (uploadInput) { 
-  document.getElementById("gmUploadPhotoFile").addEventListener("change", function () {
-
+if (uploadInput) {
+  document
+    .getElementById("gmUploadPhotoFile")
+    .addEventListener("change", function () {
       const file = this.files[0];
 
       if (!file) {
         return;
       }
 
-      const placeId = document.getElementById("gmPictureDialog").dataset.placeid;
+      const placeId =
+        document.getElementById("gmPictureDialog").dataset.placeid;
 
       const formData = new FormData();
 
-      formData.append(
-        "action",
-        "upload_place_photo"
-      );
+      formData.append("action", "upload_place_photo");
 
-      formData.append(
-        "place_id",
-        placeId
-      );
+      formData.append("place_id", placeId);
 
-      formData.append(
-        "photo",
-        file
-      );
+      formData.append("photo", file);
 
-      fetch(
-        "https://dev.pt-solution.vn/wp-admin/admin-ajax.php",
-        {
-          method: "POST",
-          body: formData
-        }
-      )
-        .then(r => r.json())
-        .then(res => {
-
+      fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
+        method: "POST",
+        body: formData,
+      })
+        .then((r) => r.json())
+        .then((res) => {
           if (res.success) {
-
             loadPlacePhotos(placeId);
-
           } else {
-
             alert(res.data);
-
           }
-
         });
-
     });
 }
 
@@ -1659,81 +1931,86 @@ if (uploadInput) {
 
 // });
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener("DOMContentLoaded", function () {
+  const aiButton = document.getElementById("ai-search-btn");
+  const searchInput = document.getElementById("pac-input");
+  const query = searchInput?.value.trim() || "";
 
-    const aiButton = document.getElementById('ai-search-btn');
-    const searchInput = document.getElementById('pac-input');
+  const aiPanel = document.getElementById("ai-result-panel");
+  const aiContent = document.getElementById("ai-result-content");
+  const closeButton = document.getElementById("close-ai-result");
 
-    const aiPanel = document.getElementById('ai-result-panel');
-    const aiContent = document.getElementById('ai-result-content');
-    const closeButton = document.getElementById('close-ai-result');
+  if (!aiButton) {
+    console.warn("ai-search-btn not found");
+    return;
+  }
 
+  /*
+   * CLICK SEARCH WITH GEMINI
+   */
+  aiButton.addEventListener("click", function (e) {
+    e.preventDefault();
 
-    if (!aiButton) {
-        console.warn('ai-search-btn not found');
-        return;
-    }
+    const searchInput = document.getElementById("pac-input");
 
+    const checksearchInput = searchInput?.value?.trim() || "";
 
     /*
-     * CLICK SEARCH WITH GEMINI
+     * Không có nội dung
      */
-    aiButton.addEventListener('click', function (e) {
+    if (!checksearchInput) {
+      alert("Please enter search content.");
 
-        e.preventDefault();
+      if (searchInput) {
+        searchInput.focus();
+      }
 
+      // Không hiện Gemini AI panel
+      return;
+    }
 
-        const resultWrapper = document.querySelector('.result-wrapper');
+    const resultWrapper = document.querySelector(".result-wrapper");
 
-        if (resultWrapper) {
-            resultWrapper.style.display = 'none';
-        }
+    if (resultWrapper) {
+      resultWrapper.style.display = "none";
+    }
 
-        if (aiPanel) {
-            aiPanel.style.display = 'block';
-        }
+    if (aiPanel) {
+      aiPanel.style.display = "block";
+    }
 
-        console.log('Gemini button clicked');
+    console.log("Gemini button clicked");
 
+    /*
+     * Lấy nội dung từ Search Google Maps
+     */
+    const query = searchInput ? searchInput.value.trim() : "";
 
-        /*
-         * Lấy nội dung từ Search Google Maps
-         */
-        const query = searchInput
-            ? searchInput.value.trim()
-            : '';
+    console.log("AI Search:", query);
 
+    /*
+     * Không có nội dung
+     */
+    if (!query) {
+      if (searchInput) {
+        searchInput.focus();
+      }
 
-        console.log('AI Search:', query);
+      return;
+    }
 
+    /*
+     * Hiện AI result panel
+     */
+    if (aiPanel) {
+      aiPanel.style.display = "block";
+    }
 
-        /*
-         * Không có nội dung
-         */
-        if (!query) {
-
-            if (searchInput) {
-                searchInput.focus();
-            }
-
-            return;
-        }
-
-
-        /*
-         * Hiện AI result panel
-         */
-        if (aiPanel) {
-            aiPanel.style.display = 'block';
-        }
-
-
-        /*
-         * Loading
-         */
-        if (aiContent) {
-
-            aiContent.innerHTML = `
+    /*
+     * Loading
+     */
+    if (aiContent) {
+      aiContent.innerHTML = `
                 <div class="ai-loading">
 
                     <i class="fa-solid fa-spinner fa-spin"></i>
@@ -1744,119 +2021,88 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 </div>
             `;
-
-        }
-
-
-        /*
-         * Disable button
-         */
-        aiButton.disabled = true;
-
-
-        /*
-         * CALL WORDPRESS AJAX
-         */
-        fetch(
-            'https://dev.pt-solution.vn/wp-admin/admin-ajax.php',
-            {
-
-                method: 'POST',
-
-                headers: {
-                    'Content-Type':
-                        'application/x-www-form-urlencoded; charset=UTF-8'
-                },
-
-                body: new URLSearchParams({
-                    action: 'pt_ai_search',
-                    query: query
-
-                }),
-                // 1000 giây
-                signal: AbortSignal.timeout(10000)
-            }
-        )
-
-
-        /*
-         * Response
-         */
-        .then(function (response) {
-
-            return response.json();
-
-        })
-
-
-        /*
-         * Gemini result
-         */
-.then(function (data) {
-
-    console.log('Gemini result:', data);
+    }
 
     /*
-     * ERROR
+     * Disable button
      */
-    if (!data.success) {
+    aiButton.disabled = true;
 
-        aiContent.innerHTML = `
+    /*
+     * CALL WORDPRESS AJAX
+     */
+    fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+
+      body: new URLSearchParams({
+        action: "pt_ai_search",
+        query: query,
+      }),
+    })
+      /*
+       * Response
+       */
+      .then(function (response) {
+        return response.json();
+      })
+
+      /*
+       * Gemini result
+       */
+      .then(function (data) {
+        console.log("Gemini result:", data);
+
+        /*
+         * ERROR
+         */
+        if (!data.success) {
+          aiContent.innerHTML = `
             <div class="ai-error">
                 <i class="fa-solid fa-circle-exclamation"></i>
 
                 <span>
-                    ${
-                        data.data?.message ||
-                        'Gemini search failed.'
-                    }
+                    ${data.data?.message || "Gemini search failed."}
                 </span>
             </div>
         `;
 
-        // Đảm bảo panel vẫn hiện để thấy lỗi
-        if (aiPanel) {
-            aiPanel.style.display = 'block';
+          // Đảm bảo panel vẫn hiện để thấy lỗi
+          if (aiPanel) {
+            aiPanel.style.display = "block";
+          }
+
+          return;
         }
 
-        return;
-    }
-
-
-    /*
-     * LẤY CONTENT GEMINI
-     */
-    const html = data.data?.html || 'No result.';
-
-
-    /*
-     * HIỂN THỊ CONTENT
-     */
-    aiContent.innerHTML = html;
-
-
-    /*
-     * HIỆN PANEL
-     */
-    if (aiPanel) {
-        aiPanel.style.display = 'block';
-    }
-
-})
-
+        /*
+         * LẤY CONTENT GEMINI
+         */
+        const html = data.data?.html || "No result.";
 
         /*
-         * Network error
+         * HIỂN THỊ CONTENT
          */
-        .catch(function (error) {
+        aiContent.innerHTML = html;
 
-            console.error(
-                'Gemini AJAX error:',
-                error
-            );
+        /*
+         * HIỆN PANEL
+         */
+        if (aiPanel) {
+          aiPanel.style.display = "block";
+        }
+      })
 
+      /*
+       * Network error
+       */
+      .catch(function (error) {
+        console.error("Gemini AJAX error:", error);
 
-            aiContent.innerHTML = `
+        aiContent.innerHTML = `
                 <div class="ai-error">
 
                     <i class="fa-solid fa-circle-exclamation"></i>
@@ -1867,39 +2113,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 </div>
             `;
+      })
 
-        })
+      /*
+       * Finish
+       */
+      .finally(function () {
+        aiButton.disabled = false;
+      });
+  });
 
-
-        /*
-         * Finish
-         */
-        .finally(function () {
-
-            aiButton.disabled = false;
-
-        });
-
+  /*
+   * CLOSE AI RESULT
+   */
+  if (closeButton) {
+    closeButton.addEventListener("click", function () {
+      if (aiPanel) {
+        aiPanel.style.display = "none";
+      }
     });
-
-
-    /*
-     * CLOSE AI RESULT
-     */
-    if (closeButton) {
-
-        closeButton.addEventListener(
-            'click',
-            function () {
-
-                if (aiPanel) {
-                    aiPanel.style.display = 'none';
-                }
-
-            }
-        );
-
-    }
-
+  }
 });
 /* END GEMINI SEARCH */

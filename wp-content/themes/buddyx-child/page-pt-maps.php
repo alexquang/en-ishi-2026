@@ -66,6 +66,8 @@ get_header();
             
             <div class="result-wrapper">
 
+            <div id="gm-place-popup" class="gm-place-popup"></div>
+
                 <div id="result-panel">
 
                     <div id="results" class="results-style"></div>
@@ -115,21 +117,6 @@ get_header();
      <!-- END GEMINI RESULT -->
 
         </div>
-
-
-        
-        <!-- <div id="ai-result-panel" style="display:none;">
-            <div class="ai-header">
-                ✨ AI Search
-                <span id="ai-close">✕</span>
-            </div>
-
-            <div id="ai-result-content"></div>
-            <div id="ai-loading" style="display:none;">
-            <div class="ai-spinner"></div>
-            <div>Gemini đang phân tích...</div>
-
-        </div> -->
 </div>
 
         <div id="map"></div>
@@ -184,7 +171,7 @@ get_header();
 </div>
 
 
-<div id="gmPictureDialog" class="gm-picture-dialog">
+<!-- <div id="gmPictureDialog" class="gm-picture-dialog">
 
     <div class="gm-picture-modal">
 
@@ -228,6 +215,6 @@ get_header();
 
     </div>
 
-</div>
+</div> -->
 
 <?php get_footer(); ?>
