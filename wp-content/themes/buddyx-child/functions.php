@@ -26,6 +26,16 @@ wp_localize_script(
     ]
 );
 
+add_action('http_api_curl', function ($handle) {
+
+    curl_setopt(
+        $handle,
+        CURLOPT_IPRESOLVE,
+        CURL_IPRESOLVE_V4
+    );
+
+});
+
 add_action('wp_footer', function () {
 ?>
     <script>
@@ -83,6 +93,18 @@ add_action('wp_enqueue_scripts', function () {
         null,
         true
     );
+
+
+
+        wp_localize_script(
+            $handle,
+            'ptMap',
+            [
+                'isLoggedIn' => is_user_logged_in(),
+                'ajax_url'   => admin_url('admin-ajax.php'),
+                'ai_nonce'   => wp_create_nonce('pt_ai_search_nonce')
+            ]
+        );
 }, 20);
 
 function buddyx_child_enqueue_styles()
@@ -118,30 +140,8 @@ if (get_stylesheet() !== get_template()) {
     );
 }
 
-// Register URL
-add_filter('register_url', function ($register_url) {
-    return home_url('/login/signup/');
-});
 add_filter('show_admin_bar', '__return_false');
 
-add_action('template_redirect', function () {
-
-    if (is_front_page() || is_home()) {
-        wp_redirect(home_url('/maps/'), 301);
-        exit;
-    }
-});
-
-/**
- * Redirect sau khi logout
- */
-add_action('wp_logout', 'pts_logout_redirect');
-
-function pts_logout_redirect()
-{
-    wp_safe_redirect('/maps/');
-    exit;
-}
 add_action('wp_footer', function () {
 ?>
     <script>
@@ -173,15 +173,6 @@ add_action('wp_footer', function () {
     </script>
 <?php
 });
-
-add_filter('login_redirect', function ($redirect_to, $requested_redirect_to, $user) {
-
-    if (!empty($user) && !is_wp_error($user)) {
-        return home_url('/maps/');
-    }
-
-    return $redirect_to;
-}, 999, 3);
 
 add_action('rest_api_init', function () {
 
@@ -289,20 +280,7 @@ function get_user_photos()
 
     wp_send_json_success($photos);
 }
-add_filter('login_url', function ($login_url, $redirect) {
 
-    $url = home_url('/login/');
-
-    if (!empty($redirect)) {
-        $url = add_query_arg(
-            'redirect_to',
-            urlencode($redirect),
-            $url
-        );
-    }
-
-    return $url;
-}, 10, 2);
 add_action('wp_ajax_get_live_status', 'get_live_status');
 add_action('wp_ajax_nopriv_get_live_status', 'get_live_status');
 
@@ -417,80 +395,484 @@ function get_place_uploads()
 
     wp_send_json_success($data);
 }
-add_action('wp_ajax_pt_ai_search', 'pt_ai_search');
-add_action('wp_ajax_nopriv_pt_ai_search', 'pt_ai_search');
 
-function pt_ai_search()
-{
-    $question = sanitize_text_field(
-        $_POST['question'] ?? ''
-    );
+// Search GEMINI
+add_action(
+    'wp_ajax_pt_ai_search',
+    'pt_ai_search'
+);
 
-    if (empty($question)) {
+add_action(
+    'wp_ajax_nopriv_pt_ai_search',
+    'pt_ai_search'
+);
+
+
+function pt_ai_search() {
+
+    /*
+     * =====================================================
+     * 1. GET SEARCH QUERY
+     * =====================================================
+     */
+
+    $query = isset($_POST['query'])
+        ? sanitize_text_field(
+            wp_unslash($_POST['query'])
+        )
+        : '';
+
+
+    if ($query === '') {
+
         wp_send_json_error([
-            'message' => 'Question empty'
-        ]);
+            'message' => 'Search content is empty.'
+        ], 400);
+
     }
 
-    $api_gemini_key = GEMINI_API_KEY;
+
+    /*
+     * =====================================================
+     * 2. GEMINI API KEY
+     * =====================================================
+     *
+     * TEST ONLY
+     */
+
+    $api_key = 'AQ.Ab8RN6KpzRnB1gj1TrD7TCrKWQdb4QfmTzNzvI8qQtMk5vN2ZA';
+
+
+    if (empty($api_key)) {
+
+        wp_send_json_error([
+            'message' => 'Gemini API key is empty.'
+        ], 500);
+
+    }
+
+
+    /*
+     * =====================================================
+     * 3. PROMPT
+     * =====================================================
+     */
+
+    $prompt = <<<PROMPT
+
+You are an AI assistant for a Google Maps website.
+
+User search:
+
+{$query}
+
+Analyze the user's request and provide useful information
+about places they may be looking for.
+
+Keep the answer concise and easy to read.
+
+Return HTML only.
+
+Do not use Markdown.
+
+Do not use <html>, <head>, or <body>.
+
+Use simple HTML such as:
+
+<p>, <strong>, <ul>, <li>, <br>.
+
+PROMPT;
+
+
+    /*
+     * =====================================================
+     * 4. GEMINI REQUEST BODY
+     * =====================================================
+     */
+
+    $body = [
+
+        'contents' => [
+
+            [
+
+                'role' => 'user',
+
+                'parts' => [
+
+                    [
+                        'text' => $prompt
+                    ]
+
+                ]
+
+            ]
+
+        ]
+
+    ];
+
+
+    /*
+     * =====================================================
+     * 5. GEMINI MODEL
+     * =====================================================
+     */
+
+    $model = 'gemini-3.6-flash';
+
+
+    /*
+     * =====================================================
+     * 6. GEMINI API URL
+     * =====================================================
+     */
+
+    $url =
+        'https://generativelanguage.googleapis.com/v1beta/models/'
+        . $model
+        . ':generateContent';
+
+
+    /*
+     * =====================================================
+     * 7. CALL GEMINI
+     * =====================================================
+     */
 
     $response = wp_remote_post(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $api_gemini_key,
+
+        $url,
+
         [
-            'timeout' => 30,
+
+            'timeout' => 60,
+
             'headers' => [
-                'Content-Type' => 'application/json'
+
+                'Content-Type' => 'application/json',
+
+                'x-goog-api-key' => $api_key
+
             ],
-            'body' => wp_json_encode([
-                'contents' => [
-                    [
-                        'parts' => [
-                            [
-                                'text' => $question
-                            ]
-                        ]
-                    ]
-                ]
-            ])
+
+            'body' => wp_json_encode($body)
+
         ]
+
     );
+
+
+    /*
+     * =====================================================
+     * 8. CONNECTION ERROR
+     * =====================================================
+     */
 
     if (is_wp_error($response)) {
+
         wp_send_json_error([
-            'message' => $response->get_error_message()
-        ]);
+
+            'message' =>
+                'Unable to connect to Gemini: '
+                . $response->get_error_message()
+
+        ], 500);
+
     }
 
-    $status = wp_remote_retrieve_response_code($response);
 
-    $body = json_decode(
-        wp_remote_retrieve_body($response),
-        true
-    );
+    /*
+     * =====================================================
+     * 9. HTTP STATUS
+     * =====================================================
+     */
 
-    if ($status !== 200) {
+    $status =
+        wp_remote_retrieve_response_code(
+            $response
+        );
+
+
+    /*
+     * =====================================================
+     * 10. RESPONSE BODY
+     * =====================================================
+     */
+
+    $raw_body =
+        wp_remote_retrieve_body(
+            $response
+        );
+
+
+    $response_body =
+        json_decode(
+            $raw_body,
+            true
+        );
+
+
+    /*
+     * =====================================================
+     * 11. INVALID JSON
+     * =====================================================
+     */
+
+    if (!is_array($response_body)) {
+
         wp_send_json_error([
-            'message' => 'Gemini API Error',
-            'status'  => $status,
-            'response' => $body
-        ]);
+
+            'message' =>
+                'Invalid response from Gemini.'
+
+        ], 502);
+
     }
 
-    $answer = '';
 
-    if (!empty($body['candidates'][0]['content']['parts'])) {
+    /*
+     * =====================================================
+     * 12. GEMINI API ERROR
+     * =====================================================
+     */
+
+    if (
+        $status < 200 ||
+        $status >= 300
+    ) {
+
+        $error_message =
+            $response_body['error']['message']
+            ?? 'Gemini API error.';
+
+
+        wp_send_json_error([
+
+            'message' => $error_message
+
+        ], $status ?: 500);
+
+    }
+
+
+    /*
+     * =====================================================
+     * 13. GET GEMINI TEXT
+     * =====================================================
+     */
+
+    $text = '';
+
+
+    if (
+        isset(
+            $response_body['candidates'][0]['content']['parts']
+        )
+        &&
+        is_array(
+            $response_body['candidates'][0]['content']['parts']
+        )
+    ) {
+
         foreach (
-            $body['candidates'][0]['content']['parts']
+            $response_body['candidates'][0]['content']['parts']
             as $part
         ) {
-            $answer .= $part['text'] ?? '';
+
+            if (
+                isset($part['text']) &&
+                is_string($part['text'])
+            ) {
+
+                $text .= $part['text'];
+
+            }
+
         }
+
     }
 
+
+    /*
+     * =====================================================
+     * 14. NO RESULT
+     * =====================================================
+     */
+
+    if (trim($text) === '') {
+
+        wp_send_json_error([
+
+            'message' =>
+                'Gemini returned no content.'
+
+        ], 502);
+
+    }
+
+
+    /*
+     * =====================================================
+     * 15. CLEAN MARKDOWN CODE BLOCK
+     * =====================================================
+     */
+
+    $text = trim($text);
+
+    $text = preg_replace(
+        '/^```(?:html)?\s*/i',
+        '',
+        $text
+    );
+
+    $text = preg_replace(
+        '/\s*```$/',
+        '',
+        $text
+    );
+
+    $text = trim($text);
+
+
+    /*
+     * =====================================================
+     * 16. ALLOW SAFE HTML
+     * =====================================================
+     */
+
+    $html = wp_kses(
+
+        $text,
+
+        [
+
+            'p' => [],
+
+            'strong' => [],
+
+            'b' => [],
+
+            'em' => [],
+
+            'i' => [],
+
+            'br' => [],
+
+            'ul' => [],
+
+            'ol' => [],
+
+            'li' => [],
+
+            'h3' => [],
+
+            'h4' => [],
+
+            'span' => [
+
+                'class' => true
+
+            ]
+
+        ]
+
+    );
+
+
+    /*
+     * =====================================================
+     * 17. RETURN TO JAVASCRIPT
+     * =====================================================
+     */
+
     wp_send_json_success([
-        'answer' => nl2br($answer ?: 'Không tìm thấy kết quả')
+
+        'html' => $html,
+
+        'query' => $query
+
     ]);
+
 }
+// End Search GEMINI
+
+// add_action('wp_ajax_pt_ai_search', 'pt_ai_search');
+// add_action('wp_ajax_nopriv_pt_ai_search', 'pt_ai_search');
+
+// function pt_ai_search()
+// {
+//     $question = sanitize_text_field(
+//         $_POST['question'] ?? ''
+//     );
+
+//     if (empty($question)) {
+//         wp_send_json_error([
+//             'message' => 'Question empty'
+//         ]);
+//     }
+
+//     $api_gemini_key = GEMINI_API_KEY;
+
+//     $response = wp_remote_post(
+//         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . $api_gemini_key,
+//         [
+//             'timeout' => 30,
+//             'headers' => [
+//                 'Content-Type' => 'application/json'
+//             ],
+//             'body' => wp_json_encode([
+//                 'contents' => [
+//                     [
+//                         'parts' => [
+//                             [
+//                                 'text' => $question
+//                             ]
+//                         ]
+//                     ]
+//                 ]
+//             ])
+//         ]
+//     );
+
+//     if (is_wp_error($response)) {
+//         wp_send_json_error([
+//             'message' => $response->get_error_message()
+//         ]);
+//     }
+
+//     $status = wp_remote_retrieve_response_code($response);
+
+//     $body = json_decode(
+//         wp_remote_retrieve_body($response),
+//         true
+//     );
+
+//     if ($status !== 200) {
+//         wp_send_json_error([
+//             'message' => 'Gemini API Error',
+//             'status'  => $status,
+//             'response' => $body
+//         ]);
+//     }
+
+//     $answer = '';
+
+//     if (!empty($body['candidates'][0]['content']['parts'])) {
+//         foreach (
+//             $body['candidates'][0]['content']['parts']
+//             as $part
+//         ) {
+//             $answer .= $part['text'] ?? '';
+//         }
+//     }
+
+//     wp_send_json_success([
+//         'answer' => nl2br($answer ?: 'Không tìm thấy kết quả')
+//     ]);
+// }
+
+
 function pt_get_member_level_name( $user_id = 0 ) {
 
     global $wpdb;
@@ -623,3 +1005,29 @@ function pt_leave_meeting(){
         'message' => 'Left meeting'
     ]);
 }
+add_filter('logout_redirect', function ($redirect_to, $requested_redirect_to, $user) {
+    return home_url('/maps');
+}, 10, 3);
+
+add_action('template_redirect', function () {
+
+    if (
+        !is_admin() &&
+        !is_user_logged_in() &&
+        $_SERVER['REQUEST_URI'] === '/'
+    ) {
+        wp_safe_redirect(home_url('/maps/'));
+        exit;
+    }
+
+});
+
+add_filter('nsl_login_redirect', function ($url, $provider) {
+
+    if ($provider === 'google') {
+        return home_url('/maps/');
+    }
+
+    return $url;
+
+}, 10, 2);

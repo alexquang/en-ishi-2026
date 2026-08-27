@@ -23,10 +23,10 @@
 define( 'DB_NAME', 'enishi' );
 
 /** Database username */
-define( 'DB_USER', 'enishi_user' );
+define( 'DB_USER', 'root' );
 
 /** Database password */
-define( 'DB_PASSWORD', 'Q0941.com' );
+define( 'DB_PASSWORD', 'root123' );
 
 /** Database hostname */
 define( 'DB_HOST', 'mysql' );
@@ -85,8 +85,8 @@ $table_prefix = 'eni_';
  *
  * @link https://developer.wordpress.org/advanced-administration/debug/debug-wordpress/
  */
-define('WP_DEBUG', true);
-define('WP_DEBUG_LOG', true);
+define('WP_DEBUG', false);
+define('WP_DEBUG_LOG', false);
 define('WP_DEBUG_DISPLAY', false);
 
 @ini_set('display_errors', 0);
@@ -94,18 +94,18 @@ define('FS_METHOD', 'direct');
 
 define('WP_REDIS_HOST', '45.117.170.72');
 define('WP_REDIS_PORT', 6379);
-define('WP_REDIS_DATABASE', 1);
-define('WP_CACHE_KEY_SALT', 'dev_pt_solution_');
+define('WP_REDIS_DATABASE', 10);
+define('WP_CACHE_KEY_SALT', 'dev_pt_solution_1');
 
 /**
  * Google Maps API
  */
-define('GOOGLE_MAPS_API_KEY', 'AIzaSyC9MdEE5EDSyBpKWTKijDBtiIA9oPnwBrQ');
+define('GOOGLE_MAPS_API_KEY', 'AIzaSyAFdjOyxzpFFiiPDU1rRrbqRlB2Y-Mb3zA');
 
 /**
  * Gemini API
  */
-define('GEMINI_API_KEY', 'AQ.Ab8RN6JTrahULOegF15qq4FJgHHHB1Cptqxgl7CWLlUHdWbaoQ');
+define('GEMINI_API_KEY', 'AQ.Ab8RN6IW_wrAedX_ZadZqlV7syF96Vsuz4Go5FYIZnKywelh1w');
 
 /* Add any custom values between this line and the "stop editing" line. */
 

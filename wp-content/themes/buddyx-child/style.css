@@ -214,6 +214,8 @@ textarea,
     border:none!important;
     background:transparent!important;
     width: 100px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
 }
 
 .gtranslate_wrapper img,

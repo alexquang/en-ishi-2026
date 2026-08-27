@@ -8,22 +8,6 @@ get_header();
 <div class="google-map-section">
 
     <div class="google-map-container">
-
-
-        <div class="map-search-box">
-
-            <input
-                id="pac-input"
-                type="text"
-                placeholder="Search now...">
-            <label class="gemini-check">
-                <input type="checkbox" id="googleSearchMode">
-            </label>
-            <button class="find-btn" id="find-btn">
-                <i class="fa-solid fa-magnifying-glass"></i>
-            </button>
-
-        </div>
         <div class="top-categories">
 
             <button class="cat-btn" data-type="restaurant">
@@ -57,11 +41,36 @@ get_header();
         </div>
 
         <div class="search-wrapper" id="search-wrapper">
+            <div class="map-search-box">
+                <input
+                    id="pac-input"
+                    type="text"
+                    placeholder="Search Google Maps"
+                    autocomplete="off"
+                >
+                <button class="find-btn" id="find-btn">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+                <button class="ai-search-btn" id="ai-search-btn" title="Search with Gemini">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path
+                            d="M12 2C12 7.52 16.48 12 22 12
+                            C16.48 12 12 16.48 12 22
+                            C12 16.48 7.52 12 2 12
+                            C7.52 12 12 7.52 12 2Z"
+                            fill="currentColor"
+                        />
+                    </svg>
+                </button>
+            </div>
+            
             <div class="result-wrapper">
+
+            <div id="gm-place-popup" class="gm-place-popup"></div>
 
                 <div id="result-panel">
 
-                    <div id="results"></div>
+                    <div id="results" class="results-style"></div>
 
                 </div>
 
@@ -71,19 +80,43 @@ get_header();
 
             </div>
 
-        </div>
+            <!-- GEMINI RESULT -->
 
-        <div id="ai-result-panel" style="display:none;">
-            <div class="ai-header">
-                ✨ AI Search
-                <span id="ai-close">✕</span>
+    <div id="ai-result-panel" class="ai-result-panel">
+
+        <div class="ai-result-header">
+
+            <div class="ai-result-title">
+
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+                <span>Gemini AI</span>
+
             </div>
 
-    <div id="ai-result-content"></div>
-    <div id="ai-loading" style="display:none;">
-    <div class="ai-spinner"></div>
-    <div>Gemini đang phân tích...</div>
-</div>
+            <button
+                id="close-ai-result"
+                class="ai-close-btn"
+                type="button">
+
+                <i class="fa-solid fa-xmark"></i>
+
+            </button>
+
+        </div>
+
+
+        <div
+            id="ai-result-content"
+            class="ai-result-content">
+
+        </div>
+
+    </div>
+
+     <!-- END GEMINI RESULT -->
+
+        </div>
 </div>
 
         <div id="map"></div>
@@ -133,11 +166,12 @@ get_header();
                 </label>
             </div>
         </div>
+        
     </div>
 </div>
 
 
-<div id="gmPictureDialog" class="gm-picture-dialog">
+<!-- <div id="gmPictureDialog" class="gm-picture-dialog">
 
     <div class="gm-picture-modal">
 
@@ -181,6 +215,6 @@ get_header();
 
     </div>
 
-</div>
+</div> -->
 
 <?php get_footer(); ?>
