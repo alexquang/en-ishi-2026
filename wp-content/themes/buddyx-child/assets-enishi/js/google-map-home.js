@@ -867,139 +867,237 @@ document.querySelectorAll(".cat-btn[data-type]").forEach((btn) => {
   });
 });
 
-
-
-
-
 function loadPlaceDetails(placeId, marker) {
+  const service = new google.maps.places.PlacesService(map);
 
-    const service =
-        new google.maps.places.PlacesService(map);
+  service.getDetails(
+    {
+      placeId: placeId,
 
-    service.getDetails(
-        {
-            placeId: placeId,
+      fields: [
+        "name",
+        "formatted_address",
+        "formatted_phone_number",
+        "website",
+        "rating",
+        "user_ratings_total",
+        "opening_hours",
+        "photos",
+        "url",
+        "types",
+        "reviews",
+      ],
+    },
 
-            fields: [
-                "name",
-                "formatted_address",
-                "formatted_phone_number",
-                "website",
-                "rating",
-                "user_ratings_total",
-                "opening_hours",
-                "photos",
-                "url",
-                "types"
-            ]
-        },
+    function (place, status) {
+      if (status !== google.maps.places.PlacesServiceStatus.OK) {
+        console.error("Place details error:", status);
 
-        function (place, status) {
+        return;
+      }
 
-            if (
-                status !==
-                google.maps.places.PlacesServiceStatus.OK
-            ) {
-                console.error(
-                    "Place details error:",
-                    status
-                );
+      /*
+       * RESULT PANEL
+       */
+      const resultPanel = document.querySelector(".result-wrapper");
 
-                return;
-            }
+      if (!resultPanel) {
+        console.error(".result-wrapper not found");
 
+        return;
+      }
 
-            /*
-             * RESULT PANEL
-             */
-            const resultPanel =
-                document.querySelector(".result-wrapper");
+      /*
+       * LẤY / TẠO POPUP
+       */
+      let popup = document.getElementById("gm-place-popup");
 
-            if (!resultPanel) {
+      if (!popup) {
+        popup = document.createElement("div");
 
-                console.error(
-                    ".result-wrapper not found"
-                );
+        popup.id = "gm-place-popup";
 
-                return;
-            }
+        popup.className = "gm-place-popup";
 
+        resultPanel.appendChild(popup);
+      }
 
-            /*
-             * LẤY / TẠO POPUP
-             */
-            let popup =
-                document.getElementById(
-                    "gm-place-popup"
-                );
+      /*
+       * PHOTO
+       */
+      const photo = place.photos?.[0]
+        ? place.photos[0].getUrl({
+            maxWidth: 800,
+            maxHeight: 500,
+          })
+        : "";
 
+      /*
+       * TYPE
+       */
+      let placeType = "Place";
 
-            if (!popup) {
+      if (place.types?.length) {
+        const type = place.types.find(
+          (t) => !["point_of_interest", "establishment"].includes(t),
+        );
 
-                popup =
-                    document.createElement("div");
-
-                popup.id =
-                    "gm-place-popup";
-
-                popup.className =
-                    "gm-place-popup";
-
-                resultPanel.appendChild(popup);
-            }
-
-
-            /*
-             * PHOTO
-             */
-            const photo =
-                place.photos?.[0]
-                    ? place.photos[0].getUrl({
-                        maxWidth: 800,
-                        maxHeight: 500
-                    })
-                    : "";
+        if (type) {
+          placeType = type
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+        }
+      }
 
 
-            /*
-             * TYPE
-             */
-            let placeType = "Place";
+      /*
+ * REVIEWS
+ */
+let reviewsHTML = "";
 
-            if (place.types?.length) {
+if (place.reviews && place.reviews.length) {
 
-                const type =
-                    place.types.find(
-                        t =>
-                            ![
-                                "point_of_interest",
-                                "establishment"
-                            ].includes(t)
-                    );
+    reviewsHTML = `
+        <div class="gm-popup-reviews">
 
-                if (type) {
+            <div class="gm-reviews-header">
 
-                    placeType =
-                        type
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, c =>
-                                c.toUpperCase()
-                            );
-                }
-            }
+                <div class="gm-reviews-title">
+                    <i class="fa-solid fa-star"></i>
+                    Reviews
+                </div>
+
+                <div class="gm-reviews-summary">
+
+                    <strong>
+                        ${place.rating ? place.rating.toFixed(1) : "-"}
+                    </strong>
+
+                    <span class="gm-review-stars">
+                        ★
+                    </span>
+
+                    <span>
+                        (${place.user_ratings_total || 0})
+                    </span>
+
+                </div>
+
+            </div>
 
 
-            /*
-             * OPENING HOURS
-             */
-            let hoursHTML = "";
+            <div class="gm-reviews-list">
 
-            if (
-                place.opening_hours &&
-                place.opening_hours.weekday_text
-            ) {
+                ${place.reviews.map(function(review) {
 
-                hoursHTML = `
+                    const authorName =
+                        review.author_name || "Google User";
+
+                    const authorPhoto =
+                        review.profile_photo_url || "";
+
+                    const authorUrl =
+                        review.author_url || "#";
+
+                    const rating =
+                        review.rating || 0;
+
+                    const reviewText =
+                        review.text || "";
+
+                    const relativeTime =
+                        review.relative_time_description || "";
+
+
+                    return `
+
+                        <div class="gm-review">
+
+                            <div class="gm-review-author">
+
+                                ${
+                                    authorPhoto
+                                        ? `
+                                            <img
+                                                class="gm-review-avatar"
+                                                src="${authorPhoto}"
+                                                alt="${authorName}">
+                                        `
+                                        : `
+                                            <div class="gm-review-avatar gm-review-avatar-default">
+                                                ${authorName.charAt(0)}
+                                            </div>
+                                        `
+                                }
+
+
+                                <div class="gm-review-author-info">
+
+                                    <a
+                                        href="${authorUrl}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="gm-review-author-name">
+
+                                        ${authorName}
+
+                                    </a>
+
+
+                                    <div class="gm-review-meta">
+
+                                        <span class="gm-review-stars">
+                                            ${"★".repeat(rating)}
+                                        </span>
+
+                                        <span class="gm-review-time">
+                                            ${relativeTime}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            ${
+                                reviewText
+                                    ? `
+                                        <div class="gm-review-text">
+                                            ${reviewText}
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+
+                    `;
+
+                }).join("")}
+
+            </div>
+
+
+            <div class="gm-google-attribution">
+
+                Reviews from Google
+
+            </div>
+
+        </div>
+    `;
+
+}
+
+      /*
+       * OPENING HOURS
+       */
+      let hoursHTML = "";
+
+      if (place.opening_hours && place.opening_hours.weekday_text) {
+        hoursHTML = `
                     <div class="gm-popup-row">
 
                         <i class="fa-regular fa-clock"></i>
@@ -1007,27 +1105,26 @@ function loadPlaceDetails(placeId, marker) {
                         <div>
 
                             ${place.opening_hours.weekday_text
-                                .map(day => `
+                              .map(
+                                (day) => `
                                     <div>
                                         ${day}
                                     </div>
-                                `)
-                                .join("")
-                            }
+                                `,
+                              )
+                              .join("")}
 
                         </div>
 
                     </div>
                 `;
-            }
+      }
 
-
-            /*
-             * WEBSITE
-             */
-            const websiteHTML =
-                place.website
-                    ? `
+      /*
+       * WEBSITE
+       */
+      const websiteHTML = place.website
+        ? `
                     <div class="gm-popup-row">
 
                         <i class="fa-solid fa-globe"></i>
@@ -1045,15 +1142,13 @@ function loadPlaceDetails(placeId, marker) {
 
                     </div>
                     `
-                    : "";
+        : "";
 
-
-            /*
-             * PHONE
-             */
-            const phoneHTML =
-                place.formatted_phone_number
-                    ? `
+      /*
+       * PHONE
+       */
+      const phoneHTML = place.formatted_phone_number
+        ? `
                     <div class="gm-popup-row">
 
                         <i class="fa-solid fa-phone"></i>
@@ -1064,13 +1159,12 @@ function loadPlaceDetails(placeId, marker) {
 
                     </div>
                     `
-                    : "";
+        : "";
 
-
-            /*
-             * RENDER POPUP
-             */
-            popup.innerHTML = `
+      /*
+       * RENDER POPUP
+       */
+      popup.innerHTML = `
 
                 <button
                     type="button"
@@ -1083,8 +1177,8 @@ function loadPlaceDetails(placeId, marker) {
 
 
                 ${
-                    photo
-                        ? `
+                  photo
+                    ? `
                         <div class="gm-popup-cover">
 
                             <img
@@ -1093,7 +1187,7 @@ function loadPlaceDetails(placeId, marker) {
 
                         </div>
                         `
-                        : ""
+                    : ""
                 }
 
 
@@ -1143,13 +1237,12 @@ function loadPlaceDetails(placeId, marker) {
 
                         </button>
 
-                        <button
-                            class="gm-popup-tab"
-                            data-popup-tab="picture">
-
-                            Picture
-
-                        </button>
+                      <button
+                          class="gm-popup-tab gm-picture-btn"
+                          data-tab="picture"
+                          data-placeid="${placeId}">
+                          Picture
+                      </button>
 
                         <button
                             class="gm-popup-tab"
@@ -1263,11 +1356,15 @@ function loadPlaceDetails(placeId, marker) {
                         ${hoursHTML}
 
 
+                        <!-- REVIEWS -->
+
+                        ${reviewsHTML}
+
                         <!-- GOOGLE MAP -->
 
                         ${
-                            place.url
-                                ? `
+                          place.url
+                            ? `
                                 <div class="gm-popup-row">
 
                                     <i class="fa-solid fa-map"></i>
@@ -1287,7 +1384,7 @@ function loadPlaceDetails(placeId, marker) {
 
                                 </div>
                                 `
-                                : ""
+                            : ""
                         }
 
 
@@ -1297,94 +1394,47 @@ function loadPlaceDetails(placeId, marker) {
 
             `;
 
+      /*
+       * HIỆN POPUP
+       */
+      popup.classList.add("show");
 
-            /*
-             * HIỆN POPUP
-             */
-            popup.classList.add("show");
+      /*
+       * CLOSE
+       */
+      const closeBtn = document.getElementById("gm-popup-close");
 
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+          popup.classList.remove("show");
+        });
+      }
 
-            /*
-             * CLOSE
-             */
-            const closeBtn =
-                document.getElementById(
-                    "gm-popup-close"
-                );
+      /*
+       * TAB
+       */
+      popup.querySelectorAll(".gm-popup-tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          popup
+            .querySelectorAll(".gm-popup-tab")
+            .forEach((t) => t.classList.remove("active"));
 
+          this.classList.add("active");
 
-            if (closeBtn) {
+          const tabName = this.dataset.popupTab;
 
-                closeBtn.addEventListener(
-                    "click",
-                    function () {
+          console.log("Selected tab:", tabName);
+        });
+      });
 
-                        popup.classList.remove(
-                            "show"
-                        );
-
-                    }
-                );
-
-            }
-
-
-            /*
-             * TAB
-             */
-            popup
-                .querySelectorAll(
-                    ".gm-popup-tab"
-                )
-                .forEach(function (tab) {
-
-                    tab.addEventListener(
-                        "click",
-                        function () {
-
-                            popup
-                                .querySelectorAll(
-                                    ".gm-popup-tab"
-                                )
-                                .forEach(t =>
-                                    t.classList.remove(
-                                        "active"
-                                    )
-                                );
-
-                            this.classList.add(
-                                "active"
-                            );
-
-
-                            const tabName =
-                                this.dataset.popupTab;
-
-
-                            console.log(
-                                "Selected tab:",
-                                tabName
-                            );
-
-                        }
-                    );
-
-                });
-
-
-            /*
-             * CENTER MAP VÀO MARKER
-             */
-            if (marker) {
-
-                map.panTo(
-                    marker.getPosition()
-                );
-
-            }
-
-        }
-    );
+      /*
+       * CENTER MAP VÀO MARKER
+       */
+      if (marker) {
+        map.panTo(marker.getPosition());
+      }
+    },
+  );
 }
 // function loadPlaceDetails(placeId, marker) {
 //   const service = new google.maps.places.PlacesService(map);
@@ -2135,3 +2185,5 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 /* END GEMINI SEARCH */
+
+/* LOAD REVIEW */

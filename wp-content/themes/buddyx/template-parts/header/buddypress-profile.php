@@ -166,9 +166,9 @@ if ( is_user_logged_in() ) {
 		$login_page_url = $login_page_id ? get_permalink( $login_page_id ) : wp_login_url();
 		?>
 		<div class="bp-icon-wrap">
-			<?php echo do_shortcode(
-				'[nextend_social_login provider="google"]'
-			);?>
+			<a href="https://dev.pt-solution.vn/wp-login.php?loginSocial=google" data-plugin="nsl" data-action="connect" data-redirect="current" data-provider="google" data-popupwidth="600" data-popupheight="600">
+				Login with Google
+			</a>
 		</div>
 		<?php
 	}
