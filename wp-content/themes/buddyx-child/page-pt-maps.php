@@ -26,7 +26,7 @@ get_header();
                 🛍 Shopping
             </button>
 
-            <button class="cat-btn" id="btnTraffic">
+            <!-- <button class="cat-btn" id="btnTraffic">
                 🚗 Traffic
             </button>
 
@@ -36,7 +36,7 @@ get_header();
 
             <button class="cat-btn" id="btnBike">
                 🚲 Bicycle
-            </button>
+            </button> -->
 
         </div>
 

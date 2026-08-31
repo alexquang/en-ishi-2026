@@ -300,8 +300,10 @@ document.addEventListener("DOMContentLoaded", function () {
       timeout: 10000,
 
       maximumAge: 300000,
-    },
-  );
+    },);
+
+            // Không có GPS vẫn tìm theo map center
+        loadNearbyPlaces1();
 });
 
 async function initMapByCountry(countryLat, countryLng, countryCode) {
@@ -545,6 +547,9 @@ async function initMap(userLat, userLng) {
     initLayerControls();
     layerControlsInitialized = true;
   }
+
+    // places của bạn
+  loadNearbyPlaces1();
 }
 
 window.initMap = initMap;
@@ -2399,3 +2404,5 @@ document.getElementById("gmVideoClose").addEventListener("click", function () {
   // Xóa nội dung video khi đóng
   document.getElementById("gmVideoContent").innerHTML = "";
 });
+
+/* Auto Load Image TODO*/

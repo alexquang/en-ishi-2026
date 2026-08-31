@@ -11,8 +11,11 @@ namespace BuddyX\Buddyx;
 
 <?php do_action( 'buddyx_copyright_before' ); ?>
 
+
+
 <div class="site-info">
 	<div class="container">	
+		
 		<?php echo buddyx_footer_custom_text(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	</div>
 
