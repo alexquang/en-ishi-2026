@@ -1097,6 +1097,57 @@ function get_place_uploads()
     wp_send_json_success($data);
 }
 
+// upload Video
+add_action(
+    'wp_ajax_get_place_uploads_videos',
+    'get_place_uploads_videos'
+);
+
+add_action(
+    'wp_ajax_nopriv_get_place_uploads_videos',
+    'get_place_uploads_videos'
+);
+
+function get_place_uploads_videos()
+{
+    $place_id = isset($_GET['place_id'])
+        ? sanitize_text_field(wp_unslash($_GET['place_id']))
+        : '';
+
+    if (empty($place_id)) {
+        wp_send_json_error([
+            'message' => 'Missing place_id'
+        ], 400);
+    }
+
+    $videos = get_posts([
+        'post_type'      => 'attachment',
+        'post_status'    => 'inherit',
+        'posts_per_page' => -1,
+        'post_mime_type' => 'video',
+        'meta_key'       => 'place_id',
+        'meta_value'     => $place_id,
+    ]);
+
+    $data = [];
+
+    foreach ($videos as $video) {
+        $url = wp_get_attachment_url($video->ID);
+
+        if (!$url) {
+            continue;
+        }
+
+        $data[] = [
+            'id'        => $video->ID,
+            'url'       => $url,
+            'mime_type' => get_post_mime_type($video->ID),
+        ];
+    }
+
+    wp_send_json_success($data);
+}
+
 // Search GEMINI
 add_action(
     'wp_ajax_pt_ai_search',
@@ -2028,3 +2079,83 @@ function pt_detect_country() {
     ]);
 
 }
+
+/* UPLOAD VIDEO */
+function upload_place_video()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(
+            'You must be logged in.',
+            403
+        );
+    }
+
+    $place_id = isset($_POST['place_id'])
+        ? sanitize_text_field(
+            wp_unslash($_POST['place_id'])
+        )
+        : '';
+
+    if (empty($place_id)) {
+        wp_send_json_error(
+            'Missing place ID.',
+            400
+        );
+    }
+
+    if (empty($_FILES['video'])) {
+        wp_send_json_error(
+            'No video selected.',
+            400
+        );
+    }
+
+    $file = $_FILES['video'];
+
+    // Chỉ cho phép video
+    if (strpos($file['type'], 'video/') !== 0) {
+        wp_send_json_error(
+            'Invalid video file.',
+            400
+        );
+    }
+
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+
+    // Upload Media Library
+    $attachment_id = media_handle_upload(
+        'video',
+        0
+    );
+
+    if (is_wp_error($attachment_id)) {
+        wp_send_json_error(
+            $attachment_id->get_error_message(),
+            500
+        );
+    }
+
+    // Lưu Google Place ID
+    update_post_meta(
+        $attachment_id,
+        'place_id',
+        $place_id
+    );
+
+    wp_send_json_success([
+        'id' => $attachment_id,
+        'url' => wp_get_attachment_url(
+            $attachment_id
+        ),
+        'mime_type' => get_post_mime_type(
+            $attachment_id
+        )
+    ]);
+}
+
+add_action(
+    'wp_ajax_upload_place_video',
+    'upload_place_video'
+);

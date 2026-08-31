@@ -170,7 +170,7 @@ get_header();
     </div>
 </div>
 
-
+<!-- Dialog Picture -->
 <div id="gmPictureDialog" class="gm-picture-dialog">
 
     <div class="gm-picture-modal">
@@ -207,6 +207,52 @@ get_header();
 
                 <div class="gm-empty">
                     No pictures loaded
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+            <!-- Dialog Video -->
+<div id="gmVideoDialog" class="gm-video-dialog">
+
+    <div class="gm-video-modal">
+
+        <div class="gm-video-header">
+
+            <h3>
+                <i class="fa-solid fa-images"></i>
+                Place Videos
+            </h3>
+            <?php if (is_user_logged_in()) : ?>
+                <button
+                    id="gmUploadVideoBtn"
+                    class="gm-upload-btn">
+                    <i class="fa-solid fa-upload"></i>
+                    Upload
+                </button>
+
+                <input
+                    type="file"
+                    id="gmUploadVideoFile"
+                    hidden>
+            <?php endif; ?>
+            <button id="gmVideoClose">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+        </div>
+
+        <div class="gm-video-body">
+
+            <div id="gmVideoContent">
+
+                <div class="gm-empty">
+                    No Video loaded
                 </div>
 
             </div>
