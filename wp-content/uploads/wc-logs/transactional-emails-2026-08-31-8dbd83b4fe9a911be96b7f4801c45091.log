@@ -1,0 +1,2 @@
+2026-08-31T05:25:44+00:00 WARNING Email "new_wallet_transaction" for user #1 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"admin","user":1}
+2026-08-31T06:28:30+00:00 WARNING Email "new_wallet_transaction" for user #32 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"quangpham","user":32}
