@@ -171,7 +171,7 @@ get_header();
 </div>
 
 
-<!-- <div id="gmPictureDialog" class="gm-picture-dialog">
+<div id="gmPictureDialog" class="gm-picture-dialog">
 
     <div class="gm-picture-modal">
 
@@ -215,6 +215,6 @@ get_header();
 
     </div>
 
-</div> -->
+</div>
 
 <?php get_footer(); ?>

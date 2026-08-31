@@ -212,10 +212,11 @@ textarea,
 
 .pt-header-language .gt_selector{
     border:none!important;
-    background:transparent!important;
+    background: #fff !important;
     width: 110px !important;
     font-size: 14px !important;
     font-weight: bold !important;
+    color: #000 !important;
 }
 
 .gtranslate_wrapper img,

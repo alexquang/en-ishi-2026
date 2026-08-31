@@ -885,6 +885,7 @@ function loadPlaceDetails(placeId, marker) {
         "photos",
         "url",
         "types",
+        "reviews",
       ],
     },
 
@@ -947,6 +948,148 @@ function loadPlaceDetails(placeId, marker) {
             .replace(/\b\w/g, (c) => c.toUpperCase());
         }
       }
+
+
+      /*
+ * REVIEWS
+ */
+let reviewsHTML = "";
+
+if (place.reviews && place.reviews.length) {
+
+    reviewsHTML = `
+        <div class="gm-popup-reviews">
+
+            <div class="gm-reviews-header">
+
+                <div class="gm-reviews-title">
+                    <i class="fa-solid fa-star"></i>
+                    Reviews
+                </div>
+
+                <div class="gm-reviews-summary">
+
+                    <strong>
+                        ${place.rating ? place.rating.toFixed(1) : "-"}
+                    </strong>
+
+                    <span class="gm-review-stars">
+                        ★
+                    </span>
+
+                    <span>
+                        (${place.user_ratings_total || 0})
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="gm-reviews-list">
+
+                ${place.reviews.map(function(review) {
+
+                    const authorName =
+                        review.author_name || "Google User";
+
+                    const authorPhoto =
+                        review.profile_photo_url || "";
+
+                    const authorUrl =
+                        review.author_url || "#";
+
+                    const rating =
+                        review.rating || 0;
+
+                    const reviewText =
+                        review.text || "";
+
+                    const relativeTime =
+                        review.relative_time_description || "";
+
+
+                    return `
+
+                        <div class="gm-review">
+
+                            <div class="gm-review-author">
+
+                                ${
+                                    authorPhoto
+                                        ? `
+                                            <img
+                                                class="gm-review-avatar"
+                                                src="${authorPhoto}"
+                                                alt="${authorName}">
+                                        `
+                                        : `
+                                            <div class="gm-review-avatar gm-review-avatar-default">
+                                                ${authorName.charAt(0)}
+                                            </div>
+                                        `
+                                }
+
+
+                                <div class="gm-review-author-info">
+
+                                    <a
+                                        href="${authorUrl}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="gm-review-author-name">
+
+                                        ${authorName}
+
+                                    </a>
+
+
+                                    <div class="gm-review-meta">
+
+                                        <span class="gm-review-stars">
+                                            ${"★".repeat(rating)}
+                                        </span>
+
+                                        <span class="gm-review-time">
+                                            ${relativeTime}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            ${
+                                reviewText
+                                    ? `
+                                        <div class="gm-review-text">
+                                            ${reviewText}
+                                        </div>
+                                    `
+                                    : ""
+                            }
+
+                        </div>
+
+                    `;
+
+                }).join("")}
+
+            </div>
+
+
+            <div class="gm-google-attribution">
+
+                Reviews from Google
+
+            </div>
+
+        </div>
+    `;
+
+}
 
       /*
        * OPENING HOURS
@@ -1094,13 +1237,12 @@ function loadPlaceDetails(placeId, marker) {
 
                         </button>
 
-                        <button
-                            class="gm-popup-tab"
-                            data-popup-tab="picture">
-
-                            Picture
-
-                        </button>
+                      <button
+                          class="gm-popup-tab gm-picture-btn"
+                          data-tab="picture"
+                          data-placeid="${placeId}">
+                          Picture
+                      </button>
 
                         <button
                             class="gm-popup-tab"
@@ -1213,6 +1355,10 @@ function loadPlaceDetails(placeId, marker) {
 
                         ${hoursHTML}
 
+
+                        <!-- REVIEWS -->
+
+                        ${reviewsHTML}
 
                         <!-- GOOGLE MAP -->
 
@@ -2039,3 +2185,5 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 /* END GEMINI SEARCH */
+
+/* LOAD REVIEW */
