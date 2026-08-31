@@ -573,6 +573,7 @@
   width: 400px !important;
 
   height: calc(100vh - 90px);
+  padding-top: 75px !important;
 
   background: #fff;
 
@@ -707,16 +708,27 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
     position: absolute;
 
     top: 20px;
-    left: 405px;
+    left: 420px !important;
 
     width: 400px;
     max-width: calc(100% - 40px);
+
+    /*
+     * Chiều cao popup theo container/map
+     */
+    height: calc(100% - 40px);
+    max-height: calc(100% - 40px);
 
     background: #fff;
 
     border-radius: 12px;
 
-    overflow: hidden;
+    /*
+     * QUAN TRỌNG:
+     * Popup là nơi duy nhất scroll
+     */
+    overflow-y: auto;
+    overflow-x: hidden;
 
     box-shadow:
         0 2px 8px rgba(0, 0, 0, 0.18),
@@ -729,6 +741,17 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
     font-family: Arial, sans-serif;
 
     color: #333;
+
+    /*
+     * Scroll mượt
+     */
+    scroll-behavior: smooth;
+
+    /*
+     * Firefox
+     */
+    scrollbar-width: thin;
+    scrollbar-color: #9aa0a6 transparent;
 }
 
 .gm-place-popup.show {
@@ -934,9 +957,6 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
 
 .gm-popup-info {
     max-height: 330px;
-
-    overflow-y: auto;
-
     background: #fff;
 }
 

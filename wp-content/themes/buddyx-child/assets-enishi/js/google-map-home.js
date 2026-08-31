@@ -867,139 +867,94 @@ document.querySelectorAll(".cat-btn[data-type]").forEach((btn) => {
   });
 });
 
-
-
-
-
 function loadPlaceDetails(placeId, marker) {
+  const service = new google.maps.places.PlacesService(map);
 
-    const service =
-        new google.maps.places.PlacesService(map);
+  service.getDetails(
+    {
+      placeId: placeId,
 
-    service.getDetails(
-        {
-            placeId: placeId,
+      fields: [
+        "name",
+        "formatted_address",
+        "formatted_phone_number",
+        "website",
+        "rating",
+        "user_ratings_total",
+        "opening_hours",
+        "photos",
+        "url",
+        "types",
+      ],
+    },
 
-            fields: [
-                "name",
-                "formatted_address",
-                "formatted_phone_number",
-                "website",
-                "rating",
-                "user_ratings_total",
-                "opening_hours",
-                "photos",
-                "url",
-                "types"
-            ]
-        },
+    function (place, status) {
+      if (status !== google.maps.places.PlacesServiceStatus.OK) {
+        console.error("Place details error:", status);
 
-        function (place, status) {
+        return;
+      }
 
-            if (
-                status !==
-                google.maps.places.PlacesServiceStatus.OK
-            ) {
-                console.error(
-                    "Place details error:",
-                    status
-                );
+      /*
+       * RESULT PANEL
+       */
+      const resultPanel = document.querySelector(".result-wrapper");
 
-                return;
-            }
+      if (!resultPanel) {
+        console.error(".result-wrapper not found");
 
+        return;
+      }
 
-            /*
-             * RESULT PANEL
-             */
-            const resultPanel =
-                document.querySelector(".result-wrapper");
+      /*
+       * LẤY / TẠO POPUP
+       */
+      let popup = document.getElementById("gm-place-popup");
 
-            if (!resultPanel) {
+      if (!popup) {
+        popup = document.createElement("div");
 
-                console.error(
-                    ".result-wrapper not found"
-                );
+        popup.id = "gm-place-popup";
 
-                return;
-            }
+        popup.className = "gm-place-popup";
 
+        resultPanel.appendChild(popup);
+      }
 
-            /*
-             * LẤY / TẠO POPUP
-             */
-            let popup =
-                document.getElementById(
-                    "gm-place-popup"
-                );
+      /*
+       * PHOTO
+       */
+      const photo = place.photos?.[0]
+        ? place.photos[0].getUrl({
+            maxWidth: 800,
+            maxHeight: 500,
+          })
+        : "";
 
+      /*
+       * TYPE
+       */
+      let placeType = "Place";
 
-            if (!popup) {
+      if (place.types?.length) {
+        const type = place.types.find(
+          (t) => !["point_of_interest", "establishment"].includes(t),
+        );
 
-                popup =
-                    document.createElement("div");
+        if (type) {
+          placeType = type
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+        }
+      }
 
-                popup.id =
-                    "gm-place-popup";
+      /*
+       * OPENING HOURS
+       */
+      let hoursHTML = "";
 
-                popup.className =
-                    "gm-place-popup";
-
-                resultPanel.appendChild(popup);
-            }
-
-
-            /*
-             * PHOTO
-             */
-            const photo =
-                place.photos?.[0]
-                    ? place.photos[0].getUrl({
-                        maxWidth: 800,
-                        maxHeight: 500
-                    })
-                    : "";
-
-
-            /*
-             * TYPE
-             */
-            let placeType = "Place";
-
-            if (place.types?.length) {
-
-                const type =
-                    place.types.find(
-                        t =>
-                            ![
-                                "point_of_interest",
-                                "establishment"
-                            ].includes(t)
-                    );
-
-                if (type) {
-
-                    placeType =
-                        type
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, c =>
-                                c.toUpperCase()
-                            );
-                }
-            }
-
-
-            /*
-             * OPENING HOURS
-             */
-            let hoursHTML = "";
-
-            if (
-                place.opening_hours &&
-                place.opening_hours.weekday_text
-            ) {
-
-                hoursHTML = `
+      if (place.opening_hours && place.opening_hours.weekday_text) {
+        hoursHTML = `
                     <div class="gm-popup-row">
 
                         <i class="fa-regular fa-clock"></i>
@@ -1007,27 +962,26 @@ function loadPlaceDetails(placeId, marker) {
                         <div>
 
                             ${place.opening_hours.weekday_text
-                                .map(day => `
+                              .map(
+                                (day) => `
                                     <div>
                                         ${day}
                                     </div>
-                                `)
-                                .join("")
-                            }
+                                `,
+                              )
+                              .join("")}
 
                         </div>
 
                     </div>
                 `;
-            }
+      }
 
-
-            /*
-             * WEBSITE
-             */
-            const websiteHTML =
-                place.website
-                    ? `
+      /*
+       * WEBSITE
+       */
+      const websiteHTML = place.website
+        ? `
                     <div class="gm-popup-row">
 
                         <i class="fa-solid fa-globe"></i>
@@ -1045,15 +999,13 @@ function loadPlaceDetails(placeId, marker) {
 
                     </div>
                     `
-                    : "";
+        : "";
 
-
-            /*
-             * PHONE
-             */
-            const phoneHTML =
-                place.formatted_phone_number
-                    ? `
+      /*
+       * PHONE
+       */
+      const phoneHTML = place.formatted_phone_number
+        ? `
                     <div class="gm-popup-row">
 
                         <i class="fa-solid fa-phone"></i>
@@ -1064,13 +1016,12 @@ function loadPlaceDetails(placeId, marker) {
 
                     </div>
                     `
-                    : "";
+        : "";
 
-
-            /*
-             * RENDER POPUP
-             */
-            popup.innerHTML = `
+      /*
+       * RENDER POPUP
+       */
+      popup.innerHTML = `
 
                 <button
                     type="button"
@@ -1083,8 +1034,8 @@ function loadPlaceDetails(placeId, marker) {
 
 
                 ${
-                    photo
-                        ? `
+                  photo
+                    ? `
                         <div class="gm-popup-cover">
 
                             <img
@@ -1093,7 +1044,7 @@ function loadPlaceDetails(placeId, marker) {
 
                         </div>
                         `
-                        : ""
+                    : ""
                 }
 
 
@@ -1266,8 +1217,8 @@ function loadPlaceDetails(placeId, marker) {
                         <!-- GOOGLE MAP -->
 
                         ${
-                            place.url
-                                ? `
+                          place.url
+                            ? `
                                 <div class="gm-popup-row">
 
                                     <i class="fa-solid fa-map"></i>
@@ -1287,7 +1238,7 @@ function loadPlaceDetails(placeId, marker) {
 
                                 </div>
                                 `
-                                : ""
+                            : ""
                         }
 
 
@@ -1297,94 +1248,47 @@ function loadPlaceDetails(placeId, marker) {
 
             `;
 
+      /*
+       * HIỆN POPUP
+       */
+      popup.classList.add("show");
 
-            /*
-             * HIỆN POPUP
-             */
-            popup.classList.add("show");
+      /*
+       * CLOSE
+       */
+      const closeBtn = document.getElementById("gm-popup-close");
 
+      if (closeBtn) {
+        closeBtn.addEventListener("click", function () {
+          popup.classList.remove("show");
+        });
+      }
 
-            /*
-             * CLOSE
-             */
-            const closeBtn =
-                document.getElementById(
-                    "gm-popup-close"
-                );
+      /*
+       * TAB
+       */
+      popup.querySelectorAll(".gm-popup-tab").forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          popup
+            .querySelectorAll(".gm-popup-tab")
+            .forEach((t) => t.classList.remove("active"));
 
+          this.classList.add("active");
 
-            if (closeBtn) {
+          const tabName = this.dataset.popupTab;
 
-                closeBtn.addEventListener(
-                    "click",
-                    function () {
+          console.log("Selected tab:", tabName);
+        });
+      });
 
-                        popup.classList.remove(
-                            "show"
-                        );
-
-                    }
-                );
-
-            }
-
-
-            /*
-             * TAB
-             */
-            popup
-                .querySelectorAll(
-                    ".gm-popup-tab"
-                )
-                .forEach(function (tab) {
-
-                    tab.addEventListener(
-                        "click",
-                        function () {
-
-                            popup
-                                .querySelectorAll(
-                                    ".gm-popup-tab"
-                                )
-                                .forEach(t =>
-                                    t.classList.remove(
-                                        "active"
-                                    )
-                                );
-
-                            this.classList.add(
-                                "active"
-                            );
-
-
-                            const tabName =
-                                this.dataset.popupTab;
-
-
-                            console.log(
-                                "Selected tab:",
-                                tabName
-                            );
-
-                        }
-                    );
-
-                });
-
-
-            /*
-             * CENTER MAP VÀO MARKER
-             */
-            if (marker) {
-
-                map.panTo(
-                    marker.getPosition()
-                );
-
-            }
-
-        }
-    );
+      /*
+       * CENTER MAP VÀO MARKER
+       */
+      if (marker) {
+        map.panTo(marker.getPosition());
+      }
+    },
+  );
 }
 // function loadPlaceDetails(placeId, marker) {
 //   const service = new google.maps.places.PlacesService(map);
