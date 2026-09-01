@@ -1,0 +1,267 @@
+/**
+ * Learnomy — single course HERO variant overlay.
+ *
+ * Layered on top of single-course.css (handle dep `learnomy-single-course`).
+ * Owns only the hero-variant chrome: the full-bleed media hero, the embedded
+ * CTA card, and the sticky in-page section nav above the single-column body.
+ * Token-driven only; dark mode + RTL inherit from the root token reassignment
+ * and logical properties.
+ *
+ * @package Learnomy
+ */
+
+/* The hero band is intentionally dark in BOTH light and dark mode — a
+   cinematic full-bleed surface with white text on top of a dimmed cover
+   image. Previously this used `background: var(--lrn-text)` which worked
+   in light mode (token resolves to dark) but inverted in dark mode (token
+   resolves to light), turning the band into washed-out light gray with
+   white text on top → unreadable. The new `--lrn-hero-band` token is
+   defined on `:root` and intentionally NOT re-assigned in `.lrn-dark` so
+   the hero stays dark regardless of theme mode. See the token comment in
+   `learnomy.css` for the rationale (image #13 from 2026-05-23). */
+.lrn-course--hero .lrn-course-hero {
+	position:   relative;
+	overflow:   hidden;
+	padding:    var(--lrn-sp-12) 0;
+	background: var(--lrn-hero-band);
+	color:      var(--lrn-white);
+}
+
+/* No-media courses get a brand-tinted gradient instead of flat band so the
+   hero doesn't read as a barren placeholder. Plus a translucent course
+   initial in the bottom-right (Substack / Notion pattern) — fills the dead
+   space below the title without inventing data the course doesn't have. */
+.lrn-course--hero .lrn-course-hero[data-has-media="false"] {
+	background: linear-gradient(135deg, var(--lrn-hero-band) 0%, color-mix(in srgb, var(--lrn-accent) 20%, var(--lrn-hero-band)) 100%);
+}
+
+.lrn-course--hero .lrn-course-hero__initial {
+	position:       absolute;
+	inset-inline-end: var(--lrn-sp-6);
+	bottom:         var(--lrn-sp-5);
+	font-size:      clamp(7rem, 16vw, 14rem);
+	font-weight:    var(--lrn-weight-bold);
+	line-height:    1;
+	letter-spacing: -0.04em;
+	color:          rgba(255, 255, 255, 0.08);
+	user-select:    none;
+	pointer-events: none;
+	z-index:        1;
+}
+
+.lrn-course--hero .lrn-course-hero__bg {
+	position: absolute;
+	inset:    0;
+	z-index:  0;
+}
+
+.lrn-course--hero .lrn-course-hero__bg-img {
+	width:      100%;
+	height:     100%;
+	object-fit: cover;
+	display:    block;
+	opacity:    0.35;
+}
+
+/* Bottom-darkening gradient over the cover image. Uses `--lrn-hero-band`
+   so the overlay matches the hero base color in both light and dark mode
+   (with `--lrn-text` this overlay LIGHTENED the bottom in dark mode and
+   the image floated unobscured behind the title). */
+.lrn-course--hero .lrn-course-hero__overlay {
+	position:   absolute;
+	inset:      0;
+	z-index:    1;
+	background: linear-gradient( to bottom, transparent, var(--lrn-hero-band) );
+	opacity:    0.55;
+}
+
+.lrn-course--hero .lrn-course-hero__inner {
+	position:               relative;
+	z-index:                2;
+	display:                grid;
+	grid-template-columns:  1fr minmax(0, 360px);
+	gap:                    var(--lrn-sp-8);
+	align-items:            start;
+}
+
+.lrn-course--hero .lrn-course-hero__title {
+	font-size:     var(--lrn-text-4xl);
+	font-weight:   var(--lrn-weight-semibold);
+	line-height:   var(--lrn-leading-tight);
+	margin:        var(--lrn-sp-3) 0;
+	color:         var(--lrn-white);
+}
+
+.lrn-course--hero .lrn-course-hero__tagline {
+	font-size:   var(--lrn-text-lg);
+	line-height: var(--lrn-leading-relaxed);
+	color:       var(--lrn-white);
+	opacity:     0.9;
+	margin:      0 0 var(--lrn-sp-4);
+}
+
+.lrn-course--hero .lrn-course-hero__badges {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2);
+}
+
+.lrn-course--hero .lrn-course-hero__meta {
+	display:     flex;
+	flex-wrap:   wrap;
+	gap:         var(--lrn-sp-4);
+	align-items: center;
+	margin-top:  var(--lrn-sp-4);
+	font-size:   var(--lrn-text-sm);
+}
+
+.lrn-course--hero .lrn-course-hero__meta-item {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	color:       var(--lrn-white);
+}
+
+.lrn-course--hero .lrn-course-hero__meta-avatar {
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-course--hero .lrn-course-hero__meta-link {
+	color:           var(--lrn-white);
+	text-decoration: underline;
+}
+
+.lrn-course--hero .lrn-course-hero__meta-muted {
+	opacity: 0.75;
+}
+
+.lrn-course--hero .lrn-course-hero__meta-item svg {
+	width:  var(--lrn-icon-sm);
+	height: var(--lrn-icon-sm);
+}
+
+.lrn-course--hero .lrn-course-hero__cta {
+	padding:    0;
+	overflow:   hidden;
+	color:      var(--lrn-text);
+	background: var(--lrn-bg);
+}
+
+/* The hero variant already paints the course cover as a full-bleed banner
+   (.lrn-hero__bg-img, dimmed via .lrn-hero__overlay). The shared enroll-card
+   partial then renders the same image again inside .lrn-sidebar-card__preview
+   at the top of the floating card — three copies of the same image on one
+   screen (bg + card preview + sometimes a video trailer). Suppress the
+   in-card preview so the cover is shown once via the hero backdrop. Video
+   trailers still render via the dedicated .lrn-course-hero__trailer slot
+   above the included partial. */
+.lrn-course--hero .lrn-course-hero__cta .lrn-sidebar-card__preview {
+	display: none;
+}
+
+/* The shared enroll card floats the wishlist heart absolutely (anchored to
+   the preview media in the classic layout). The hero card now hides that
+   preview, so the absolute wishlist would float to the top of the card and
+   bleed onto the dark hero backdrop with no contrast. Same fix as split:
+   let the wishlist flow normally below the CTA. */
+.lrn-course--hero .lrn-course-hero__cta .lrn-wishlist-btn {
+	position:           static;
+	margin-block-start: var(--lrn-sp-3);
+}
+
+.lrn-course--hero .lrn-course-hero__trailer {
+	aspect-ratio: 16 / 9;
+	background:   var(--lrn-bg-tertiary);
+}
+
+.lrn-course--hero .lrn-course-hero__trailer .lrn-course-preview-video {
+	width:   100%;
+	height:  100%;
+	border:  0;
+	display: block;
+}
+
+/* In-page section nav — sticks below the hero while the body scrolls. */
+.lrn-course-hero-body {
+	display:               grid;
+	grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+	gap:                   var(--lrn-sp-8);
+	padding-block:         var(--lrn-sp-8);
+}
+
+.lrn-course-section-nav {
+	position:      sticky;
+	top:           var(--lrn-sp-6);
+	align-self:    start;
+}
+
+.lrn-course-section-nav__list {
+	list-style:    none;
+	margin:        0;
+	padding:       0;
+	display:       flex;
+	flex-direction: column;
+	gap:           var(--lrn-sp-1);
+	border-inline-start: 2px solid var(--lrn-border);
+}
+
+/* Specificity boosted with `.lrn-course-section-nav` parent so the link's
+   muted color (`--lrn-text-secondary`) wins against theme rules like
+   `.entry-content a` (0,1,1) that otherwise paint these links accent-red.
+   At mobile/tablet the nav collapses to a horizontal row and that's where
+   the leak was most visible — three red links on a dark hero. */
+.lrn-course-section-nav .lrn-course-section-nav__link {
+	display:             block;
+	padding:             var(--lrn-sp-2) var(--lrn-sp-3);
+	color:               var(--lrn-text-secondary);
+	text-decoration:     none;
+	border-radius:       var(--lrn-radius-sm);
+	font-size:           var(--lrn-text-sm);
+	transition:          color var(--lrn-dur) var(--lrn-ease), background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-course-section-nav .lrn-course-section-nav__link:hover,
+.lrn-course-section-nav .lrn-course-section-nav__link:focus-visible {
+	color:      var(--lrn-accent);
+	background: var(--lrn-accent-bg);
+}
+
+.lrn-course-hero-body__main {
+	min-width: 0;
+}
+
+/* Below the desktop tier — collapse the hero grid + body to one column.
+   `max-width: 1023.98px` (not 1024px) so that an exactly-1024-wide viewport
+   (iPad landscape) keeps the desktop 2-col layout. The classic variant's
+   shared `single-course.css` uses `@media (min-width: 1024px)` for the same
+   tier boundary; aligning the hero/split queries to be exclusive of 1024
+   keeps all three variants consistent at the iPad-landscape inflection. */
+@media (max-width: 1023.98px) {
+	.lrn-course--hero .lrn-course-hero__inner {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-course-hero-body {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-course-section-nav {
+		position: static;
+	}
+
+	.lrn-course-section-nav__list {
+		flex-direction:      row;
+		flex-wrap:           wrap;
+		border-inline-start: 0;
+	}
+}
+
+@media (max-width: 640px) {
+	.lrn-course--hero .lrn-course-hero {
+		padding: var(--lrn-sp-8) 0;
+	}
+
+	.lrn-course--hero .lrn-course-hero__title {
+		font-size: var(--lrn-text-3xl);
+	}
+}

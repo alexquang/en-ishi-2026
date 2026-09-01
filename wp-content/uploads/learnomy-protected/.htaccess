@@ -1,0 +1,10 @@
+# Learnomy protected uploads — every byte here is served through
+# /learnomy-file/{id}/ after a permission check. Direct access is never valid.
+<IfModule mod_authz_core.c>
+	Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+	Order allow,deny
+	Deny from all
+</IfModule>
+Options -Indexes

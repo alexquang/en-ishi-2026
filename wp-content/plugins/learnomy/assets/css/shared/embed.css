@@ -1,0 +1,145 @@
+/* ────────────────────────────────────────────────────────────────────────
+   Unified embed component (ADR D8 — one renderer, one premium look on every
+   surface: lesson player, content body, wp-admin editors, AND the Pro
+   front-end builder). Output of \Learnomy\Content\Embed::render(): a responsive
+   aspect-ratio frame for oEmbed providers, or a clean link-card fallback.
+
+   This is the ONE place the component is styled. It is loaded both on the
+   frontend player and in every authoring editor so the author preview is
+   pixel-identical to the learner view. Token-driven → dark mode + RTL inherit.
+   ──────────────────────────────────────────────────────────────────────── */
+.lrn-embed {
+	margin-block: var(--lrn-sp-6);
+}
+.lrn-embed__frame {
+	position:      relative;
+	width:         100%;
+	overflow:      hidden;
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	background:    var(--lrn-bg-tertiary);
+	box-shadow:    var(--lrn-shadow-sm);
+}
+.lrn-embed--16x9 .lrn-embed__frame { aspect-ratio: 16 / 9; }
+.lrn-embed--4x3  .lrn-embed__frame { aspect-ratio: 4 / 3; }
+.lrn-embed--1x1  .lrn-embed__frame { aspect-ratio: 1 / 1; }
+/* Provider markup (iframe, or a wrapping div) fills the frame edge to edge. */
+.lrn-embed__frame > :where(iframe, video, embed, object, div) {
+	position: absolute;
+	inset:    0;
+	width:    100%;
+	height:   100%;
+	border:   0;
+}
+.lrn-embed__caption {
+	margin-block: var(--lrn-sp-2) 0;
+	color:        var(--lrn-text-secondary);
+	font-size:    var(--lrn-text-sm);
+	text-align:   center;
+}
+/* Premium link-card fallback for URLs WP can't oEmbed — never a broken iframe.
+   Specificity matched to the ratio rule above (.lrn-embed wrapper) so the card
+   collapses to content height instead of inheriting the 16:9 box. */
+.lrn-embed .lrn-embed__frame--card {
+	position:     static;
+	aspect-ratio: auto;
+	background:   var(--lrn-bg-secondary);
+}
+.lrn-embed__frame--card > .lrn-embed-card {
+	position: static;
+}
+.lrn-embed-card {
+	display:         flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-4);
+	padding:         var(--lrn-sp-4) var(--lrn-sp-5);
+	text-decoration: none;
+	color:           var(--lrn-text);
+	transition:      background .15s ease;
+}
+.lrn-embed-card:hover { background: var(--lrn-bg-hover); }
+.lrn-embed-card:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-embed-card__icon { flex: none; color: var(--lrn-text-secondary); }
+.lrn-embed-card__body { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.lrn-embed-card__host { font-weight: 600; font-size: var(--lrn-text-base); }
+.lrn-embed-card__url  {
+	color:         var(--lrn-text-tertiary);
+	font-size:     var(--lrn-text-xs);
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	white-space:   nowrap;
+}
+.lrn-embed-card__action {
+	flex:        none;
+	font-size:   var(--lrn-text-sm);
+	font-weight: 600;
+	color:       var(--lrn-accent);
+}
+@media (max-width: 480px) {
+	.lrn-embed--16x9 .lrn-embed__frame { aspect-ratio: 16 / 10; }
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   Editor chrome for the LrnEmbedBlock (wp-admin editors + Pro builder).
+   The block renders the component above as its live preview; these rules style
+   only the authoring affordances around it (URL input, source bar, status).
+   ──────────────────────────────────────────────────────────────────────── */
+.lrn-editor-embed {
+	margin-block: var(--lrn-sp-4);
+}
+.lrn-editor-embed__input {
+	width:         100%;
+	box-sizing:    border-box;
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+	font-size:     var(--lrn-text-base);
+}
+.lrn-editor-embed__input:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+	border-color:   var(--lrn-accent);
+}
+.lrn-editor-embed__status {
+	padding:       var(--lrn-sp-4);
+	border:        1px dashed var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	color:         var(--lrn-text-secondary);
+	font-size:     var(--lrn-text-sm);
+	text-align:    center;
+}
+/* The live preview is a player — don't let its iframe swallow editor clicks. */
+.lrn-editor-embed__preview .lrn-embed__frame > :where(iframe, video, embed, object) {
+	pointer-events: none;
+}
+.lrn-editor-embed__bar {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	margin-top:    var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	color:         var(--lrn-text-tertiary);
+}
+.lrn-editor-embed__url {
+	flex:          1;
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	white-space:   nowrap;
+}
+.lrn-editor-embed__replace {
+	flex:        none;
+	padding:     var(--lrn-sp-1) var(--lrn-sp-3);
+	border:      1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-sm);
+	background:  var(--lrn-bg);
+	color:       var(--lrn-accent);
+	font-size:   var(--lrn-text-xs);
+	font-weight: 600;
+	cursor:      pointer;
+}
+.lrn-editor-embed__replace:hover { background: var(--lrn-bg-hover); }

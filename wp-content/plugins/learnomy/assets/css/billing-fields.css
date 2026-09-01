@@ -1,0 +1,65 @@
+/**
+ * Billing address fields — shared by checkout and the account Billing page.
+ *
+ * These rules lived in checkout.css, which is enqueued on checkout only. When
+ * the fields were extracted into templates/partials/billing-fields.php and
+ * reused on /account/billing/, the markup came across and the styling did not:
+ * the account form rendered as raw browser inputs with no spacing, no field
+ * chrome and a country select at a different width from everything else
+ * (Basecamp 10171338907).
+ *
+ * The partial and its stylesheet now travel together. Anywhere that requires
+ * billing-fields.php must also enqueue learnomy-billing-fields, and the rules
+ * exist in exactly one place so the two surfaces cannot drift apart visually.
+ *
+ * Class prefix is `lrn-billing-*`, not `lrn-checkout__billing-*`: a shared
+ * partial named after one of its two hosts is a trap for the next reader.
+ *
+ * @package Learnomy
+ */
+
+.lrn-billing-row {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+	margin-bottom:  var(--lrn-sp-3);
+}
+
+.lrn-billing-row label {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-billing-row input,
+.lrn-billing-row select {
+	width:         100%;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-size:     var(--lrn-text-base);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg);
+	border:        var(--lrn-border-width) solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-billing-row input:focus-visible,
+.lrn-billing-row select:focus-visible {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:
+		0 0 0 2px var(--lrn-bg),
+		0 0 0 4px var(--lrn-accent);
+}
+
+/* State and postcode share a line: both are short and read as one address
+   line. Collapses under narrow widths so neither is squeezed. */
+.lrn-billing-grid {
+	display:               grid;
+	grid-template-columns: 1fr 1fr;
+	gap:                   var(--lrn-sp-3);
+}
+
+@media (max-width: 480px) {
+	.lrn-billing-grid {
+		grid-template-columns: 1fr;
+	}
+}

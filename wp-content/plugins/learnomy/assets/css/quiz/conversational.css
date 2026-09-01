@@ -1,0 +1,501 @@
+/**
+ * Conversational quiz styles — Typeform-style immersive layout.
+ *
+ * Uses lrn-conv__* prefix to avoid conflicts with base .lrn-quiz__* styles.
+ * All values reference --lrn-* tokens from learnomy.css.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Container
+   ========================================================================== */
+
+.lrn-conv {
+	position: relative;
+	background: var(--lrn-bg);
+	color: var(--lrn-text);
+	font-family: var(--lrn-font);
+	min-height: 100vh;
+	min-height: 100dvh;
+}
+
+/* ==========================================================================
+   Progress bar — thin fixed line at top
+   ========================================================================== */
+
+.lrn-conv__progress {
+	position: fixed;
+	top: 0;
+	inset-inline-start: 0;
+	height: 3px;
+	background: var(--lrn-accent);
+	transition: width 0.4s ease;
+	z-index: 100;
+}
+
+/* ==========================================================================
+   Timer — minimal, top-right
+   ========================================================================== */
+
+.lrn-conv__timer {
+	position: fixed;
+	top: var(--lrn-sp-3);
+	inset-inline-end: var(--lrn-sp-4);
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+	z-index: 101;
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+}
+
+.lrn-conv__timer svg {
+	width: 14px;
+	height: 14px;
+}
+
+.lrn-conv__timer--urgent {
+	color: var(--lrn-danger);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+/* ==========================================================================
+   Player
+   ========================================================================== */
+
+.lrn-conv__player {
+	position: relative;
+}
+
+/* Anti-cheat warning */
+.lrn-conv__cheat-warning {
+	position: fixed;
+	top: var(--lrn-sp-3);
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--lrn-warn-bg);
+	color: var(--lrn-warn);
+	font-size: var(--lrn-text-sm);
+	padding: var(--lrn-sp-2) var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-lg);
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	z-index: 102;
+}
+
+.lrn-conv__cheat-warning svg {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Question card — full viewport centered
+   ========================================================================== */
+
+.lrn-conv__card {
+	min-height: 100vh;
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: var(--lrn-sp-8);
+	text-align: center;
+	transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.lrn-conv__card--transitioning {
+	opacity: 0.3;
+	transform: translateY(-20px);
+}
+
+/* Question counter */
+.lrn-conv__counter {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: var(--lrn-sp-4);
+}
+
+/* Question text — large and centered */
+.lrn-conv__question {
+	font-size: var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	max-width: 640px;
+	margin: 0 0 var(--lrn-sp-8);
+	line-height: var(--lrn-leading-relaxed);
+}
+
+/* ==========================================================================
+   Pill answer buttons
+   ========================================================================== */
+
+.lrn-conv__options {
+	width: 100%;
+	max-width: 640px;
+}
+
+.lrn-conv__option {
+	display: block;
+	width: 100%;
+	padding: var(--lrn-sp-4) var(--lrn-sp-6);
+	margin-bottom: var(--lrn-sp-3);
+	border: 2px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-xl);
+	background: var(--lrn-bg);
+	color: var(--lrn-text);
+	font-family: var(--lrn-font);
+	font-size: var(--lrn-text-md);
+	cursor: pointer;
+	transition: all var(--lrn-dur) var(--lrn-ease);
+	text-align: start;
+	line-height: var(--lrn-leading-normal);
+}
+
+.lrn-conv__option:hover {
+	border-color: var(--lrn-accent);
+	background: var(--lrn-accent-bg);
+}
+
+.lrn-conv__option:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-conv__option--selected {
+	border-color: var(--lrn-accent);
+	background: var(--lrn-accent);
+	color: var(--lrn-white);
+}
+
+.lrn-conv__option--selected:hover {
+	border-color: var(--lrn-accent-hover);
+	background: var(--lrn-accent-hover);
+}
+
+/* ==========================================================================
+   Text input & essay — centered below question
+   ========================================================================== */
+
+.lrn-conv__text-input,
+.lrn-conv__essay {
+	width: 100%;
+	max-width: 640px;
+	text-align: start;
+}
+
+.lrn-conv__input {
+	width: 100%;
+	font-size: var(--lrn-text-md);
+	padding: var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-lg);
+}
+
+.lrn-conv__textarea {
+	width: 100%;
+	font-size: var(--lrn-text-md);
+	padding: var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-lg);
+	resize: vertical;
+}
+
+/* Continue button for text/essay questions */
+.lrn-conv__continue {
+	margin-top: var(--lrn-sp-6);
+	border-radius: var(--lrn-radius-xl);
+	padding: var(--lrn-sp-3) var(--lrn-sp-8);
+}
+
+/* Multi-select: the explicit "done choosing" affordance. Single-answer
+   questions advance on their own, so this block only appears for mc_multi. */
+.lrn-conv__multi-continue {
+	display:         flex;
+	flex-direction:  column;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+}
+
+.lrn-conv__multi-hint {
+	margin:    var(--lrn-sp-4) 0 0;
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+/* The shared continue button carries a top margin sized for sitting alone
+   under a text field; here it follows the hint line, so it sits closer. */
+.lrn-conv__multi-continue .lrn-conv__continue {
+	margin-top: 0;
+}
+
+/* Hint */
+.lrn-conv__hint {
+	max-width: 640px;
+	margin-top: var(--lrn-sp-6);
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+	text-align: start;
+}
+
+.lrn-conv__hint summary {
+	cursor: pointer;
+}
+
+/* Keyboard shortcut hint */
+.lrn-conv__keyboard-hint {
+	position: fixed;
+	bottom: var(--lrn-sp-4);
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-tertiary);
+}
+
+/* ==========================================================================
+   Results — full viewport centered
+   ========================================================================== */
+
+.lrn-conv__results {
+	min-height: 80vh;
+	min-height: 80dvh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	padding: var(--lrn-sp-8);
+}
+
+.lrn-conv__results-icon {
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-conv__results-icon svg {
+	width: 64px;
+	height: 64px;
+	color: var(--lrn-danger);
+}
+
+.lrn-conv__results-icon--pass svg {
+	color: var(--lrn-success);
+}
+
+.lrn-conv__results-title {
+	font-size: var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-conv__results-score {
+	font-size: var(--lrn-text-xl);
+	color: var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-conv__results-breakdown {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-conv__results-status {
+	font-size: var(--lrn-text-md);
+	margin: 0 0 var(--lrn-sp-6);
+}
+
+.lrn-conv__results-actions {
+	display: flex;
+	gap: var(--lrn-sp-3);
+	flex-wrap: wrap;
+	justify-content: center;
+	margin-bottom: var(--lrn-sp-10);
+}
+
+/* ==========================================================================
+   Review section
+   ========================================================================== */
+
+.lrn-conv__review {
+	width: 100%;
+	max-width: 640px;
+	text-align: start;
+}
+
+.lrn-conv__review-heading {
+	font-size: var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	margin: 0 0 var(--lrn-sp-4);
+}
+
+.lrn-conv__review-item {
+	margin-bottom: var(--lrn-sp-4);
+	padding: var(--lrn-sp-4);
+}
+
+.lrn-conv__review-item--correct {
+	border-inline-start: 3px solid var(--lrn-success);
+}
+
+.lrn-conv__review-item--incorrect {
+	border-inline-start: 3px solid var(--lrn-danger);
+}
+
+.lrn-conv__review-item--pending {
+	border-inline-start: 3px solid var(--lrn-warn);
+}
+
+.lrn-conv__review-item-header {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-conv__review-item-status svg {
+	width: 18px;
+	height: 18px;
+}
+
+.lrn-conv__review-item--correct .lrn-conv__review-item-status svg {
+	color: var(--lrn-success);
+}
+
+.lrn-conv__review-item--incorrect .lrn-conv__review-item-status svg {
+	color: var(--lrn-danger);
+}
+
+.lrn-conv__review-item--pending .lrn-conv__review-item-status svg {
+	color: var(--lrn-warn);
+}
+
+.lrn-conv__review-item-title {
+	flex: 1;
+	font-size: var(--lrn-text-base);
+	font-weight: var(--lrn-weight-medium);
+	margin: 0;
+}
+
+.lrn-conv__review-item-score {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-conv__review-answer {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	padding: var(--lrn-sp-2) 0;
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-conv__review-answer-icon svg {
+	width: 14px;
+	height: 14px;
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-conv__review-answer--correct .lrn-conv__review-answer-icon svg {
+	color: var(--lrn-success);
+}
+
+.lrn-conv__review-answer--wrong .lrn-conv__review-answer-icon svg {
+	color: var(--lrn-danger);
+}
+
+.lrn-conv__review-answer--selected {
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-conv__review-essay {
+	margin-top: var(--lrn-sp-3);
+}
+
+.lrn-conv__review-essay-label {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-conv__review-essay-text {
+	font-size: var(--lrn-text-sm);
+	border-inline-start: 3px solid var(--lrn-border-heavy);
+	padding-inline-start: var(--lrn-sp-4);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-conv__review-essay-pending {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-warn);
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+	margin: 0;
+}
+
+.lrn-conv__review-essay-pending svg {
+	width: 12px;
+	height: 12px;
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media ( prefers-reduced-motion: reduce ) {
+	.lrn-conv__card--transitioning {
+		opacity: 0.3;
+		transform: none;
+		transition: opacity 0.2s;
+	}
+
+	.lrn-conv__progress {
+		transition: none;
+	}
+}
+
+/* ==========================================================================
+   Mobile (640px)
+   ========================================================================== */
+
+@media ( max-width: 640px ) {
+	.lrn-conv__card {
+		padding: var(--lrn-sp-6) var(--lrn-sp-4);
+	}
+
+	.lrn-conv__question {
+		font-size: var(--lrn-text-xl);
+	}
+
+
+	.lrn-conv__option {
+		padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	}
+
+	.lrn-conv__keyboard-hint {
+		display: none;
+	}
+}
+
+@media ( max-width: 640px ) {
+	.lrn-conv__card {
+		padding: var(--lrn-sp-4) var(--lrn-sp-3);
+	}
+
+	.lrn-conv__question {
+		font-size: var(--lrn-text-lg);
+	}
+
+
+	.lrn-conv__nav {
+		flex-direction: column;
+		gap: var(--lrn-sp-2);
+	}
+
+	.lrn-conv__nav .lrn-btn {
+		width: 100%;
+		justify-content: center;
+	}
+}

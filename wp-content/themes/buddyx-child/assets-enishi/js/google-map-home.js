@@ -202,13 +202,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function (results, status) {
           if (status !== "OK" || !results || !results.length) {
-            console.log("Không xác định được quốc gia");
-
             // ==========================
             // FALLBACK VIỆT NAM
             // ==========================
 
-            initMapByCountry(14.0583, 108.2772, "VN");
+            initMapByCountry(35.6762, 139.6503, "JP");
 
             return;
           }
@@ -222,9 +220,7 @@ document.addEventListener("DOMContentLoaded", function () {
           });
 
           if (!countryResult) {
-            console.log("Không tìm thấy country");
-
-            initMapByCountry(14.0583, 108.2772, "VN");
+            initMapByCountry(35.6762, 139.6503, "JP");
 
             return;
           }
@@ -255,12 +251,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
           const countryLng = location.lng();
 
-          console.log("Country:", countryName);
-
-          console.log("Country Code:", countryCode);
-
-          console.log("Country Center:", countryLat, countryLng);
-
           // =================================
           // INIT MAP
           // =================================
@@ -287,7 +277,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // FALLBACK VIỆT NAM
       // =================================
 
-      initMapByCountry(14.0583, 108.2772, "VN");
+      initMapByCountry(35.6762, 139.6503, "JP");
     },
 
     // =====================================
@@ -362,93 +352,93 @@ async function initMapByCountry(countryLat, countryLng, countryCode) {
   }
 }
 
-async function initMapByCountry(countryLat, countryLng, countryCode) {
-  // =========================
-  // MẶC ĐỊNH
-  // =========================
+// async function initMapByCountry(countryLat, countryLng, countryCode) {
+//   // =========================
+//   // MẶC ĐỊNH
+//   // =========================
 
-  let center = {
-    lat: Number(countryLat),
-    lng: Number(countryLng),
-  };
+//   let center = {
+//     lat: Number(countryLat),
+//     lng: Number(countryLng),
+//   };
 
-  let zoom = 6;
+//   let zoom = 6;
 
-  // =========================
-  // TÌM THÀNH PHỐ MẶC ĐỊNH
-  // =========================
+//   // =========================
+//   // TÌM THÀNH PHỐ MẶC ĐỊNH
+//   // =========================
 
-  const city = majorCities[countryCode];
+//   const city = majorCities[countryCode];
 
-  if (city) {
-    center = {
-      lat: city.lat,
-      lng: city.lng,
-    };
+//   if (city) {
+//     center = {
+//       lat: city.lat,
+//       lng: city.lng,
+//     };
 
-    zoom = city.zoom;
+//     zoom = city.zoom;
 
-    console.log("Default city:", city.name);
-  } else {
-    console.log("Không có thành phố mặc định cho:", countryCode);
-  }
+//     console.log("Default city:", city.name);
+//   } else {
+//     console.log("Không có thành phố mặc định cho:", countryCode);
+//   }
 
-  // =========================
-  // CREATE MAP
-  // =========================
+//   // =========================
+//   // CREATE MAP
+//   // =========================
 
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: center,
+//   map = new google.maps.Map(document.getElementById("map"), {
+//     center: center,
 
-    zoom: zoom,
+//     zoom: zoom,
 
-    mapTypeControl: false,
+//     mapTypeControl: false,
 
-    gestureHandling: "greedy",
+//     gestureHandling: "greedy",
 
-    scrollwheel: true,
+//     scrollwheel: true,
 
-    draggable: true,
+//     draggable: true,
 
-    streetViewControl: false,
+//     streetViewControl: false,
 
-    fullscreenControl: false,
-  });
+//     fullscreenControl: false,
+//   });
 
-  // =========================
-  // PLACES SERVICE
-  // =========================
+//   // =========================
+//   // PLACES SERVICE
+//   // =========================
 
-  service = new google.maps.places.PlacesService(map);
+//   service = new google.maps.places.PlacesService(map);
 
-  // =========================
-  // KHÔNG TẠO GPS MARKER
-  // =========================
+//   // =========================
+//   // KHÔNG TẠO GPS MARKER
+//   // =========================
 
-  marker = null;
+//   marker = null;
 
-  // =========================
-  // LAYERS
-  // =========================
+//   // =========================
+//   // LAYERS
+//   // =========================
 
-  trafficLayer = new google.maps.TrafficLayer();
+//   trafficLayer = new google.maps.TrafficLayer();
 
-  transitLayer = new google.maps.TransitLayer();
+//   transitLayer = new google.maps.TransitLayer();
 
-  bikeLayer = new google.maps.BicyclingLayer();
+//   bikeLayer = new google.maps.BicyclingLayer();
 
-  // =========================
-  // LAYER CONTROL
-  // =========================
+//   // =========================
+//   // LAYER CONTROL
+//   // =========================
 
-  if (!layerControlsInitialized) {
-    initLayerControls();
+//   if (!layerControlsInitialized) {
+//     initLayerControls();
 
-    layerControlsInitialized = true;
-  }
+//     layerControlsInitialized = true;
+//   }
 
-  console.log("Map initialized:", countryCode, center, zoom);
-}
+//   console.log("Map initialized:", countryCode, center, zoom);
+// }
 
 async function initMap(userLat, userLng) {
   const center = {
@@ -949,15 +939,13 @@ function loadPlaceDetails(placeId, marker) {
         }
       }
 
-
       /*
- * REVIEWS
- */
-let reviewsHTML = "";
+       * REVIEWS
+       */
+      let reviewsHTML = "";
 
-if (place.reviews && place.reviews.length) {
-
-    reviewsHTML = `
+      if (place.reviews && place.reviews.length) {
+        reviewsHTML = `
         <div class="gm-popup-reviews">
 
             <div class="gm-reviews-header">
@@ -988,26 +976,19 @@ if (place.reviews && place.reviews.length) {
 
             <div class="gm-reviews-list">
 
-                ${place.reviews.map(function(review) {
+                ${place.reviews
+                  .map(function (review) {
+                    const authorName = review.author_name || "Google User";
 
-                    const authorName =
-                        review.author_name || "Google User";
+                    const authorPhoto = review.profile_photo_url || "";
 
-                    const authorPhoto =
-                        review.profile_photo_url || "";
+                    const authorUrl = review.author_url || "#";
 
-                    const authorUrl =
-                        review.author_url || "#";
+                    const rating = review.rating || 0;
 
-                    const rating =
-                        review.rating || 0;
+                    const reviewText = review.text || "";
 
-                    const reviewText =
-                        review.text || "";
-
-                    const relativeTime =
-                        review.relative_time_description || "";
-
+                    const relativeTime = review.relative_time_description || "";
 
                     return `
 
@@ -1016,14 +997,14 @@ if (place.reviews && place.reviews.length) {
                             <div class="gm-review-author">
 
                                 ${
-                                    authorPhoto
-                                        ? `
+                                  authorPhoto
+                                    ? `
                                             <img
                                                 class="gm-review-avatar"
                                                 src="${authorPhoto}"
                                                 alt="${authorName}">
                                         `
-                                        : `
+                                    : `
                                             <div class="gm-review-avatar gm-review-avatar-default">
                                                 ${authorName.charAt(0)}
                                             </div>
@@ -1062,20 +1043,20 @@ if (place.reviews && place.reviews.length) {
 
 
                             ${
-                                reviewText
-                                    ? `
+                              reviewText
+                                ? `
                                         <div class="gm-review-text">
                                             ${reviewText}
                                         </div>
                                     `
-                                    : ""
+                                : ""
                             }
 
                         </div>
 
                     `;
-
-                }).join("")}
+                  })
+                  .join("")}
 
             </div>
 
@@ -1088,8 +1069,7 @@ if (place.reviews && place.reviews.length) {
 
         </div>
     `;
-
-}
+      }
 
       /*
        * OPENING HOURS
@@ -1233,7 +1213,15 @@ if (place.reviews && place.reviews.length) {
                             class="gm-popup-tab active"
                             data-popup-tab="overview">
 
-                            Overview
+                            Messege
+
+                        </button>
+
+                        <button
+                            class="gm-popup-tab"
+                            data-popup-tab="live">
+
+                            Live
 
                         </button>
 
@@ -1245,20 +1233,15 @@ if (place.reviews && place.reviews.length) {
                       </button>
 
                         <button
-                            class="gm-popup-tab"
-                            data-popup-tab="video">
-
+                            class="gm-popup-tab gm-video-btn"
+                            data-popup-tab="video"
+                            data-tab="video"
+                            data-placeid="${placeId}" >
                             Video
 
                         </button>
 
-                        <button
-                            class="gm-popup-tab"
-                            data-popup-tab="live">
 
-                            Live
-
-                        </button>
 
                     </div>
 
@@ -1622,6 +1605,129 @@ document.querySelectorAll('input[name="maptype"]').forEach((radio) => {
   });
 });
 
+/* insert Videos */
+document.addEventListener("click", function (e) {
+  const uploadBtn = e.target.closest("#gmUploadVideoBtn");
+
+  if (!uploadBtn) {
+    return;
+  }
+
+  console.log("Click Upload Video");
+
+  const fileInput = document.getElementById("gmUploadVideoFile");
+
+  if (!fileInput) {
+    console.error("gmUploadVideoFile not found");
+    return;
+  }
+
+  fileInput.click();
+});
+
+document.addEventListener("change", function (e) {
+  console.log("gmUploadVideoFile");
+  if (e.target.id !== "gmUploadVideoFile") {
+    return;
+  }
+
+  const file = e.target.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  const uploadBtn = document.getElementById("gmUploadVideoBtn");
+  const dialog = document.getElementById("gmVideoDialog");
+
+  if (!uploadBtn || !dialog) {
+    console.error("Video upload elements not found");
+    return;
+  }
+
+  // Lấy Place ID
+  const placeId = dialog.dataset.placeid;
+
+  if (!placeId) {
+    alert("Place ID not found");
+    return;
+  }
+
+  // Kiểm tra video
+  if (!file.type.startsWith("video/")) {
+    alert("Please select a video file.");
+    e.target.value = "";
+    return;
+  }
+
+  console.log("Upload video:", file.name);
+  console.log("Place ID:", placeId);
+
+  // Disable button
+  uploadBtn.disabled = true;
+
+  uploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
+
+  // FormData
+  const formData = new FormData();
+
+  formData.append("action", "upload_place_video");
+
+  formData.append("place_id", placeId);
+
+  formData.append("video", file);
+
+  fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
+    method: "POST",
+    body: formData,
+    credentials: "same-origin",
+  })
+    .then(async (response) => {
+      const text = await response.text();
+
+      console.log("HTTP Status:", response.status);
+
+      console.log("Response:", text);
+
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status + ": " + text);
+      }
+
+      return JSON.parse(text);
+    })
+
+    .then((res) => {
+      console.log("Upload video result:", res);
+
+      if (res.success) {
+        alert("Video upload success!");
+
+        // Reset file input
+        e.target.value = "";
+
+        // Reload video
+        loadPlaceVideos(placeId);
+      } else {
+        console.error("Upload error:", res.data);
+
+        alert(typeof res.data === "string" ? res.data : "Upload failed");
+      }
+    })
+
+    .catch((error) => {
+      console.error("Video upload error:", error);
+
+      alert("Upload failed: " + error.message);
+    })
+
+    .finally(() => {
+      uploadBtn.disabled = false;
+
+      uploadBtn.innerHTML = '<i class="fa fa-upload"></i> Upload';
+    });
+});
+
+/* insert Photo */
 document.addEventListener("change", function (e) {
   if (e.target.id !== "photo-upload") {
     return;
@@ -1805,6 +1911,29 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 });
+
+/* Load Place Video */
+function loadPlaceVideos(placeId) {
+  fetch(
+    "https://dev.pt-solution.vn/wp-admin/admin-ajax.php?action=get_place_uploads_videos&place_id=" +
+      placeId,
+  )
+    .then((r) => r.json())
+    .then((res) => {
+      console.log("Place videos:", res);
+
+      if (!res.success || !res.data) {
+        return;
+      }
+
+      renderVideos(res.data);
+    })
+    .catch((error) => {
+      console.error("Load videos error:", error);
+    });
+}
+
+/* Load Place Photo */
 function loadPlacePhotos(placeId) {
   const service = new google.maps.places.PlacesService(map);
 
@@ -1831,6 +1960,37 @@ function loadPlacePhotos(placeId) {
   );
 }
 
+/* Render Video */
+function renderVideos(videos) {
+  const container = document.querySelector("#gmVideoContent");
+
+  if (!container) {
+    return;
+  }
+
+  if (!videos.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = videos
+    .map(
+      (video) => `
+        <div class="place-video">
+          <video
+            src="${video.url}"
+            controls
+            playsinline
+            preload="metadata"
+            style="width:100%; border-radius:12px;"
+          ></video>
+        </div>
+      `,
+    )
+    .join("");
+}
+
+/* Render Photo */
 function renderPhotos(place, uploads) {
   const container = document.getElementById("gmPictureContent");
 
@@ -1879,6 +2039,20 @@ function normalizeSearch() {
   return document.getElementById("pac-input").value.trim();
 }
 
+/* Dialog Video */
+document.addEventListener("click", function (e) {
+  const videoBtn = e.target.closest(".gm-video-btn");
+
+  if (!videoBtn) {
+    return;
+  }
+
+  const placeId = videoBtn.dataset.placeid;
+
+  openPlaceVideoDialog(placeId);
+});
+
+/* Dialog Picture */
 document.addEventListener("click", function (e) {
   const pictureBtn = e.target.closest(".gm-picture-btn");
 
@@ -1891,6 +2065,26 @@ document.addEventListener("click", function (e) {
   openPlacePictureDialog(placeId);
 });
 
+/* Open Video */
+function openPlaceVideoDialog(placeId) {
+  const dialog = document.getElementById("gmVideoDialog");
+
+  dialog.dataset.placeid = placeId;
+
+  dialog.classList.add("show");
+
+  document.getElementById("gmVideoContent").innerHTML = `
+        <div class="gm-empty">
+            Loading videos...
+        </div>
+    `;
+
+  console.log("Open Video Dialog:", placeId);
+
+  loadPlaceVideos(placeId);
+}
+
+/* Open Picture */
 function openPlacePictureDialog(placeId) {
   const dialog = document.getElementById("gmPictureDialog");
 
@@ -2186,4 +2380,14 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 /* END GEMINI SEARCH */
 
-/* LOAD REVIEW */
+/* Close Dialog Video */
+document.getElementById("gmVideoClose").addEventListener("click", function () {
+  const dialog = document.getElementById("gmVideoDialog");
+
+  dialog.classList.remove("show");
+
+  // Xóa nội dung video khi đóng
+  document.getElementById("gmVideoContent").innerHTML = "";
+});
+
+/* Auto Load Image TODO*/

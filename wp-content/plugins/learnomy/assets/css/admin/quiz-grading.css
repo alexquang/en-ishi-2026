@@ -1,0 +1,132 @@
+/**
+ * Admin grading detail screen.
+ *
+ * Builds on `.lrn-settings-card` (head already padded) — these rules pad the
+ * card body and style the student-answer block + inline grade form. Token-only.
+ *
+ * @package Learnomy
+ */
+
+.lrn-grading-list {
+	margin-block-start: var(--lrn-sp-5);
+}
+
+.lrn-grading-card__answer,
+.lrn-grading-card__form,
+.lrn-grading-card__result {
+	padding: var(--lrn-sp-4) var(--lrn-sp-5);
+}
+
+.lrn-grading-card__label {
+	font-size:          var(--lrn-text-xs);
+	font-weight:        var(--lrn-weight-semibold);
+	text-transform:     uppercase;
+	letter-spacing:     0.04em;
+	color:              var(--lrn-text-secondary);
+	margin:             0 0 var(--lrn-sp-2);
+}
+
+.lrn-grading-card__answer-body {
+	background:    var(--lrn-bg-secondary);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	color:         var(--lrn-text);
+	font-size:     var(--lrn-text-base);
+	line-height:   1.6;
+	white-space:   normal;
+	overflow-wrap: anywhere;
+}
+
+.lrn-grading-card__form {
+	border-block-start: 1px solid var(--lrn-border);
+	display:            flex;
+	flex-direction:     column;
+	gap:                var(--lrn-sp-4);
+}
+
+.lrn-grading-card__form .lrn-form-field input,
+.lrn-grading-card__form .lrn-form-field textarea {
+	max-width:  100%;
+	box-sizing: border-box;
+}
+
+.lrn-grading-card__form .lrn-form-field input[type="number"] {
+	width: 7rem;
+}
+
+.lrn-grading-card__actions {
+	display: flex;
+	gap:     var(--lrn-sp-3);
+}
+
+.lrn-grading-card__result {
+	border-block-start: 1px solid var(--lrn-border);
+	color:              var(--lrn-text);
+	font-size:          var(--lrn-text-base);
+}
+
+.lrn-grading-card__result p {
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-grading-card.is-graded {
+	opacity: 0.92;
+}
+
+.lrn-grading-banner {
+	margin-block: var(--lrn-sp-4);
+}
+
+@media (min-width: 640px) {
+	.lrn-grading-card__form {
+		flex-direction: row;
+		flex-wrap:      wrap;
+		align-items:    flex-end;
+	}
+
+	.lrn-grading-card__form .lrn-form-field--feedback {
+		flex: 1 1 60%;
+	}
+}
+
+/* ==========================================================================
+   P1: tab-switch integrity signal on the attempt-review header
+   ========================================================================== */
+
+.lrn-grading-meta {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	margin:      var(--lrn-sp-2) 0 0;
+	font-size:   var(--lrn-text-sm);
+}
+
+.lrn-grading-tabswitch {
+	display:       inline-flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-1);
+	padding:       2px var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-pill);
+	background:    var(--lrn-bg-secondary);
+	color:         var(--lrn-text-secondary);
+	font-weight:   var(--lrn-weight-medium);
+}
+
+.lrn-grading-tabswitch svg,
+.lrn-grading-tabswitch i {
+	width:  var(--lrn-sp-4);
+	height: var(--lrn-sp-4);
+}
+
+/* Flagged: advisory warning tint, never an error/red "guilty" signal. */
+.lrn-grading-tabswitch--flagged {
+	background: color-mix(in srgb, var(--lrn-warn) 14%, transparent);
+	color:      var(--lrn-warn);
+}
+
+.lrn-grading-tabswitch__hint {
+	color:     var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-xs);
+}

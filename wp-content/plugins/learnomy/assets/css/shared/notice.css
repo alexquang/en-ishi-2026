@@ -1,0 +1,77 @@
+/**
+ * Learnomy inline notice component.
+ *
+ * Compact one-line status banner for contextual messages ("admin view",
+ * "preview mode", "expiring soon", etc.). Matches the pagination + skeleton
+ * design language — token-driven, subtle border, no heavy shadow.
+ *
+ * @package Learnomy
+ */
+
+.lrn-notice {
+	display:         flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-3, 12px);
+	padding:         var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px);
+	margin:          0 0 var(--lrn-sp-5, 20px);
+	border:          1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius:   var(--lrn-radius-md, 6px);
+	background:      var(--lrn-bg-secondary, var(--lrn-bg-secondary));
+	color:           var(--lrn-text, var(--lrn-text));
+	font-size:       var(--lrn-text-sm, 13px);
+	line-height:     1.5;
+}
+
+.lrn-notice svg {
+	flex-shrink: 0;
+	color:       var(--lrn-text-secondary, var(--lrn-text-secondary));
+}
+
+.lrn-notice a {
+	color:           var(--lrn-accent, var(--lrn-accent));
+	text-decoration: none;
+	font-weight:     500;
+}
+
+.lrn-notice a:hover,
+.lrn-notice a:focus-visible {
+	text-decoration: underline;
+}
+
+/* Semantic variants — mirror the UX guidelines tokens. */
+
+.lrn-notice--info {
+	border-color: color-mix(in srgb, var(--lrn-accent, var(--lrn-accent)) 20%, transparent);
+	background:   var(--lrn-accent-bg, rgba(35, 131, 226, 0.08));
+}
+
+.lrn-notice--info svg {
+	color: var(--lrn-accent, var(--lrn-accent));
+}
+
+.lrn-notice--success {
+	border-color: color-mix(in srgb, var(--lrn-success, var(--lrn-success)) 22%, transparent);
+	background:   var(--lrn-success-bg, rgba(46, 164, 79, 0.08));
+}
+
+.lrn-notice--success svg {
+	color: var(--lrn-success, var(--lrn-success));
+}
+
+.lrn-notice--warn {
+	border-color: color-mix(in srgb, var(--lrn-warn, var(--lrn-warn)) 22%, transparent);
+	background:   var(--lrn-warn-bg, rgba(217, 119, 6, 0.08));
+}
+
+.lrn-notice--warn svg {
+	color: var(--lrn-warn, var(--lrn-warn));
+}
+
+.lrn-notice--danger {
+	border-color: color-mix(in srgb, var(--lrn-danger, var(--lrn-danger)) 22%, transparent);
+	background:   var(--lrn-danger-bg, rgba(224, 62, 62, 0.08));
+}
+
+.lrn-notice--danger svg {
+	color: var(--lrn-danger, var(--lrn-danger));
+}

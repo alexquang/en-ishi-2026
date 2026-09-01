@@ -1,0 +1,4931 @@
+/**
+ * Learnomy — master frontend stylesheet
+ *
+ * Architecture:
+ *   1. Design tokens  (:root / .lrn-app + dark mode overrides)
+ *   2. Base reset     (scoped to .lrn-app so we don't touch the theme)
+ *   3. Layout         (.lrn-container, .lrn-grid)
+ *   4. Components     (buttons, cards, forms, table, badges, progress, toast, modal)
+ *   5. Responsive     (768px, 640px breakpoints)
+ *
+ * Golden rule: never hardcode px values, hex colors, or font names —
+ * always reference a --lrn-* custom property.
+ */
+
+/* ==========================================================================
+   1. Design tokens
+   ========================================================================== */
+
+:root,
+.lrn-app {
+	/* --- Surfaces --- */
+	--lrn-bg:               var(--bg, var(--wp--preset--color--base, #ffffff));
+	/* --lrn-bg-elevated: a raised card/panel surface (admin form wrap, Spaces
+	   plan cards). Was consumed in 6 places across Free+Pro with 5 different
+	   fallbacks but never defined, so the same semantic surface rendered
+	   white, off-white, or transparent depending on which file styled it
+	   (card 10119687953 part 2). One definition, light + dark. */
+	--lrn-bg-elevated:      #ffffff;
+	--lrn-bg-secondary:     #f7f7f5;
+	--lrn-bg-tertiary:      #f0f0ed;
+	--lrn-bg-hover:         rgba(55, 53, 47, 0.04);
+	--lrn-bg-active:        rgba(55, 53, 47, 0.08);
+	/* --lrn-bg-muted: subtle wash for inset rows / quiz review-board cards.
+	   Hoisted here from learnomy-pro/.../advanced-settings.css so Free
+	   frontend (quiz/review-board.css) and Pro admin both resolve it. */
+	--lrn-bg-muted:         rgba(0, 0, 0, 0.03);
+
+	/* --- Text --- */
+	--lrn-text:             var(--text-1, var(--wp--preset--color--contrast, #37352f));
+	--lrn-text-secondary:   #6b6b6b;
+	--lrn-text-tertiary:    #9b9a97;
+	--lrn-text-placeholder: #c7c6c4;
+	/* --lrn-text-muted: WP-admin-aligned muted body text. Hoisted here from
+	   learnomy-pro/.../advanced-settings.css so Free frontend (learnomy.css
+	   muted-help text) and Pro admin both resolve it. Value matches the
+	   pre-hoist fallback chain (--lrn-wp-text-muted = #9ca3af) so existing
+	   render is preserved. */
+	--lrn-text-muted:       #9ca3af;
+	/* On-accent / on-dark foreground. Default white — correct on the saturated
+	   brand accent in light AND dark mode (the accent token does not flip).
+	   Exposed as a token so a site whose brand accent is pale can override the
+	   text colour without touching component rules. */
+	--lrn-text-inverse:     #ffffff;
+
+	/* --- Accent / Brand --- */
+	--lrn-accent:           var(--brand, var(--wp--preset--color--primary, #2383e2));
+	/* Hover + tint derive from --lrn-accent so every accent state follows the
+	   active theme's brand. The hardcoded value is the pre-color-mix fallback
+	   for browsers without color-mix() (keeps the historical blue there). */
+	--lrn-accent-hover:     #1b6ec2;
+	--lrn-accent-hover:     color-mix(in srgb, var(--lrn-accent) 82%, #000);
+	--lrn-accent-bg:        rgba(35, 131, 226, 0.08);
+	--lrn-accent-bg:        color-mix(in srgb, var(--lrn-accent) 8%, transparent);
+
+	/* --- Semantic colours --- */
+	--lrn-success:          #2ea44f;
+	--lrn-success-bg:       rgba(46, 164, 79, 0.08);
+	--lrn-warn:             #d97706;
+	--lrn-warn-bg:          rgba(217, 119, 6, 0.08);
+	--lrn-danger:           #e03e3e;
+	--lrn-danger-bg:        rgba(224, 62, 62, 0.08);
+
+	/* --- Borders & dividers --- */
+	--lrn-border:           rgba(55, 53, 47, 0.09);
+	--lrn-border-heavy:     rgba(55, 53, 47, 0.16);
+	--lrn-divider:          rgba(55, 53, 47, 0.06);
+
+	/* --- Shadows --- */
+	--lrn-shadow-sm:        0 1px 2px rgba(0, 0, 0, 0.04);
+	--lrn-shadow-md:        0 4px 12px rgba(0, 0, 0, 0.08);
+	--lrn-shadow-lg:        0 12px 32px rgba(0, 0, 0, 0.12);
+	--lrn-shadow-overlay:   0 0 0 1px rgba(55, 53, 47, 0.09), 0 12px 32px rgba(0, 0, 0, 0.12);
+
+	/* --- Special purpose --- */
+	--lrn-progress:         #2383e2;
+	--lrn-gold:             #dfab01;
+
+	/* --- Explicit white (text on colored / dark backgrounds) --- */
+	--lrn-white:            #ffffff;
+
+	/* --- Hover variants --- */
+	--lrn-danger-hover:     #c73434;
+	--lrn-success-dark:     #1a7c3b;
+
+	/* --- Overlay / hero --- */
+	--lrn-accent-light:     #93c5fd;
+
+	/* --- Wishlist button overlay backgrounds --- */
+	--lrn-wishlist-bg:       rgba(255, 255, 255, 0.85);
+	--lrn-wishlist-bg-hover: rgba(255, 255, 255, 0.95);
+
+	/* --- Purple (pro badges, gradients) --- */
+	--lrn-purple:           #7c3aed;
+
+	/* --- Warning variants (preview bars, alerts) --- */
+	--lrn-warn-light-bg:    #fefce8;
+	--lrn-warn-light-border:#fde68a;
+	--lrn-warn-dark:        #92400e;
+
+	/* --- Banner colours (offline / online indicators) --- */
+	--lrn-warning-bg:       #fff3cd;
+	--lrn-warning-text:     #856404;
+	--lrn-warning-border:   #ffc107;
+	--lrn-success-text:     #155724;
+	--lrn-success-border:   #28a745;
+
+	/* --- Chart palette — shared across every dashboard / analytics page.
+	   Pass these (NOT raw hex) into ApexCharts series.colors arrays so every
+	   chart reads in the same visual language. Muted ~65% saturation keeps a
+	   5+ series chart looking premium, not a kindergarten poster. */
+	--lrn-chart-color-1:    #4263eb;  /* indigo  — primary series          */
+	--lrn-chart-color-2:    #12b886;  /* teal    — success / secondary     */
+	--lrn-chart-color-3:    #fab005;  /* amber   — warning / tertiary      */
+	--lrn-chart-color-4:    #f06595;  /* pink    — accent / fourth         */
+	--lrn-chart-color-5:    #7950f2;  /* purple  — fifth                   */
+	--lrn-chart-color-6:    #15aabf;  /* cyan    — sixth                   */
+	--lrn-success-banner-bg:#d4edda;
+
+	/* --- WordPress admin native colours (used inside .wp-admin chrome) --- */
+	--lrn-wp-text:           #1d2327;
+	--lrn-wp-text-secondary: #50575e;
+	--lrn-wp-border:         #dcdcde;
+	--lrn-wp-border-light:   #e5e7eb;
+	--lrn-wp-bg-light:       #f8f9fb;
+	--lrn-wp-text-muted:     #9ca3af;
+
+	/* --- Extension palette (pro-features cards, status chips) --- */
+	--lrn-cat-purple-dark:   #5b21b6;
+	--lrn-cat-amber-dark:    #b45309;
+	--lrn-cat-amber-strong:  #f0c33c;
+
+	/* --- Status reds + greens (admin form chrome, badges) --- */
+	--lrn-danger-strong:     #dc2626;
+	--lrn-danger-dark:       #b91c1c;
+	--lrn-success-strong:    #22c55e;
+	--lrn-success-mid:       #15803d;
+
+	/* --- Spacing (4px grid) --- */
+	--lrn-sp-1:    4px;
+	--lrn-sp-2:    8px;
+	--lrn-sp-2-5:  10px;
+	--lrn-sp-3:    12px;
+	--lrn-sp-4:  16px;
+	--lrn-sp-5:  20px;
+	--lrn-sp-6:  24px;
+	--lrn-sp-8:  32px;
+	--lrn-sp-10: 40px;
+	--lrn-sp-12: 48px;
+	--lrn-sp-16: 64px;
+
+	/* --- Border radius --- */
+	--lrn-radius-sm: 3px;
+	--lrn-radius-md: 6px;
+	--lrn-radius-lg: 8px;
+	--lrn-radius-xl: 12px;
+	--lrn-radius-pill: 999px;
+	--lrn-radius-full: 9999px;
+
+	/* --- Extended scale + component scalars ---
+	   Previously referenced only through var() fallbacks (so they "worked" but
+	   weren't real tokens). Defined here at their established fallback values so
+	   every reference resolves to a token — no visual change. */
+	--lrn-sp-7:           28px;
+	--lrn-sp-15:          80px;
+	--lrn-sp-40:          240px;
+	--lrn-w-12:           60px;
+	--lrn-w-20:           100px;
+	--lrn-w-22:           110px;
+	--lrn-w-24:           120px;
+	--lrn-w-26:           130px;
+	--lrn-w-30:           150px;
+	--lrn-dt-width:       140px;
+	--lrn-icon-size:      16px;
+	--lrn-border-width:   1px;
+	--lrn-drag-opacity:   0.5;
+	--lrn-shadow-xl:      0 24px 48px rgba(0, 0, 0, 0.18);
+	--lrn-accent-soft:    rgba(35, 131, 226, 0.2);
+	--lrn-accent-contrast: #ffffff;
+	--lrn-danger-soft:    #fdecea;
+	--lrn-bg-subtle:      rgba(55, 53, 47, 0.02);
+
+	/* --- Motion --- */
+	--lrn-dur:  120ms;
+	--lrn-ease: ease-out;
+
+	/* --- Typography ---
+	   Inherit the site's body font by default so the LMS reads as native to
+	   the active theme (what users expect), instead of imposing a separate
+	   system stack. BuddyNext's TokenService / theme.json still override
+	   --lrn-font when present (3-tier cascade); this is the fallback. */
+	--lrn-font:      inherit;
+
+	/* Monospace is a SEPARATE decision from the body face: an invite code or a
+	   space identifier has to be read character by character, so it must not
+	   inherit the theme's proportional stack. Referenced before it was declared
+	   (Basecamp 10156657345) — those font-family rules simply did not apply. */
+	--lrn-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+	/* Type scale in REM, so it tracks the SITE's root size instead of pinning
+	   its own. The old absolute-px scale sat below most themes' body text —
+	   base was 14px against a 17px theme body, so every Learnomy paragraph
+	   read smaller than the theme's own (Varun, 2026-08-07: the quiz start
+	   screen's rules at 13px on a wide display). rem also honours a reader's
+	   browser font-size preference, which fixed pixels silently ignored.
+	   At a 16px root this maps to 12/14/16/17/18/24/30/36/48 — nothing
+	   shrinks anywhere; the two under-theme sizes (sm, base) grow.
+	   wp-admin keeps the old compact px scale — admin.css re-pins these
+	   tokens, because dense list tables are set against wp-admin's own 13px
+	   chrome, not the theme's. */
+	--lrn-text-2xs:  0.6875rem;
+	--lrn-text-xs:   0.75rem;
+	--lrn-text-sm:   0.875rem;
+	--lrn-text-base: 1rem;
+	--lrn-text-md:   1.0625rem;
+	--lrn-text-lg:   1.125rem;
+	--lrn-text-xl:   1.5rem;
+	--lrn-text-2xl:  1.875rem;
+	--lrn-text-3xl:  2.25rem;
+	--lrn-text-4xl:  3rem;
+
+	--lrn-leading-tight:   1.2;
+	--lrn-leading-normal:  1.5;
+	--lrn-leading-relaxed: 1.7;
+
+	--lrn-weight-normal:   400;
+	--lrn-weight-medium:   500;
+	--lrn-weight-semibold: 600;
+	/* Two rules already asked for `bold` against a scale that stopped at
+	   semibold, so both rendered at the inherited weight. Declared rather than
+	   rewritten to semibold: the scale was incomplete, the call sites were not
+	   wrong to want it. */
+	--lrn-weight-bold:     700;
+
+	/* --- Container ---
+	   The container width is injected at wp_head time by
+	   Template_Loader::register_routes() (`:root,.lrn-app { --lrn-container-width: <setting>; }`)
+	   so the customer's Settings > Container Width is authoritative. The
+	   `.lrn-container { max-width: var(--lrn-container-width, 960px) }`
+	   rule in this file carries the same 960px fallback for the off-chance
+	   the inline style fails to load. Setting a duplicate value here would
+	   override the inline value at equal specificity but later cascade
+	   order — that was the v1.0.1 bug where 1200px was silently reset to
+	   960px. Keep it commented-only here as a pointer. */
+
+	/* --- Onboarding guide --- */
+
+	/* --- Touch + container + fluid scale (plan-03 phase 2 bolt-on) --- */
+	--lrn-touch-min:         44px;
+
+	/* Largest a pseudo-element hit-area extender may ever become. A blast
+	   radius limit, not a size: see "Tap targets" further down this file. */
+	--lrn-tap-area-max:      48px;
+
+	--lrn-ease-out-expo:    cubic-bezier(0.16, 1, 0.3, 1);
+
+	--lrn-icon-xs: 14px;
+	--lrn-icon-sm: 16px;
+	--lrn-icon-md: 20px;
+	--lrn-icon-xl: 32px;
+
+	/* --- Viewport units (iOS Safari URL-bar safe) --- */
+	--lrn-vh: 1vh; /* fallback for older browsers */
+}
+
+/* Modern browsers with dynamic viewport unit support — overrides --lrn-vh
+   so calc(100 * var(--lrn-vh)) tracks the visible viewport instead of
+   clipping behind iOS Safari's URL bar. */
+@supports (height: 100dvh) {
+	:root,
+	.lrn-app {
+		--lrn-vh: 1dvh;
+	}
+}
+
+/* ==========================================================================
+   Dark mode overrides
+   ========================================================================== */
+
+/* The light palette is declared on `:root, .lrn-app` (token block 1). On an
+   in-theme route the dark class lands on <body> while the content sits in a
+   `.lrn-app` child that re-declares --lrn-* itself, so a bare `.lrn-dark` on
+   <body> is shadowed by `.lrn-app`'s own light tokens and the page never
+   darkens. Re-assert the dark tokens at the `.lrn-app` level too
+   (`.lrn-dark .lrn-app`, specificity 0,2,0 > `.lrn-app` 0,1,0) so dark mode
+   reaches the content on themed pages, not just chromeless routes. */
+.lrn-dark,
+.lrn-dark .lrn-app {
+	--lrn-bg:               #191919;
+	--lrn-bg-elevated:      #242424; /* one elevation step above the page bg */
+	--lrn-bg-secondary:     #202020;
+	--lrn-bg-tertiary:      #2a2a2a;
+	--lrn-bg-hover:         rgba(255, 255, 255, 0.04);
+	--lrn-bg-active:        rgba(255, 255, 255, 0.08);
+	--lrn-bg-muted:         rgba(255, 255, 255, 0.05);
+	--lrn-text:             #e6e6e6;
+	--lrn-text-secondary:   #999999;
+	--lrn-text-tertiary:    #6b6b6b;
+	--lrn-text-placeholder: #4a4a4a;
+	--lrn-text-muted:       rgba(230, 230, 230, 0.6);
+	/* Card edges were `rgba(255,255,255,0.09)` — at 9% alpha on a near-black
+	   page the border is functionally invisible, so any card placed on a
+	   dark hero/banner (the hero variant's floating enroll card is the
+	   clearest example) blends into the backdrop with no chrome separation.
+	   16% gives a clear edge without reading as a colored frame; matches
+	   the existing `--lrn-border-heavy` value. */
+	--lrn-border:           rgba(255, 255, 255, 0.16);
+	--lrn-border-heavy:     rgba(255, 255, 255, 0.24);
+	--lrn-divider:          rgba(255, 255, 255, 0.08);
+	/* Light-mode shadows use `rgba(0,0,0,0.04-0.18)` which evaporate on a
+	   #191919 page (black-on-near-black = invisible). Dark mode needs darker,
+	   larger shadows to create the same "card lifts off the page" effect.
+	   These ride the same 1px/4px/12px/24px y-offset scale as the light
+	   values so the elevation rhythm matches across themes. */
+	--lrn-shadow-sm:        0 1px 2px rgba(0, 0, 0, 0.50);
+	--lrn-shadow-md:        0 4px 12px rgba(0, 0, 0, 0.55);
+	--lrn-shadow-lg:        0 12px 32px rgba(0, 0, 0, 0.60);
+	--lrn-shadow-xl:        0 24px 48px rgba(0, 0, 0, 0.65);
+	--lrn-shadow-overlay:   0 0 0 1px rgba(255, 255, 255, 0.12), 0 12px 32px rgba(0, 0, 0, 0.60);
+	--lrn-wishlist-bg:       rgba(0, 0, 0, 0.60);
+	--lrn-wishlist-bg-hover: rgba(0, 0, 0, 0.80);
+}
+
+/* ==========================================================================
+   Hero band — ALWAYS dark, both modes
+   --------------------------------------------------------------------------
+   The hero variants (classic's .lrn-hero partial AND the hero-layout's
+   .lrn-course-hero) are intentionally a dark cinematic band with white
+   text and a dimmed-image backdrop. They MUST stay dark in dark mode too
+   — flipping the band to light gray inverts the overlay (bottom-lightening
+   instead of bottom-darkening), washes out the image, and collapses title
+   contrast (image #13 from 2026-05-23). So this token is defined ONCE on
+   :root and NOT re-assigned in `.lrn-dark` — it intentionally bypasses
+   the light/dark cascade. Use it for any "hero" band that needs to host
+   white text on top of a dimmed cover image regardless of theme mode.
+   ========================================================================== */
+:root,
+.lrn-app {
+	--lrn-hero-band: #1a1a2e;
+}
+
+/* Base reset — anchored at `.lrn-app`, which is a CONTENT WRAPPER around the
+   plugin's templates (and the <body> only on chromeless routes that have no
+   theme), NEVER the <body> of an in-theme page. Anchoring this at <body> would
+   leak the font-size/line-height/link/img rules below into the theme header and
+   footer. Keep `.lrn-app` off <body> for in-theme routes — see
+   Template_Loader::render(). */
+.lrn-app *,
+.lrn-app *::before,
+.lrn-app *::after {
+	box-sizing: border-box;
+}
+
+/* `hidden` means hidden, on every Learnomy element, in both scopes.
+ *
+ * The UA sheet's `[hidden] { display: none }` is a bare attribute selector, so
+ * ANY component rule that sets `display` beats it — every `.lrn-thing { display:
+ * flex }` silently makes `hidden` a no-op on that component. JS then toggles the
+ * attribute, the a11y tree updates, and the element stays on screen. It is a
+ * bug that reads like a JS bug and is not one: Membership Analytics set `hidden`
+ * on `.lrn-stat-grid { display: grid }` and the tiles sat on "Loading" forever
+ * beside the empty state that had correctly appeared (Basecamp 10148651710).
+ *
+ * This had been diagnosed and patched NINE times as nine per-component
+ * `.lrn-x[hidden] { display: none }` rules across seven stylesheets, each with
+ * its own comment re-deriving the same cause. One rule replaces all of them, and
+ * covers the components nobody has hit yet. `!important` is the point — the rule
+ * has to outrank a component's own `display`, whatever it is.
+ *
+ * Scoped to our two wrappers so it cannot touch theme or core markup. */
+.lrn-app [hidden],
+.learnomy-admin [hidden] {
+	display: none !important;
+}
+
+.lrn-app {
+	font-family:  var(--lrn-font);
+	font-size:    var(--lrn-text-base);
+	line-height:  var(--lrn-leading-normal);
+	color:        var(--lrn-text);
+	background:   var(--lrn-bg);
+}
+
+.lrn-app a {
+	color: var(--lrn-accent);
+	text-decoration: none;
+}
+
+/* Buttons override the link color — must match .lrn-app a specificity. */
+.lrn-app a.lrn-btn--primary,
+.lrn-app a.lrn-btn--primary:hover { color: var(--lrn-text-inverse); }
+.lrn-app a.lrn-btn--secondary,
+.lrn-app a.lrn-btn--secondary:hover { color: var(--lrn-text); text-decoration: none; }
+.lrn-app a.lrn-btn--ghost,
+.lrn-app a.lrn-btn--ghost:hover { text-decoration: none; }
+
+.lrn-app a:not([class]):hover {
+	/* Scoped to bare prose links only (no class). Classed component anchors —
+	   account nav, cards, buttons — own their hover via their own rules; this
+	   generic shift must not override them. Hover is signalled by the colour
+	   change (now brand-derived via --lrn-accent-hover); inline prose links that
+	   want an underline opt in via their own rule. */
+	color: var(--lrn-accent-hover);
+}
+
+.lrn-app img {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+/* Avatars are always square. The reset above forces height:auto, which would
+   stretch a non-square avatar source (e.g. a 32px-wide image rendering 43px
+   tall) — Basecamp #9985419603. Every get_avatar() image carries WordPress's
+   `avatar` class, so re-assert a 1:1 box and crop-to-fill here once, covering
+   the Q&A inbox, at-risk/enrollment/review lists, leaderboards and feeds. */
+.lrn-app img.avatar {
+	aspect-ratio: 1 / 1;
+	height: auto;
+	object-fit: cover;
+}
+
+/* ==========================================================================
+   3. Layout
+   ========================================================================== */
+
+.lrn-container {
+	max-width:      var(--lrn-container-width, 960px);
+	margin-inline:  auto;
+	padding:        var(--lrn-sp-8) var(--lrn-sp-4);
+}
+
+/* Dark-mode heading contrast (systemic). Learnomy renders inside themes whose
+   heading colour is a fixed dark value that does NOT respond to `.lrn-dark`, so
+   every content heading went near-invisible (dark-on-dark) in dark mode. Pin
+   all headings inside a Learnomy `.lrn-container` to the text token so they
+   flip with the root dark tokens. Excludes the two titles that sit on a
+   permanently-dark hero banner (they stay light in both modes). The theme
+   header/footer live outside `.lrn-container`, so their headings are untouched. */
+.lrn-container :is( h1, h2, h3, h4, h5, h6 ):not( .lrn-hero__title ):not( .lrn-course-hero__title ) {
+	color: var(--lrn-text);
+}
+
+.lrn-container--wide {
+	max-width: 1200px; /* allow-page-width — deliberate opt-in wide utility, not a page default */
+}
+
+.lrn-container--full {
+	max-width: none;
+	padding:   0;
+}
+
+.lrn-container--narrow {
+	max-width: 640px;
+}
+
+/* Course grid — auto-fill so it flows nicely at any screen width.
+   Uses <ul><li> for semantics/a11y; reset the default disc bullets and
+   indentation so the grid's gap is the only spacing the eye sees. */
+.lrn-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: var(--lrn-sp-6);
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.lrn-grid > li {
+	list-style: none;
+}
+
+/* Count-pinned grids. Blocks that know their card count (course-grid columns,
+   membership-pricing plan count) emit .lrn-grid--cols-N so the track count
+   matches the cards. Without this the .lrn-grid auto-fill above renders empty
+   trailing columns at wide viewports (e.g. 3 plans leaving a 4th dead column).
+   minmax(0,1fr) keeps cells from overflowing their content. */
+.lrn-grid--cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.lrn-grid--cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.lrn-grid--cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.lrn-grid--cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.lrn-grid--cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.lrn-grid--cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+/* Membership pricing block. The block emits .lrn-membership-pricing__* but no
+   stylesheet defined them, so the table rendered flat (no featured ring, no
+   badge pill, no check bullets, unaligned CTAs). Token-driven so it follows the
+   theme + dark mode. */
+.lrn-membership-pricing__plan {
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	padding: var(--lrn-sp-6);
+}
+
+.lrn-membership-pricing__plan--featured {
+	box-shadow: inset 0 0 0 2px var(--lrn-accent);
+}
+
+.lrn-membership-pricing__badge {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.lrn-membership-pricing__name {
+	margin: 0 0 var(--lrn-sp-2);
+	font-size: var(--lrn-text-lg);
+}
+
+.lrn-membership-pricing__price {
+	display: flex;
+	align-items: baseline;
+	gap: var(--lrn-sp-1);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-membership-pricing__amount {
+	font-size: var(--lrn-text-2xl);
+	font-weight: 700;
+	color: var(--lrn-text);
+}
+
+.lrn-membership-pricing__period {
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-membership-pricing__description {
+	color: var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-membership-pricing__features {
+	list-style: none;
+	margin: 0 0 var(--lrn-sp-6);
+	padding: 0;
+	display: grid;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-membership-pricing__feature {
+	position: relative;
+	padding-inline-start: var(--lrn-sp-6);
+	color: var(--lrn-text);
+}
+
+.lrn-membership-pricing__feature::before {
+	content: "";
+	position: absolute;
+	inset-inline-start: 0;
+	top: 0.15em;
+	width: 1em;
+	height: 1em;
+	background-color: var(--lrn-accent);
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.lrn-membership-pricing__actions {
+	margin-top: auto;
+}
+
+.lrn-membership-pricing__cta {
+	width: 100%;
+	justify-content: center;
+}
+
+.lrn-flex {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-3);
+}
+
+.lrn-flex--wrap {
+	flex-wrap: wrap;
+}
+
+.lrn-flex--between {
+	justify-content: space-between;
+}
+
+.lrn-flex--col {
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+/* ==========================================================================
+   4. Components
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.lrn-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--lrn-sp-2);
+	padding: var(--lrn-sp-2) var(--lrn-sp-4);
+	min-height: var(--lrn-touch-min);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	font-weight:   var(--lrn-weight-medium);
+	line-height:   var(--lrn-leading-tight);
+	white-space:   nowrap;
+	cursor: pointer;
+	border: 1px solid transparent;
+	border-radius: var(--lrn-radius-md);
+	transition: background var(--lrn-dur) var(--lrn-ease),
+	            border-color var(--lrn-dur) var(--lrn-ease),
+	            color var(--lrn-dur) var(--lrn-ease),
+	            box-shadow var(--lrn-dur) var(--lrn-ease);
+	text-decoration: none;
+}
+
+.lrn-btn:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-btn:disabled,
+.lrn-btn[aria-disabled="true"] {
+	opacity: 0.45;
+	pointer-events: none;
+}
+
+/* Primary */
+.lrn-btn--primary {
+	background:   var(--lrn-accent);
+	border-color: var(--lrn-accent);
+	color: var(--lrn-text-inverse);
+}
+
+.lrn-btn--primary:hover {
+	background:   var(--lrn-accent-hover);
+	border-color: var(--lrn-accent-hover);
+	color: var(--lrn-text-inverse);
+	text-decoration: none;
+}
+
+/* Secondary */
+.lrn-btn--secondary {
+	background:   var(--lrn-bg);
+	border-color: var(--lrn-border-heavy);
+	color:        var(--lrn-text);
+}
+
+.lrn-btn--secondary:hover {
+	background:   var(--lrn-bg-hover);
+	border-color: var(--lrn-border-heavy);
+	color:        var(--lrn-text);
+	text-decoration: none;
+}
+
+/* Ghost */
+.lrn-btn--ghost {
+	background:   transparent;
+	border-color: transparent;
+	color:        var(--lrn-text-secondary);
+}
+
+.lrn-btn--ghost:hover {
+	background:   var(--lrn-bg-hover);
+	color:        var(--lrn-text);
+	text-decoration: none;
+}
+
+/* Danger */
+.lrn-btn--danger {
+	background:   var(--lrn-danger);
+	border-color: var(--lrn-danger);
+	color: var(--lrn-text-inverse);
+}
+
+.lrn-btn--danger:hover {
+	background:   var(--lrn-danger-hover);
+	border-color: var(--lrn-danger-hover);
+	color: var(--lrn-text-inverse);
+	text-decoration: none;
+}
+
+/* Destructive but quiet: a ghost button whose text reads danger, used for
+   per-row/per-card deletes (notes, bookmarks) so the destructive action is
+   discoverable without a loud solid-red button on every card. Pair with
+   .lrn-btn--ghost; a confirm dialog still guards the action. */
+.lrn-btn--ghost.lrn-btn--danger-text {
+	color: var(--lrn-danger);
+}
+
+.lrn-btn--ghost.lrn-btn--danger-text:hover {
+	background: color-mix(in srgb, var(--lrn-danger) 10%, transparent);
+	color:      var(--lrn-danger-hover);
+}
+
+/* Sizes */
+.lrn-btn--sm {
+	padding:   var(--lrn-sp-1) var(--lrn-sp-3);
+	font-size: var(--lrn-text-sm);
+	/* min-height inherited from .lrn-btn — no override needed. */
+}
+
+.lrn-btn--lg {
+	padding:   var(--lrn-sp-3) var(--lrn-sp-6);
+	font-size: var(--lrn-text-md);
+}
+
+/* Opt-in wrapping, for buttons whose label is CONTENT rather than chrome.
+ *
+ * `.lrn-btn` sets `white-space: nowrap`, which is right for fixed labels -
+ * "Save", "Enroll Now" - and wrong the moment the text is a course, section or
+ * space name an owner chose. Those can be any length, and on a phone the button
+ * is usually forced to `width: 100%`, so an unwrappable label simply runs past
+ * the border (Basecamp 10186267878; same defect on the thank-you Spaces CTA,
+ * 10186351296).
+ *
+ * One modifier rather than a per-screen `white-space` override, because the
+ * per-screen version is how the same overflow gets re-solved on every new
+ * surface that renders a dynamic label. Add `.lrn-btn--wrap` to the button and
+ * the vocabulary carries the answer.
+ *
+ * min-height stays inherited from .lrn-btn, so a wrapped label grows the box
+ * instead of squashing the 40px tap target. */
+.lrn-btn--wrap {
+	white-space: normal;
+	text-align:  center;
+	/* A single unbroken word longer than the button (a slug-like course name)
+	   would still overflow with `normal` alone. */
+	overflow-wrap: anywhere;
+}
+
+/* Icons inside buttons track the button's text size (a bare lucide <i>/<svg>
+   otherwise renders at its native ~24px and dwarfs small buttons — e.g. the
+   announcement Send button). Sized in em so it scales with --sm/--lg. */
+.lrn-btn i[data-lucide],
+.lrn-btn svg {
+	width:  1.05em;
+	height: 1.05em;
+	flex:   0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   Cards
+   -------------------------------------------------------------------------- */
+
+.lrn-card {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	padding:       var(--lrn-sp-6);
+	box-shadow:    var(--lrn-shadow-sm);
+	transition:    box-shadow var(--lrn-dur) var(--lrn-ease),
+	               border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-card:hover {
+	box-shadow:    var(--lrn-shadow-md);
+	border-color:  var(--lrn-border-heavy);
+}
+
+/* Course card */
+.lrn-course-card {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	/* Unified with the dashboard course-card variant (search "Course card"
+	   ~line 2180): same radius, resting shadow, and lift-on-hover so a card
+	   looks identical on the catalog, account, and dashboard surfaces. */
+	border-radius: var(--lrn-radius-xl);
+	overflow:      hidden;
+	display:       flex;
+	flex-direction: column;
+	box-shadow:    var(--lrn-shadow-sm);
+	transition:    box-shadow var(--lrn-dur) var(--lrn-ease),
+	               transform var(--lrn-dur) var(--lrn-ease),
+	               border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-course-card:hover {
+	box-shadow:   var(--lrn-shadow-lg);
+	border-color: var(--lrn-border-heavy);
+	transform:    translateY(-3px);
+}
+
+.lrn-course-card__thumbnail {
+	position:       relative;
+	width:          100%;
+	aspect-ratio:   16 / 9;
+	overflow:       hidden;
+	background:     var(--lrn-bg-tertiary);
+}
+
+.lrn-course-card__thumbnail img {
+	width:      100%;
+	height:     100%;
+	object-fit: cover;
+	transition: transform var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-course-card:hover .lrn-course-card__thumbnail img {
+	transform: scale(1.03);
+}
+
+.lrn-course-card__info {
+	padding: var(--lrn-sp-4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2);
+	flex: 1;
+}
+
+.lrn-course-card__title {
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+	color:       var(--lrn-text);
+	margin:      0;
+}
+
+.lrn-course-card__meta {
+	display:   flex;
+	gap:       var(--lrn-sp-3);
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-course-card__footer {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	margin-top:      auto;
+	padding-top:     var(--lrn-sp-3);
+}
+
+.lrn-course-card__price {
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+/* Recurring interval suffix ("/mo", "/yr") next to the card price. */
+.lrn-course-card__price-interval {
+	font-size:   var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-normal);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-course-card__price--free {
+	color: var(--lrn-success);
+}
+
+/* On-sale card price: the discounted price leads in the normal price colour,
+   the regular price follows struck through + muted (Basecamp #9981514248). */
+.lrn-course-card__price-now {
+	color: var(--lrn-text);
+}
+
+.lrn-course-card__price-original {
+	margin-inline-start: var(--lrn-sp-2);
+	font-size:           var(--lrn-text-sm);
+	font-weight:         var(--lrn-weight-normal);
+	color:               var(--lrn-text-secondary);
+	text-decoration:     line-through;
+}
+
+/* Some courses show a LABEL in the price slot instead of an amount: "Members
+   only" for membership-gated courses, "External" when access is granted
+   elsewhere. They share one treatment — a glyph beside a word, set smaller than
+   a price — so a new label variant cannot forget half of it. That is exactly
+   what happened to "External": it reused the bare price rule, so its Lucide
+   glyph fell back to the 24px default and towered over the 14px crown on the
+   card beside it (Basecamp 10149397436). Colour is the ONLY thing a variant
+   below is allowed to add. */
+.lrn-course-card__price--label {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	font-size:   var(--lrn-text-sm);
+}
+
+.lrn-course-card__price--label [data-lucide] {
+	width:  14px;
+	height: 14px;
+}
+
+.lrn-course-card__price--members {
+	color: var(--lrn-accent);
+}
+
+/* "Included with your membership" — the member already owns this. Success, not
+   accent: the accent label is an upsell ("Members only" is asking them to
+   subscribe), and this one is the opposite, confirming they already did. Given
+   both can appear in one grid, they must not read as the same thing. */
+.lrn-course-card__price--included {
+	color: var(--lrn-success);
+}
+
+/* External access is a fact about where you enrol, not an upsell — it stays
+   secondary so it does not compete with the accent-coloured membership label. */
+.lrn-course-card__price--external {
+	color: var(--lrn-text-secondary);
+}
+
+/* Enrolled card footer (My Courses, or an in-progress card in the catalog): the
+   price is replaced by the progress bar + a Start/Continue/Review affordance, so
+   a learner never sees the price of a course they already own. The bar fills the
+   row; the resume link sits on the trailing edge. */
+.lrn-course-card__footer--enrolled {
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-course-card__footer--enrolled .lrn-progress-bar {
+	flex:      1 1 auto;
+	min-width: 0;
+}
+
+.lrn-course-card__resume {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-1);
+	flex:            0 0 auto;
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-semibold);
+	color:           var(--lrn-accent);
+	white-space:     nowrap;
+	text-decoration: none; /* it is a real link (to the course); never underline */
+	transition:      gap var(--lrn-dur) var(--lrn-ease), color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-course-card__resume:hover,
+.lrn-course-card__resume:focus-visible {
+	color:           var(--lrn-accent-hover);
+	text-decoration: none;
+	gap:             var(--lrn-sp-2); /* nudge the arrow on hover for affordance */
+}
+
+.lrn-course-card__resume [data-lucide] {
+	width:  14px;
+	height: 14px;
+}
+
+.lrn-course-card__progress {
+	margin-top: var(--lrn-sp-2);
+}
+
+/* --------------------------------------------------------------------------
+   Wishlist button (heart icon on course cards)
+   -------------------------------------------------------------------------- */
+
+.lrn-course-card {
+	position: relative;
+}
+
+/* Wishlist heart on course cards. Chains `.lrn-action` so the bg + color
+ * here win source-order against the generic `.lrn-action` rule defined
+ * further down (which uses background: transparent). Without the chain
+ * the heart sat on a transparent puck and disappeared into dark
+ * featured-image backgrounds. See Basecamp #9924827308. */
+.lrn-wishlist-btn,
+.lrn-action.lrn-wishlist-btn {
+	position: absolute;
+	top:  var(--lrn-sp-2);
+	inset-inline-end: var(--lrn-sp-2);
+	z-index: 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: var(--lrn-wishlist-bg);
+	color: var(--lrn-text-secondary);
+	cursor: pointer;
+	transition: background var(--lrn-dur) var(--lrn-ease),
+	            color var(--lrn-dur) var(--lrn-ease),
+	            transform var(--lrn-dur) var(--lrn-ease);
+	backdrop-filter: blur(4px);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* TOUCH TARGET without changing the visual.
+   The puck is deliberately a small 32px circle floating over the card
+   thumbnail — inflating it to 44px would put a heavy blob on every card in the
+   grid. But 32px is genuinely hard to hit with a thumb, and this control sits
+   in the corner of a card whose whole surface is a link, so a near-miss opens
+   the course instead of saving it (Basecamp 10146578362).
+   So the CIRCLE stays 32px and the HIT AREA grows to --lrn-touch-min, centred,
+   via a transparent pseudo-element. Only on `pointer: coarse` — on a mouse the
+   32px puck is already precise, and an invisible 44px catcher there would
+   swallow clicks meant for the card behind it. */
+@media (pointer: coarse) {
+	.lrn-wishlist-btn::after,
+	.lrn-action.lrn-wishlist-btn::after {
+		content:  "";
+		position: absolute;
+		top:      50%;
+		left:     50%;
+		width:    var(--lrn-touch-min);
+		height:   var(--lrn-touch-min);
+		transform: translate(-50%, -50%);
+	}
+}
+
+.lrn-wishlist-btn:hover,
+.lrn-action.lrn-wishlist-btn:hover {
+	background: var(--lrn-wishlist-bg-hover);
+	color: var(--lrn-danger);
+	transform: scale(1.1);
+}
+
+.lrn-wishlist-btn:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+/* Wishlist active state — specificity is intentionally bumped to (0,3,0) by
+   pairing the doubled `.lrn-wishlist-btn--active` class with the
+   `[aria-pressed="true"]` attribute the same button always carries when
+   active. The bare doubled-class selector (0,2,0) ties with the generic
+   `.lrn-action[aria-pressed="true"]` rule defined later in this file,
+   and source order would otherwise win — leaving the heart filled with
+   `--lrn-accent` (theme brand) instead of `--lrn-danger`. The Lucide
+   `heart` SVG also ships `fill="none"` as an attribute, so we explicitly
+   fill the path with currentColor to get a solid red heart instead of an
+   outline. */
+.lrn-wishlist-btn.lrn-wishlist-btn--active[aria-pressed="true"] {
+	color: var(--lrn-danger);
+}
+
+.lrn-wishlist-btn.lrn-wishlist-btn--active[aria-pressed="true"]:hover {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-wishlist-btn.lrn-wishlist-btn--active[aria-pressed="true"] svg {
+	fill: currentColor;
+}
+
+.lrn-wishlist-btn svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* Full-width variant — the enroll card on the single course page reuses
+ * `.lrn-wishlist-btn` with the `.lrn-btn--full` modifier so users get a
+ * proper labelled button (not a floating heart). The base rule above
+ * forces absolute positioning + a 32px round puck for the catalog
+ * thumbnail overlay; here we restore inline flow + full width + a
+ * readable label-and-icon layout. See Basecamp #9925493064. */
+.lrn-wishlist-btn.lrn-btn--full,
+.lrn-action.lrn-wishlist-btn.lrn-btn--full {
+	position:        static;
+	top:             auto;
+	inset-inline-end: auto;
+	width:           100%;
+	min-width:       0;
+	height:          auto;
+	/* `min-height: 0` here used to undo the 32px puck floor from the base rule
+	   — and, at (0,3,0), it also undid `.lrn-action`'s 44px tap floor, leaving
+	   this button ~35px tall from padding and line-height alone. It sits
+	   directly under Buy Now on the enroll card, so an under-size target here
+	   is a mis-tap next to a payment action. Restore the floor explicitly. */
+	min-height:      var(--lrn-touch-min);
+	padding:         var(--lrn-sp-2-5) var(--lrn-sp-4);
+	gap:             var(--lrn-sp-2);
+	border:          1px solid var(--lrn-border, rgba(55, 53, 47, 0.16));
+	border-radius:   var(--lrn-radius-md, 6px);
+	background:      transparent;
+	color:           var(--lrn-text, var(--lrn-text-1));
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-medium);
+	box-shadow:      none;
+	backdrop-filter: none;
+	margin-top:      var(--lrn-sp-3);
+}
+
+.lrn-wishlist-btn.lrn-btn--full:hover,
+.lrn-action.lrn-wishlist-btn.lrn-btn--full:hover {
+	background: var(--lrn-tertiary, rgba(55, 53, 47, 0.04));
+	color:      var(--lrn-danger);
+	transform:  none;
+}
+
+.lrn-wishlist-btn.lrn-btn--full.lrn-wishlist-btn--active[aria-pressed="true"] {
+	border-color: var(--lrn-danger);
+	color:        var(--lrn-danger);
+}
+
+/* Dark mode: --lrn-wishlist-bg / --lrn-wishlist-bg-hover are overridden in
+   the .lrn-dark token block above, so no per-component rule is needed. */
+
+/* --------------------------------------------------------------------------
+   Form controls
+   -------------------------------------------------------------------------- */
+
+.lrn-input,
+.lrn-textarea,
+.lrn-select {
+	display:       block;
+	width:         100%;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	line-height:   var(--lrn-leading-normal);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	transition:    border-color var(--lrn-dur) var(--lrn-ease),
+	               box-shadow var(--lrn-dur) var(--lrn-ease);
+	appearance: none;
+}
+
+.lrn-input::placeholder,
+.lrn-textarea::placeholder {
+	color: var(--lrn-text-placeholder);
+}
+
+.lrn-input:focus-visible,
+.lrn-textarea:focus-visible,
+.lrn-select:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-input:focus:not(:focus-visible),
+.lrn-textarea:focus:not(:focus-visible),
+.lrn-select:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-textarea {
+	resize:     vertical;
+	min-height: 96px;
+}
+
+.lrn-select {
+	padding-inline-end: var(--lrn-sp-8);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b6b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+	background-repeat:   no-repeat;
+	background-position: right var(--lrn-sp-3) center;
+}
+
+/* The dropdown arrow is painted with background-position, which has no logical
+   keyword — flip it (and the padding) to the start side under RTL so it lines
+   up with padding-inline-end. */
+[dir="rtl"] .lrn-select {
+	background-position: left var(--lrn-sp-3) center;
+}
+
+/* Checkbox */
+.lrn-checkbox {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	cursor:      pointer;
+	font-size:   var(--lrn-text-base);
+	color:       var(--lrn-text);
+	user-select: none;
+}
+
+.lrn-checkbox input[type="checkbox"] {
+	width:         16px;
+	height:        16px;
+	border:        1.5px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-sm);
+	background:    var(--lrn-bg);
+	accent-color:  var(--lrn-accent);
+	cursor:        pointer;
+	flex-shrink:   0;
+}
+
+/* Toggle. The track is an inline-block (not a flex child) so it keeps its 36x20
+   box even when a host context resets the label off `display:flex` — e.g.
+   WordPress core admin CSS forces form-table labels to inline-block at <=782px,
+   which would otherwise collapse an inline <span> track to width:0. Spacing uses
+   a margin on the label rather than flex `gap` for the same reason. */
+.lrn-toggle {
+	display:     inline-flex;
+	align-items: center;
+	cursor:      pointer;
+	user-select: none;
+}
+
+.lrn-toggle__track {
+	/* !important defends the pill's box against host form CSS — WordPress core
+	   admin resets form-table controls to `display:inline` at <=782px, which
+	   collapses the switch to width:0 on mobile. This is the switch's own
+	   presentation, never a layout hook, so the override is safe. */
+	display:        inline-block !important;
+	vertical-align: middle;
+	position:       relative;
+	width:          36px;
+	height:         20px;
+	background:     var(--lrn-border-heavy);
+	border-radius:  10px;
+	transition:     background var(--lrn-dur) var(--lrn-ease);
+	flex-shrink:    0;
+}
+
+.lrn-toggle input[type="checkbox"]:checked + .lrn-toggle__track {
+	background: var(--lrn-accent);
+}
+
+.lrn-toggle__thumb {
+	position:      absolute;
+	top:           2px;
+	inset-inline-start: 2px;
+	width:         16px;
+	height:        16px;
+	background:    var(--lrn-white);
+	border-radius: 50%;
+	box-shadow:    var(--lrn-shadow-sm);
+	transition:    inset-inline-start var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-toggle input[type="checkbox"]:checked ~ .lrn-toggle__track .lrn-toggle__thumb {
+	inset-inline-start: 18px;
+}
+
+.lrn-toggle input[type="checkbox"] {
+	position: absolute;
+	opacity:  0;
+	width:    0;
+	height:   0;
+}
+
+.lrn-toggle__label {
+	vertical-align:      middle;
+	margin-inline-start: var(--lrn-sp-2);
+	font-size:           var(--lrn-text-sm);
+	color:               var(--lrn-text);
+}
+
+/* Keyboard focus lands on the visually-hidden checkbox — show the ring on the
+   track so the switch is a11y-reachable (WCAG 2.4.7). */
+.lrn-toggle input[type="checkbox"]:focus-visible + .lrn-toggle__track {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 2px;
+}
+
+.lrn-toggle--disabled {
+	cursor:  not-allowed;
+	opacity: 0.6;
+}
+
+/* --------------------------------------------------------------------------
+   Code block (Editor.js CodeTool)
+
+   render_editorjs_content() outputs `<pre class="lrn-code"><code>...</code></pre>`
+   for every code block. Without styling the snippet fell to browser default
+   (no background, no padding, no monospace) and read as broken plain text.
+   See Basecamp #9925230195.
+   -------------------------------------------------------------------------- */
+
+.lrn-code {
+	margin:         var(--lrn-sp-4) 0;
+	padding:        var(--lrn-sp-4);
+	background:     var(--lrn-bg-tertiary, #f4f4f0);
+	border:         1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius:  var(--lrn-radius-md, 6px);
+	font-family:    var(--lrn-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+	font-size:      var(--lrn-text-sm, 13px);
+	line-height:    1.55;
+	color:          var(--lrn-text, #1c1c1c);
+	overflow-x:     auto;
+	white-space:    pre;
+	tab-size:       2;
+}
+
+.lrn-code code {
+	font-family:    inherit;
+	font-size:      inherit;
+	background:     transparent;
+	padding:        0;
+	color:          inherit;
+}
+
+/* --------------------------------------------------------------------------
+   Table
+   -------------------------------------------------------------------------- */
+
+.lrn-table {
+	width:           100%;
+	border-collapse: collapse;
+	font-size:       var(--lrn-text-base);
+}
+
+.lrn-table th {
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	text-align:  start;
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text-secondary);
+	border-bottom: 1px solid var(--lrn-border-heavy);
+	white-space: nowrap;
+}
+
+.lrn-table td {
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	color:       var(--lrn-text);
+	border-bottom: 1px solid var(--lrn-divider);
+	vertical-align: middle;
+}
+
+.lrn-table tr:last-child td {
+	border-bottom: none;
+}
+
+.lrn-table tbody tr:hover td {
+	background: var(--lrn-bg-hover);
+}
+
+/* --------------------------------------------------------------------------
+   Badges
+   -------------------------------------------------------------------------- */
+
+.lrn-badge {
+	display:       inline-flex;
+	align-items:   center;
+	padding:       2px var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	line-height:   var(--lrn-leading-tight);
+	border-radius: var(--lrn-radius-sm);
+	white-space:   nowrap;
+}
+
+/* Catalog category pill. Class name is historical — visually it is now a
+   quiet neutral surface so the brand-accent budget is reserved for CTAs
+   and active states (see Basecamp catalog premium-pass). */
+.lrn-badge--blue {
+	background: var(--lrn-bg-tertiary);
+	color:      var(--lrn-text-secondary);
+}
+
+.lrn-badge--green {
+	background: var(--lrn-success-bg);
+	color:      var(--lrn-success);
+}
+
+.lrn-badge--amber {
+	background: var(--lrn-warn-bg);
+	color:      var(--lrn-warn);
+}
+
+.lrn-badge--red {
+	background: var(--lrn-danger-bg);
+	color:      var(--lrn-danger);
+}
+
+/* Featured course ribbon — emitted by the `learnomy_course_card_badges`
+   hook subscriber. Uses the amber palette + a small inline Lucide star so
+   the ribbon reads as an accent, not a status. */
+.lrn-badge--featured {
+	gap: var(--lrn-sp-1);
+}
+.lrn-badge--featured svg {
+	width:  1em;
+	height: 1em;
+	fill:   currentColor;
+	stroke: currentColor;
+}
+
+/* Course delivery format (Video / Audio / Text) on catalog cards. Quiet
+   neutral surface with a small leading Lucide icon for the dominant lesson
+   type, so the catalog signals format at a glance. */
+.lrn-badge--format {
+	gap:        var(--lrn-sp-1);
+	background: var(--lrn-bg-tertiary);
+	color:      var(--lrn-text-secondary);
+}
+.lrn-badge--format svg {
+	width:  1em;
+	height: 1em;
+}
+
+/* --------------------------------------------------------------------------
+   Tab bar
+
+   The responsive block at the foot of this file has always scrolled
+   `.lrn-tabs` horizontally and kept `.lrn-tab` from wrapping — but the base
+   rules those two lines assume were never written, so the component was half
+   declared and unusable. Completed here rather than re-invented per page.
+   -------------------------------------------------------------------------- */
+
+.lrn-tabs {
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-1);
+	border-bottom:  1px solid var(--lrn-border);
+	margin-block-end: var(--lrn-sp-4);
+}
+
+.lrn-tab {
+	display:            inline-flex;
+	align-items:        center;
+	gap:                var(--lrn-sp-2);
+	padding:            var(--lrn-sp-2) var(--lrn-sp-3);
+	color:              var(--lrn-text-secondary);
+	font-size:          var(--lrn-text-sm);
+	font-weight:        var(--lrn-weight-medium);
+	line-height:        var(--lrn-leading-tight);
+	text-decoration:    none;
+	border-bottom:      2px solid transparent;
+	margin-block-end:   -1px;
+	transition:         color var(--lrn-dur) var(--lrn-ease),
+	                    border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-tab:hover,
+.lrn-tab:focus-visible {
+	color: var(--lrn-text);
+}
+
+.lrn-tab.is-active,
+.lrn-tab[aria-current="page"] {
+	color:              var(--lrn-accent);
+	border-bottom-color: var(--lrn-accent);
+}
+
+/* Card-level badge row — keeps category + Featured badges on the same
+   line. Degrades gracefully when empty (no wasted vertical rhythm). */
+.lrn-course-card__badges {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+.lrn-course-card__badges:empty {
+	display: none;
+}
+
+/* Outcomes bullet list — rendered when the instructor has populated the
+   `learning_outcomes` repeater (preferred) instead of the legacy
+   `what_you_learn` HTML blob. */
+.lrn-outcomes__list {
+	list-style:    disc;
+	padding-inline-start: var(--lrn-sp-5);
+	margin:        0;
+	display:       grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap:           var(--lrn-sp-2) var(--lrn-sp-4);
+	color:         var(--lrn-text);
+}
+.lrn-outcomes__list li {
+	line-height: var(--lrn-leading-relaxed);
+}
+
+/* --------------------------------------------------------------------------
+   Progress bar
+   -------------------------------------------------------------------------- */
+
+.lrn-progress-bar {
+	width:         100%;
+	height:        6px;
+	background:    var(--lrn-bg-tertiary);
+	border-radius: 3px;
+	overflow:      hidden;
+}
+
+.lrn-progress-bar__fill {
+	height:        100%;
+	background:    var(--lrn-progress);
+	border-radius: 3px;
+	transition:    width 300ms var(--lrn-ease);
+	min-width:     0;
+	max-width:     100%;
+}
+
+.lrn-progress-bar--gold .lrn-progress-bar__fill {
+	background: var(--lrn-gold);
+}
+
+/* --------------------------------------------------------------------------
+   Toast notifications
+   -------------------------------------------------------------------------- */
+
+.lrn-toast-region {
+	position:  fixed;
+	bottom:    var(--lrn-sp-6);
+	inset-inline-end: var(--lrn-sp-6);
+	z-index:   9999;
+	display:   flex;
+	flex-direction: column;
+	gap:       var(--lrn-sp-2);
+	pointer-events: none;
+}
+
+.lrn-toast {
+	display:       flex;
+	align-items:   flex-start;
+	gap:           var(--lrn-sp-3);
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	box-shadow:    var(--lrn-shadow-overlay);
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text);
+	min-width: 260px;
+	max-width: 360px;
+	pointer-events: auto;
+	animation: lrn-toast-in var(--lrn-dur) var(--lrn-ease);
+}
+
+@keyframes lrn-toast-in {
+	from {
+		opacity:   0;
+		transform: translateY(var(--lrn-sp-3));
+	}
+	to {
+		opacity:   1;
+		transform: translateY(0);
+	}
+}
+
+.lrn-toast--success { border-inline-start: 3px solid var(--lrn-success); }
+.lrn-toast--warn    { border-inline-start: 3px solid var(--lrn-warn); }
+.lrn-toast--error   { border-inline-start: 3px solid var(--lrn-danger); }
+
+/* --------------------------------------------------------------------------
+   Modal
+   -------------------------------------------------------------------------- */
+
+.lrn-modal__overlay {
+	position:   fixed;
+	inset:      0;
+	background: rgba(0, 0, 0, 0.45);
+	z-index:    9900;
+	display:    flex;
+	align-items: center;
+	justify-content: center;
+	padding:    var(--lrn-sp-4);
+	animation:  lrn-fade-in var(--lrn-dur) var(--lrn-ease);
+}
+
+@keyframes lrn-fade-in {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+.lrn-modal {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-xl);
+	box-shadow:    var(--lrn-shadow-overlay);
+	width:         100%;
+	max-width: 560px;
+	max-height:    90vh;
+	max-height:    90dvh;
+	overflow-y:    auto;
+	animation:     lrn-modal-in var(--lrn-dur) var(--lrn-ease);
+}
+
+@keyframes lrn-modal-in {
+	from {
+		opacity:   0;
+		transform: scale(0.97);
+	}
+	to {
+		opacity:   1;
+		transform: scale(1);
+	}
+}
+
+.lrn-modal__header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	padding:         var(--lrn-sp-5) var(--lrn-sp-6);
+	border-bottom:   1px solid var(--lrn-divider);
+}
+
+.lrn-modal__title {
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	margin:      0;
+}
+
+.lrn-modal__body {
+	padding: var(--lrn-sp-6);
+}
+
+.lrn-modal__footer {
+	display:         flex;
+	align-items:     center;
+	justify-content: flex-end;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-4) var(--lrn-sp-6);
+	border-top:      1px solid var(--lrn-divider);
+}
+
+/* --------------------------------------------------------------------------
+   Empty state — single canonical block (frontend + admin)
+
+   Markup contract (matches admin partials/empty-state.php):
+
+     <div class="lrn-empty-state">                <!-- or --inline variant -->
+       <i data-lucide="…" class="lrn-empty-state__icon"></i>
+       <h3 class="lrn-empty-state__title">…</h3>
+       <p class="lrn-empty-state__desc">…</p>
+       <a class="lrn-empty-state__cta">…</a>      <!-- optional -->
+     </div>
+
+   Consolidated 2026-05-23 — see plan/2026-05-23-admin-ux-audit/REPORT.md
+   §2.6. Previously two competing blocks in this file and three different
+   sub-class names for the description (`__desc` / `__text` / `__message`).
+   All 25+ call-sites across Free templates + Pro extensions migrated to
+   `__desc` in one swing; no alias needed.
+   -------------------------------------------------------------------------- */
+
+.lrn-empty-state {
+	display:         flex;
+	flex-direction:  column;
+	align-items:     center;
+	justify-content: center;
+	text-align:      center;
+	padding:         var(--lrn-sp-16) var(--lrn-sp-6);
+	gap:             var(--lrn-sp-4);
+	/* Contained empty-card: a dashed surface so an empty tab reads as an
+	   intentional "nothing here yet" state that fills its column, instead of
+	   stray centred text floating on the page (which looked like an unfinished
+	   skeleton — and made empty tabs appear a different width to populated
+	   ones). Theme-agnostic: works even when --lrn-bg matches the body. */
+	border:        1px dashed var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-xl);
+	background:    color-mix(in srgb, var(--lrn-text) 2%, transparent);
+}
+
+/* Block editor preview placeholder — shown only inside the editor's
+   ServerSideRender preview (via \Learnomy\block_editor_placeholder) when a
+   server-rendered block has no subject yet or its subject was deleted. Tells
+   the site owner what to do instead of the bare "Block rendered as empty." */
+.lrn-block-placeholder {
+	padding:       var(--lrn-sp-8) var(--lrn-sp-6);
+	text-align:    center;
+	color:         var(--lrn-text-secondary);
+	font-size:     var(--lrn-text-sm);
+	border:        1px dashed var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-xl);
+	background:    color-mix(in srgb, var(--lrn-text) 2%, transparent);
+}
+
+/* Inline variant — smaller padding + no surface for use inside a card or
+   content section where the full empty-state card would double up borders. */
+.lrn-empty-state--inline {
+	padding:       var(--lrn-sp-6) var(--lrn-sp-4);
+	border:        0;
+	border-radius: 0;
+	background:    transparent;
+}
+
+.lrn-empty-state__icon {
+	font-size:   var(--lrn-text-2xl);
+	color:       var(--lrn-text-tertiary);
+	line-height: 1;
+}
+
+.lrn-empty-state__title {
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	margin:      0;
+}
+
+.lrn-empty-state__desc {
+	font-size:   var(--lrn-text-base);
+	color:       var(--lrn-text-secondary);
+	max-width:   400px;
+	margin:      0;
+	line-height: var(--lrn-leading-relaxed);
+}
+
+/* --------------------------------------------------------------------------
+   Page section header
+   -------------------------------------------------------------------------- */
+
+.lrn-page-header {
+	padding:       var(--lrn-sp-10) 0 var(--lrn-sp-6);
+	border-bottom: 1px solid var(--lrn-divider);
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-page-header__title {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	margin:      0 0 var(--lrn-sp-2);
+	line-height: var(--lrn-leading-tight);
+	/* The title carries a leading Lucide icon. As a block box the icon was an
+	   inline SVG on `vertical-align: baseline`, so its BOTTOM edge sat on the
+	   text baseline while its 24px box ran taller than the font's cap height —
+	   it read as floating above the words rather than sitting with them, and it
+	   stayed 24px while the heading scaled down at two breakpoints, so the
+	   mismatch got worse on a phone.
+	   Flex centres the two optically; sizing the icon in `em` keeps it in
+	   proportion at every breakpoint without repeating the rule in each media
+	   query. */
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-page-header__title > svg,
+.lrn-page-header__title > i[data-lucide] {
+	/* Scales with the heading instead of being pinned at 24px. */
+	inline-size: 0.85em;
+	block-size:  0.85em;
+	flex:        0 0 auto;
+}
+
+/* Renamed from `.lrn-page-header__desc` 2026-05-23 — see admin.css for
+   the rationale. Frontend uses the same class name as admin for the
+   page-header subtitle so themes that style admin via the frontend
+   stylesheet pick up both. Legacy `__desc` alias preserved during the
+   Free/Pro lockstep deprecation window — see admin.css comment. */
+.lrn-page-header__subtitle,
+.lrn-page-header__desc {
+	font-size:  var(--lrn-text-md);
+	color:      var(--lrn-text-secondary);
+	margin:     0;
+}
+
+/* --------------------------------------------------------------------------
+   Utility classes
+   -------------------------------------------------------------------------- */
+
+.lrn-divider {
+	border:      none;
+	border-top:  1px solid var(--lrn-divider);
+	margin:      var(--lrn-sp-4) 0;
+}
+
+/* Admin/owner on-page edit affordance, rendered above course/lesson content.
+   Reuses .lrn-container for width alignment but drops its vertical padding so
+   the bar stays slim. */
+.lrn-admin-edit-bar {
+	display:         flex;
+	justify-content: flex-end;
+	padding-block:   0;
+	margin-block:    var(--lrn-sp-3);
+}
+
+/* On distraction-free lesson / quiz pages the edit bar fires from
+ * learnomy_lesson_before_content which renders OUTSIDE the player
+ * wrapper, so the inherited .lrn-container max-width centered the bar
+ * at a viewport x that didn't match the player-content column AND
+ * pushed the lesson title down. Float it at the top-right of the
+ * viewport so the lesson body aligns with the curriculum sidebar
+ * header. (Basecamp #9925339019.) */
+body.lrn-distraction-free .lrn-admin-edit-bar {
+	position:    absolute;
+	top:         var(--lrn-sp-3);
+	inset-inline-end: var(--lrn-sp-5);
+	max-width:   none;
+	padding:     0;
+	margin:      0;
+	z-index:     5;
+}
+
+.lrn-admin-edit-bar__btn {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-2) var(--lrn-sp-4);
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-medium);
+	color:           var(--lrn-text);
+	background:      var(--lrn-bg-secondary);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	text-decoration: none;
+	transition:      background var(--lrn-dur) var(--lrn-ease),
+		border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-admin-edit-bar__btn:hover,
+.lrn-admin-edit-bar__btn:focus-visible {
+	background:   var(--lrn-bg-tertiary);
+	border-color: var(--lrn-accent);
+	color:        var(--lrn-accent);
+}
+
+.lrn-admin-edit-bar__btn svg {
+	width:  16px;
+	height: 16px;
+}
+
+.lrn-text-muted    { color: var(--lrn-text-secondary); }
+.lrn-text-tertiary { color: var(--lrn-text-tertiary); }
+.lrn-text-accent   { color: var(--lrn-accent); }
+.lrn-text-success  { color: var(--lrn-success); }
+.lrn-text-warn     { color: var(--lrn-warn); }
+.lrn-text-danger   { color: var(--lrn-danger); }
+
+.lrn-sr-only {
+	position: absolute;
+	width:    1px;
+	height:   1px;
+	padding:  0;
+	margin:   -1px;
+	overflow: hidden;
+	clip:     rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border:   0;
+}
+
+/* --------------------------------------------------------------------------
+   Hero banner (single course sales page)
+   -------------------------------------------------------------------------- */
+
+.lrn-hero {
+	position:   relative;
+	background: #1a1a2e;
+	color:      var(--lrn-white);
+	overflow:   hidden;
+}
+
+/* No-thumbnail courses get a brand-tinted gradient instead of flat navy
+   so the hero doesn't read as a barren placeholder block. */
+.lrn-hero:not([data-has-bg="true"]) {
+	background: linear-gradient(135deg, #1a1a2e 0%, color-mix(in srgb, var(--lrn-accent) 20%, #1a1a2e) 100%);
+}
+
+/* Big translucent course initial in the bottom-right corner of the hero
+   when no cover image is set (Substack / Notion style). Filled the dead
+   space below the title without inventing data the course doesn't have. */
+.lrn-hero__initial {
+	position:       absolute;
+	inset-inline-end: var(--lrn-sp-6);
+	bottom:         var(--lrn-sp-5);
+	font-size:      clamp(7rem, 16vw, 14rem);
+	font-weight:    var(--lrn-weight-bold);
+	line-height:    1;
+	letter-spacing: -0.04em;
+	color:          rgba(255, 255, 255, 0.08);
+	user-select:    none;
+	pointer-events: none;
+	z-index:        1;
+}
+
+.lrn-hero__bg {
+	position: absolute;
+	inset:    0;
+	z-index:  0;
+}
+
+.lrn-hero__bg-img {
+	width:      100%;
+	height:     100%;
+	object-fit: cover;
+	opacity:    0.35;
+}
+
+.lrn-hero__overlay {
+	position:   absolute;
+	inset:      0;
+	z-index:    1;
+	background: linear-gradient(135deg, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.55) 60%, rgba(0, 0, 0, 0.30) 100%);
+}
+
+.lrn-hero__inner {
+	position:    relative;
+	z-index:     2;
+	padding-top: var(--lrn-sp-10);
+	padding-bottom: var(--lrn-sp-10);
+}
+
+/* Breadcrumb on the dark course hero. The shared `.lrn-breadcrumb__*`
+   component colours (--lrn-text / --lrn-text-secondary / --lrn-text-tertiary)
+   are tuned for light surfaces and collapse to ~2.5:1 on the hero's dark
+   band — a WCAG-AA failure (the crumb was effectively invisible). The older
+   `.lrn-hero__breadcrumb a` / `span[aria-current]` rules never matched the
+   partial's `.lrn-breadcrumb__link` / `__current` markup, so the override
+   silently did nothing. Re-tint the real classes to translucent white. */
+.lrn-hero .lrn-breadcrumb__link {
+	color: color-mix(in srgb, var(--lrn-white) 80%, transparent);
+}
+
+.lrn-hero .lrn-breadcrumb__link:hover,
+.lrn-hero .lrn-breadcrumb__link:focus-visible {
+	color:      var(--lrn-white);
+	background:  color-mix(in srgb, var(--lrn-white) 14%, transparent);
+}
+
+.lrn-hero .lrn-breadcrumb__current {
+	color: var(--lrn-white);
+}
+
+.lrn-hero .lrn-breadcrumb__item:not(:last-child)::after {
+	color: color-mix(in srgb, var(--lrn-white) 45%, transparent);
+}
+
+.lrn-hero__badges {
+	display:       flex;
+	gap:           var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-badge--outline {
+	background:    transparent;
+	border:        1px solid rgba(255, 255, 255, 0.3);
+	color:         rgba(255, 255, 255, 0.9);
+	padding:       2px var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	border-radius: var(--lrn-radius-sm);
+}
+
+.lrn-hero .lrn-badge--blue {
+	background: rgba(35, 131, 226, 0.3);
+	color:      var(--lrn-accent-light);
+}
+
+.lrn-hero__title {
+	font-size:     clamp(var(--lrn-text-xl), 4vw, 36px);
+	font-weight:   var(--lrn-weight-semibold);
+	line-height:   var(--lrn-leading-tight);
+	margin:        0 0 var(--lrn-sp-3);
+	max-width: 640px;
+	color:         var(--lrn-white);
+}
+
+.lrn-hero__tagline {
+	font-size:   var(--lrn-text-md);
+	color:       rgba(255, 255, 255, 0.85);
+	margin:      0 0 var(--lrn-sp-5);
+	max-width: 560px;
+	line-height: var(--lrn-leading-relaxed);
+}
+
+.lrn-hero__meta {
+	display:     flex;
+	align-items: center;
+	flex-wrap:   wrap;
+	gap:         var(--lrn-sp-4);
+	font-size:   var(--lrn-text-sm);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-hero__meta-item {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	color:       rgba(255, 255, 255, 0.8);
+}
+
+.lrn-hero__meta-item svg {
+	width:  14px;
+	height: 14px;
+}
+
+.lrn-hero__meta-avatar {
+	width:         24px;
+	height:        24px;
+	border-radius: 50%;
+	border:        2px solid rgba(255, 255, 255, 0.3);
+}
+
+.lrn-hero__meta-link {
+	color:           var(--lrn-white);
+	text-decoration: none;
+	font-weight:     var(--lrn-weight-medium);
+}
+
+.lrn-hero__meta-link:hover {
+	text-decoration: underline;
+}
+
+.lrn-hero__stars {
+	color:       var(--lrn-gold);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+.lrn-hero__meta-muted {
+	color: rgba(255, 255, 255, 0.5);
+}
+
+.lrn-hero__updated {
+	font-size: var(--lrn-text-xs);
+	color:     rgba(255, 255, 255, 0.45);
+	margin:    0;
+}
+
+/* --------------------------------------------------------------------------
+   Outcomes box ("What You Will Learn")
+   -------------------------------------------------------------------------- */
+
+.lrn-outcomes {
+	padding:       var(--lrn-sp-6);
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-outcomes__heading {
+	font-size:     var(--lrn-text-lg);
+	font-weight:   var(--lrn-weight-semibold);
+	margin:        0 0 var(--lrn-sp-4);
+}
+
+.lrn-outcomes__grid {
+	columns:    2;
+	column-gap: var(--lrn-sp-6);
+}
+
+.lrn-outcomes__grid ul,
+.lrn-outcomes__grid ol {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-outcomes__grid li {
+	display:        flex;
+	align-items:    flex-start;
+	gap:            var(--lrn-sp-2);
+	padding-bottom: var(--lrn-sp-3);
+	break-inside:   avoid;
+	font-size:      var(--lrn-text-sm);
+	line-height:    var(--lrn-leading-normal);
+}
+
+.lrn-outcomes__grid li::before {
+	content:     "\\2713";
+	color:       var(--lrn-success);
+	font-weight: var(--lrn-weight-semibold);
+	flex-shrink: 0;
+	margin-top:  1px;
+}
+
+/* --------------------------------------------------------------------------
+   Requirements
+   -------------------------------------------------------------------------- */
+
+.lrn-requirements ul,
+.lrn-requirements ol {
+	margin:      0;
+	padding-inline-start: var(--lrn-sp-5);
+}
+
+.lrn-requirements li {
+	padding-bottom: var(--lrn-sp-2);
+	font-size:      var(--lrn-text-sm);
+	color:          var(--lrn-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   Section subtitle
+   -------------------------------------------------------------------------- */
+
+.lrn-section-subtitle {
+	display:     block;
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-normal);
+	color:       var(--lrn-text-tertiary);
+	margin-top:  var(--lrn-sp-1);
+}
+
+/* --------------------------------------------------------------------------
+   Instructor panel
+   -------------------------------------------------------------------------- */
+
+.lrn-instructor-panel {
+	padding: var(--lrn-sp-6);
+}
+
+.lrn-instructor-panel__header {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-4);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-instructor-panel__avatar {
+	width:         80px;
+	height:        80px;
+	border-radius: 50%;
+	flex-shrink:   0;
+}
+
+.lrn-instructor-panel__name {
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-2);
+}
+
+.lrn-instructor-panel__name a {
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-instructor-panel__name a:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-instructor-panel__stats {
+	display:   flex;
+	gap:       var(--lrn-sp-4);
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-instructor-panel__stats svg {
+	width:  14px;
+	height: 14px;
+}
+
+.lrn-instructor-panel__bio {
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+	line-height: var(--lrn-leading-relaxed);
+	margin:      0 0 var(--lrn-sp-4);
+}
+
+/* --------------------------------------------------------------------------
+   Rating summary
+   -------------------------------------------------------------------------- */
+
+.lrn-rating-summary {
+	display:       flex;
+	gap:           var(--lrn-sp-8);
+	padding:       var(--lrn-sp-6);
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-rating-summary__left {
+	text-align:  center;
+	flex-shrink: 0;
+	min-width: 80px;
+}
+
+.lrn-rating-summary__avg {
+	display:     block;
+	font-size:   var(--lrn-text-4xl);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: 1;
+	color:       var(--lrn-text);
+}
+
+.lrn-rating-summary__stars {
+	margin: var(--lrn-sp-1) 0;
+}
+
+.lrn-rating-summary__label {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+.lrn-rating-summary__bars {
+	flex: 1;
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2);
+	justify-content: center;
+}
+
+.lrn-rating-summary__bar-row {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-rating-summary__bar-label {
+	font-size:  var(--lrn-text-sm);
+	color:      var(--lrn-text-secondary);
+	width:      32px;
+	flex-shrink: 0;
+	text-align: end;
+}
+
+.lrn-rating-summary__bar {
+	flex:          1;
+	height:        8px;
+	background:    var(--lrn-bg-tertiary);
+	border-radius: 4px;
+	overflow:      hidden;
+}
+
+.lrn-rating-summary__bar-fill {
+	height:        100%;
+	background:    var(--lrn-gold);
+	border-radius: 4px;
+	width:         var(--bar-pct, 0%);
+}
+
+.lrn-rating-summary__bar-pct {
+	font-size:  var(--lrn-text-xs);
+	color:      var(--lrn-text-tertiary);
+	width:      32px;
+	flex-shrink: 0;
+}
+
+.lrn-star--filled { color: var(--lrn-gold); }
+.lrn-star--empty  { color: var(--lrn-bg-tertiary); }
+
+/* .lrn-sidebar-card* + .lrn-single-course__section / __progress moved to assets/css/single-course.css. */
+
+/* ── Surface B (W6) banners + completion screen ─────────────────────── */
+
+.lrn-banner {
+	display:       flex;
+	gap:           var(--lrn-sp-4);
+	align-items:   flex-start;
+	padding:       var(--lrn-sp-4) var(--lrn-sp-5);
+	margin-bottom: var(--lrn-sp-5);
+	border-radius: var(--lrn-radius-md, 8px);
+	border:        1px solid var(--lrn-border, var(--lrn-wp-border-light));
+	background:    var(--lrn-bg, var(--lrn-white));
+	position:      relative;
+}
+
+.lrn-banner--welcome {
+	border-color: var(--lrn-accent, var(--lrn-accent));
+	background:   color-mix(in srgb, var(--lrn-accent, var(--lrn-accent)) 6%, var(--lrn-bg, var(--lrn-white)));
+}
+
+.lrn-banner--announcement {
+	border-color: var(--lrn-warn, var(--lrn-warn));
+	background:   color-mix(in srgb, var(--lrn-warn, var(--lrn-warn)) 6%, var(--lrn-bg, var(--lrn-white)));
+}
+
+.lrn-banner--success {
+	border-color: var(--lrn-success, var(--lrn-success));
+	background:   color-mix(in srgb, var(--lrn-success, var(--lrn-success)) 6%, var(--lrn-bg, var(--lrn-white)));
+}
+
+.lrn-banner--warning {
+	border-color: var(--lrn-warn, var(--lrn-warn));
+	background:   color-mix(in srgb, var(--lrn-warn, var(--lrn-warn)) 6%, var(--lrn-bg, var(--lrn-white)));
+}
+
+.lrn-banner--info {
+	border-color: var(--lrn-accent);
+	background:   color-mix(in srgb, var(--lrn-accent) 6%, var(--lrn-bg, var(--lrn-white)));
+}
+
+.lrn-banner--error {
+	border-color: var(--lrn-danger);
+	background:   color-mix(in srgb, var(--lrn-danger) 6%, var(--lrn-bg, var(--lrn-white)));
+}
+
+.lrn-banner--success strong,
+.lrn-banner--warning strong {
+	display:     block;
+	margin-bottom: var(--lrn-sp-1);
+	color:       var(--lrn-text, var(--lrn-text));
+	font-weight: var(--lrn-weight-semibold);
+}
+
+.lrn-banner__icon {
+	flex-shrink: 0;
+	color:       var(--lrn-accent, var(--lrn-accent));
+	display:     inline-flex;
+	padding-top: 2px;
+}
+
+.lrn-banner--announcement .lrn-banner__icon {
+	color: var(--lrn-warn, var(--lrn-warn));
+}
+
+.lrn-banner__body {
+	flex: 1;
+	min-width: 0;
+}
+
+.lrn-banner__title {
+	font-size:     var(--lrn-text-base);
+	font-weight:   var(--lrn-weight-semibold);
+	margin:        0 0 var(--lrn-sp-2);
+	color:         var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-banner__message {
+	font-size:   var(--lrn-text-sm);
+	line-height: var(--lrn-leading-relaxed);
+	color:       var(--lrn-text-secondary, var(--lrn-text-secondary));
+}
+
+.lrn-banner__message p:first-child { margin-top: 0; }
+.lrn-banner__message p:last-child  { margin-bottom: 0; }
+
+.lrn-banner__meta {
+	font-size:  var(--lrn-text-xs);
+	color:      var(--lrn-text-muted, var(--lrn-wp-text-muted));
+	margin:     var(--lrn-sp-2) 0 0;
+}
+
+.lrn-banner__dismiss {
+	position:       absolute;
+	top:            var(--lrn-sp-3);
+	inset-inline-end: var(--lrn-sp-3);
+	display:        inline-flex;
+	align-items:    center;
+	justify-content:center;
+	width:          28px;
+	height:         28px;
+	border-radius:  50%;
+	color:          var(--lrn-text-secondary, var(--lrn-text-secondary));
+	background:     transparent;
+	text-decoration:none;
+	transition:     background-color 120ms ease;
+}
+
+.lrn-banner__dismiss:hover,
+.lrn-banner__dismiss:focus-visible {
+	background: color-mix(in srgb, var(--lrn-text, var(--lrn-text)) 8%, transparent);
+	color:      var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-course-completion {
+	text-align:    center;
+	padding:       var(--lrn-sp-8, 32px) var(--lrn-sp-6, 24px);
+	margin-bottom: var(--lrn-sp-6);
+	border:        1px solid var(--lrn-border, var(--lrn-wp-border-light));
+	background:    color-mix(in srgb, var(--lrn-success, var(--lrn-success-strong)) 4%, var(--lrn-bg, var(--lrn-white)));
+}
+
+.lrn-course-completion__icon {
+	display:       inline-flex;
+	align-items:   center;
+	justify-content:center;
+	width:         72px;
+	height:        72px;
+	border-radius: 50%;
+	color:         var(--lrn-success, var(--lrn-success-strong));
+	background:    color-mix(in srgb, var(--lrn-success, var(--lrn-success-strong)) 14%, transparent);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-course-completion__title {
+	font-size:   var(--lrn-text-xl, 1.25rem);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-3);
+	color:       var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-course-completion__message {
+	font-size:   var(--lrn-text-base);
+	line-height: var(--lrn-leading-relaxed);
+	color:       var(--lrn-text-secondary, var(--lrn-text-secondary));
+	max-width: 520px;
+	margin:      0 auto var(--lrn-sp-5);
+}
+
+.lrn-course-completion__actions {
+	display:         flex;
+	flex-wrap:       wrap;
+	gap:             var(--lrn-sp-3);
+	justify-content: center;
+	align-items:     center;
+}
+
+.lrn-course-completion__retake-form {
+	display:        inline-flex;
+	flex-direction: column;
+	align-items:    center;
+	gap:            var(--lrn-sp-2);
+	margin:         0;
+}
+
+.lrn-course-completion__retake-note {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-muted, var(--lrn-wp-text-muted));
+	margin:    0;
+}
+
+/* About body with optional truncation */
+.lrn-about__body {
+	font-size:   var(--lrn-text-sm);
+	line-height: var(--lrn-leading-relaxed);
+	color:       var(--lrn-text-secondary);
+}
+
+/* Review cards inside single course */
+.lrn-review-card {
+	padding:       var(--lrn-sp-5);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+/* Reviews "Load more" — centered under the card list. The button paginates the
+   reviews section so a course with many reviews shows them all without bloating
+   the initial page load (Basecamp #9981647943). */
+.lrn-reviews-load-more-wrap {
+	display:         flex;
+	justify-content: center;
+	margin-top:      var(--lrn-sp-4);
+}
+
+.lrn-reviews-load-more {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-review-card__header {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-review-card__avatar {
+	width:         48px;
+	height:        48px;
+	border-radius: 50%;
+	flex-shrink:   0;
+}
+
+.lrn-review-card__meta {
+	flex: 1;
+}
+
+.lrn-review-card__name {
+	display: block;
+	margin-bottom: 2px;
+}
+
+.lrn-review-card__stars {
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-review-card__date {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+.lrn-review-card__title {
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-2);
+}
+
+.lrn-review-card__body {
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+	line-height: var(--lrn-leading-relaxed);
+	margin:      0;
+}
+
+/* Instructor reply — read-side block + write-side form.
+   Clean tinted block (no decorative left accent "marker"). */
+.lrn-review-card__reply {
+	margin-top:    var(--lrn-sp-3);
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	background:    var(--lrn-bg-secondary);
+	border-radius: var(--lrn-radius-sm);
+}
+
+.lrn-review-card__reply-label {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	font-size:   var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-accent);
+	margin-bottom: var(--lrn-sp-1);
+}
+
+.lrn-review-card__reply-body {
+	margin:    0;
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text);
+	line-height: var(--lrn-leading-relaxed);
+}
+
+.lrn-review-reply-form {
+	margin-top:     var(--lrn-sp-3);
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2);
+}
+
+.lrn-review-reply-form__alert {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-danger, #d04040);
+}
+
+.lrn-review-reply-form__submit {
+	align-self: flex-start;
+}
+
+/* Button size modifier */
+.lrn-btn--lg {
+	padding:    var(--lrn-sp-3) var(--lrn-sp-6);
+	font-size:  var(--lrn-text-md);
+}
+
+.lrn-btn--sm {
+	padding:    var(--lrn-sp-1) var(--lrn-sp-3);
+	font-size:  var(--lrn-text-sm);
+	min-height: var(--lrn-touch-min);
+}
+
+/* --------------------------------------------------------------------------
+   Archive header
+   -------------------------------------------------------------------------- */
+
+.lrn-archive-header {
+	margin-bottom: var(--lrn-sp-6);
+	padding-block: var(--lrn-sp-4);
+	border-bottom: 1px solid var(--lrn-border);
+}
+
+.lrn-archive-header__eyebrow {
+	display:        block;
+	font-size:      var(--lrn-text-xs);
+	font-weight:    var(--lrn-weight-semibold);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color:          var(--lrn-text-tertiary);
+	margin:         0 0 var(--lrn-sp-2);
+}
+
+.lrn-archive-header__title {
+	font-size:      var(--lrn-text-2xl);
+	font-weight:    var(--lrn-weight-semibold);
+	margin:         0;
+	line-height:    1.15;
+	letter-spacing: -0.01em;
+}
+
+.lrn-archive-header__count {
+	color:      var(--lrn-text-secondary);
+	margin:     var(--lrn-sp-2) 0 0;
+	font-size:  var(--lrn-text-sm);
+}
+
+/* --------------------------------------------------------------------------
+   Filter bar (catalog search + category + sort + view toggle — ALL INLINE)
+   -------------------------------------------------------------------------- */
+
+/* Filter bar, course grid, list-view, and view-toggle rules extracted to
+   assets/css/catalog.css — loaded conditionally on the catalog route. */
+
+/* Inputs and selects inside filter bar */
+.lrn-input,
+.lrn-select {
+	display:       block;
+	width:         100%;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	transition:    border-color var(--lrn-dur) var(--lrn-ease),
+	               box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-input:focus-visible,
+.lrn-select:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-input:focus:not(:focus-visible),
+.lrn-select:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-select {
+	appearance:        auto;
+	min-width: 140px;
+}
+
+/* Dashboard header / stats-row / stat-card / sections / membership-card /
+   certificate-card / instructor-profile rules extracted to
+   assets/css/dashboards.css — loaded conditionally on the three
+   dashboard routes (student-dashboard, instructor-dashboard,
+   instructor-profile). */
+
+/* --------------------------------------------------------------------------
+   Course card
+   -------------------------------------------------------------------------- */
+
+.lrn-course-card {
+	background:     var(--lrn-bg);
+	border:         1px solid var(--lrn-border);
+	border-radius:  var(--lrn-radius-xl);
+	overflow:       hidden;
+	box-shadow:     var(--lrn-shadow-sm);
+	display:        flex;
+	flex-direction: column;
+	transition:     box-shadow var(--lrn-dur) var(--lrn-ease),
+	                transform var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-course-card:hover {
+	box-shadow:   var(--lrn-shadow-lg);
+	border-color: var(--lrn-border-heavy);
+	transform:    translateY(-3px);
+}
+
+.lrn-course-card__thumb {
+	aspect-ratio: 16 / 9;
+	background:   var(--lrn-bg-tertiary);
+	overflow:     hidden;
+}
+
+.lrn-course-card__thumb img {
+	width:      100%;
+	height:     100%;
+	object-fit: cover;
+}
+
+.lrn-course-card__thumbnail,
+.lrn-course-card__thumbnail--placeholder {
+	aspect-ratio: 16 / 9;
+	background:   var(--lrn-bg-tertiary);
+	overflow:     hidden;
+}
+
+/* No-thumbnail fallback: gradient surface with the course initial in big
+   translucent typography — premium "designed empty state" instead of a
+   bald grey rectangle. Hue is brand-tinted so different courses still
+   feel distinct from the body. */
+.lrn-course-card__thumbnail--placeholder {
+	background:    linear-gradient(135deg, var(--lrn-bg-tertiary) 0%, color-mix(in srgb, var(--lrn-accent) 14%, var(--lrn-bg-tertiary)) 100%);
+	display:       grid;
+	place-items:   center;
+	position:      relative;
+}
+
+.lrn-course-card__thumbnail-initial {
+	font-size:      clamp(2.5rem, 6vw, 4.5rem);
+	font-weight:    var(--lrn-weight-bold);
+	line-height:    1;
+	letter-spacing: -0.02em;
+	color:          var(--lrn-text-secondary);
+	color:          color-mix(in srgb, var(--lrn-text) 28%, transparent);
+	user-select:    none;
+}
+
+.lrn-course-card__thumbnail img {
+	width:      100%;
+	height:     100%;
+	object-fit: cover;
+}
+
+.lrn-course-card__info {
+	padding:        var(--lrn-sp-4);
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2);
+	flex:           1;
+}
+
+.lrn-course-card__title {
+	font-size:     var(--lrn-text-md);
+	font-weight:   var(--lrn-weight-semibold);
+	margin:        0;
+	line-height:   var(--lrn-leading-tight);
+
+	/* Clamp to two lines so a long title can't inflate the card and break
+	   the grid alignment. The reserved min-height keeps single-line titles
+	   aligned with two-line neighbours in the same row. */
+	display:            -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow:           hidden;
+	min-height:         calc( var(--lrn-text-md) * var(--lrn-leading-tight) * 2 );
+}
+
+.lrn-course-card__title a {
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-course-card__title a:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-course-card__meta {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+/* Instructor is a link — make sure it looks clickable and hovers to accent
+   so catalog visitors can tell it opens the instructor profile. */
+a.lrn-course-card__instructor-link {
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+	transition:      color var(--lrn-dur) var(--lrn-ease);
+}
+a.lrn-course-card__instructor-link:hover,
+a.lrn-course-card__instructor-link:focus-visible {
+	/* Color shift is the hover affordance; no duplicate underline. */
+	color:           var(--lrn-accent);
+}
+
+.lrn-course-card__stats {
+	font-size:  var(--lrn-text-sm);
+	color:      var(--lrn-text-secondary);
+}
+
+.lrn-course-card__rating {
+	color: var(--lrn-warn);
+}
+
+.lrn-course-card__footer {
+	margin-top: auto;
+	padding-top: var(--lrn-sp-3);
+}
+
+/* --------------------------------------------------------------------------
+   Course overview stats (single course)
+   -------------------------------------------------------------------------- */
+
+.lrn-course-overview {
+	display:       flex;
+	flex-wrap:     wrap;
+	gap:           var(--lrn-sp-4) var(--lrn-sp-6);
+	padding:       var(--lrn-sp-5);
+	margin-bottom: var(--lrn-sp-6);
+	background:    var(--lrn-bg-secondary);
+	border-radius: var(--lrn-radius-lg);
+	border:        1px solid var(--lrn-border);
+}
+
+.lrn-course-overview__item {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-course-overview__item svg {
+	width:  16px;
+	height: 16px;
+	color:  var(--lrn-accent);
+}
+
+/* .lrn-curriculum* rules moved to assets/css/single-course.css. */
+
+/* --------------------------------------------------------------------------
+   Breadcrumb
+   -------------------------------------------------------------------------- */
+
+.lrn-breadcrumb {
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-breadcrumb a {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-breadcrumb a:hover {
+	color: var(--lrn-accent);
+}
+
+/* .lrn-single-course__* layout / title / meta / sidebar / cta / price moved to assets/css/single-course.css. */
+
+.lrn-btn--full {
+	width: 100%;
+	justify-content: center;
+}
+
+/* --------------------------------------------------------------------------
+   Badges
+   -------------------------------------------------------------------------- */
+
+.lrn-badge {
+	display:       inline-flex;
+	align-items:   center;
+	padding:       2px var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	border-radius: var(--lrn-radius-sm);
+	white-space:   nowrap;
+}
+
+/* Catalog category pill. Class name is historical — visually it is now a
+   quiet neutral surface so the brand-accent budget is reserved for CTAs
+   and active states (see Basecamp catalog premium-pass). */
+.lrn-badge--blue {
+	background: var(--lrn-bg-tertiary);
+	color:      var(--lrn-text-secondary);
+}
+
+.lrn-badge--green {
+	background: var(--lrn-success-bg);
+	color:      var(--lrn-success);
+}
+
+/* --------------------------------------------------------------------------
+   Card (generic)
+   -------------------------------------------------------------------------- */
+
+.lrn-card {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	box-shadow:    var(--lrn-shadow-sm);
+}
+
+/* Empty state — duplicate block removed 2026-05-23.
+   The canonical block now lives ~1000 lines above (search for
+   "Empty state — single canonical block"). The `--inline` modifier
+   from this block was merged into the canonical declaration; the
+   `__text` selector is now an alias of `__desc` in that same block.
+   See plan/2026-05-23-admin-ux-audit/REPORT.md §2.6. */
+
+.lrn-empty-state--inline .lrn-empty-state__icon {
+	width:  32px;
+	height: 32px;
+}
+
+/* --------------------------------------------------------------------------
+   Load more
+   -------------------------------------------------------------------------- */
+
+.lrn-load-more {
+	text-align:  center;
+	margin-top:  var(--lrn-sp-8);
+}
+
+/* --------------------------------------------------------------------------
+   Progress bar
+   -------------------------------------------------------------------------- */
+
+.lrn-progress-bar {
+	height:        6px;
+	background:    var(--lrn-bg-tertiary);
+	border-radius: 3px;
+	overflow:      hidden;
+}
+
+.lrn-progress-bar__fill {
+	height:        100%;
+	background:    var(--lrn-progress);
+	border-radius: 3px;
+	transition:    width 0.3s ease;
+}
+
+.lrn-progress-bar__label {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+/* --------------------------------------------------------------------------
+   Lesson player — collapsible sidebar layout
+   -------------------------------------------------------------------------- */
+
+/* ── Sidebar ── */
+
+/* check 6: a11y_keyboard — focus ring for sidebar collapse/expand toggle */
+
+/* ── Sidebar navigation ── */
+
+/* ── Section accordion ── */
+
+/* check 6: a11y_keyboard — keyboard focus ring for section accordion */
+
+/* ── Lesson items ── */
+
+a
+
+/* Current lesson highlight */
+
+/* Completed lesson */
+
+/* ── Sidebar footer / progress bar ── */
+
+/* ── Open sidebar button (visible when collapsed) ── */
+
+/* check 6: a11y_keyboard — focus ring for floating open-sidebar button */
+
+/* ── Main content area ── */
+
+/*
+ * check 9: loading_state — video skeleton placeholder.
+ * Sits inside .lrn-video-wrapper (aspect-ratio box) until Plyr renders the
+ * player. Once Plyr fires "ready", JS adds .lrn-video-wrapper--loaded which
+ * hides the skeleton. The skeleton uses existing .lrn-skeleton shimmer CSS.
+ */
+
+/* Plyr adds a visible player element — skeleton can be hidden via wrapper flag */
+
+/*
+ * check 11: error_state — media-error empty state inside content type blocks.
+ * Renders when content_type requires a URL but no URL has been set.
+ */
+
+/*
+ * check 10: empty_state — text-type lesson with no body content.
+ */
+
+/* ── Completion strip — student-facing requirement checklist ──
+   Rendered above Mark Complete when completion_mode !== 'manual'.
+   Each line shows a requirement (time on page, video %, scroll, quiz pass)
+   with an icon, label, and progress bar. Scoped to .lrn-completion-strip
+   so it composes with surrounding actions without leaking styles. */
+
+@media (max-width: 640px) {
+	
+	
+
+	/* check 3: responsive_3_breakpoint — lesson player mobile layout at the
+	   canonical 640px breakpoint. Moved from non-standard 768px block. */
+
+	/* Sidebar becomes a full-screen overlay drawer on small screens */
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+}
+
+/* ── Prev / next lesson navigation ── */
+
+/*
+ * Long lesson titles inside the prev/next buttons used to wrap to multiple
+ * lines and visually collide with the icon + Prev/Next label, looking like
+ * the title was overlapping the navigation control (bug card #6). Cap each
+ * title to one line with ellipsis; the full title is still readable on hover
+ * via the native title attribute when the template provides it.
+ */
+
+/* prefers-reduced-motion: remove sidebar slide animation */
+
+/* Quiz player + gate + question types + question-ordering / matching
+   extracted to assets/css/quiz-player.css. Loaded conditionally on the
+   `quiz` and `standalone-quiz` routes via Template_Loader. */
+
+/* Certificate verify extracted to assets/css/cert-verify.css. Loaded conditionally on the `certificate-verify` route via Template_Loader. */
+
+/* Certificate-card rules extracted to assets/css/dashboards.css. */
+
+/* --------------------------------------------------------------------------
+   Category archive
+   -------------------------------------------------------------------------- */
+
+.lrn-category-archive__header {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-category-archive__title {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-2);
+}
+
+.lrn-category-archive__description {
+	color:  var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-category-archive__count {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-tertiary);
+}
+
+.lrn-subcategory-list {
+	display:       flex;
+	flex-wrap:     wrap;
+	gap:           var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-6);
+}
+
+/* Instructor-profile rules (including .lrn-social-link) extracted to
+   assets/css/dashboards.css. */
+
+/* Become-instructor application rules (.lrn-become-instructor*) extracted
+   to assets/css/register.css — the auth / onboarding slice. */
+
+/* --------------------------------------------------------------------------
+   Form groups (used across the plugin)
+   -------------------------------------------------------------------------- */
+
+.lrn-form-group {
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-form-label {
+	display:       block;
+	font-size:     var(--lrn-text-base);
+	font-weight:   var(--lrn-weight-medium);
+	margin-bottom: var(--lrn-sp-2);
+	color:         var(--lrn-text);
+}
+
+.lrn-form-label span[aria-hidden] {
+	color: var(--lrn-danger);
+}
+
+.lrn-textarea {
+	display:       block;
+	width:         100%;
+	padding:       var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	resize:        vertical;
+	transition:    border-color var(--lrn-dur) var(--lrn-ease),
+	               box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-textarea:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-textarea:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-form-hint {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-tertiary);
+	margin:    var(--lrn-sp-1) 0 0;
+}
+
+/* Membership pricing + manage legacy rules moved to assets/css/membership.css. */
+
+/* --------------------------------------------------------------------------
+   Tables (frontend — shared across templates)
+   -------------------------------------------------------------------------- */
+
+.lrn-table-wrap {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	/* Establish the containing block for absolutely-positioned descendants so
+	   they are clipped by the overflow-x:auto below. Without it, a `.screen-
+	   reader-text` label in the last column header (position:absolute, no
+	   positioned ancestor) resolves against the viewport and renders at the far
+	   edge of a wide table, off-screen but still counted in document scroll
+	   width, giving the whole page a phantom horizontal scrollbar at tablet
+	   widths (Basecamp 10124269807). Relative makes the wrap the container so
+	   the label scrolls inside the table instead of blowing out the page. */
+	position:      relative;
+	/* Scroll horizontally instead of clipping: a wide table (e.g. the
+	   instructor dashboard "My Courses" list) used to lose its right-most
+	   columns + action buttons off-canvas at phone widths because
+	   overflow:hidden cut them off. overflow-x:auto keeps every column
+	   reachable via scroll while the rounded corners still clip cleanly. */
+	overflow-x:    auto;
+	box-shadow:    var(--lrn-shadow-sm);
+}
+
+.lrn-table {
+	width:           100%;
+	border-collapse: collapse;
+	font-size:       var(--lrn-text-sm);
+}
+
+.lrn-table thead {
+	background: var(--lrn-bg-secondary);
+}
+
+.lrn-table th {
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	text-align:    start;
+	font-weight:   var(--lrn-weight-semibold);
+	color:         var(--lrn-text-secondary);
+	border-bottom: 1px solid var(--lrn-border);
+}
+
+.lrn-table td {
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	border-bottom: 1px solid var(--lrn-divider);
+	vertical-align: middle;
+}
+
+.lrn-table tbody tr:last-child td { border-bottom: none; }
+.lrn-table tbody tr:hover td     { background: var(--lrn-bg-hover); }
+
+/* NOTE: this class sits on a <td>.
+ *
+ * It used to be `display: flex`, which takes the element OUT of the table
+ * layout — a flex container is no longer a table-cell, so the cell stopped
+ * sharing the row's height and vertical alignment and began painting its own
+ * background. On hover that showed up as a grey block stepping below and beside
+ * the row, and the actions column read as detached from the data it belongs to.
+ *
+ * The buttons are already `inline-flex`, so a row of them needs no flex parent —
+ * nowrap keeps them on one line and the sibling margin supplies the gap, with
+ * the cell staying a cell. */
+.lrn-table__actions {
+	white-space: nowrap;
+}
+
+.lrn-table__actions > * + * {
+	margin-inline-start: var(--lrn-sp-2);
+}
+
+/* Optical alignment: a ghost button's own 12px padding pushed its LABEL 13px
+ * right of the "Actions" header, even though the button box started exactly on
+ * the header's text edge. Pull the first one back by its padding so the column
+ * reads as aligned. */
+.lrn-table__actions > .lrn-btn--ghost:first-child {
+	margin-inline-start: calc( var(--lrn-sp-3) * -1 );
+}
+
+/* --------------------------------------------------------------------------
+   Activity list (instructor dashboard)
+   -------------------------------------------------------------------------- */
+
+.lrn-activity-list {
+	list-style: none;
+	padding:    0;
+	margin:     0;
+}
+
+.lrn-activity-list__item {
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-3);
+	padding:        var(--lrn-sp-3) 0;
+	border-bottom:  1px solid var(--lrn-divider);
+}
+
+.lrn-activity-list__item:last-child { border-bottom: none; }
+
+.lrn-activity-list__avatar {
+	width:         32px;
+	height:        32px;
+	border-radius: 50%;
+	flex-shrink:   0;
+}
+
+.lrn-activity-list__text {
+	flex:      1;
+	font-size: var(--lrn-text-sm);
+}
+
+/* Announcement widget: heading line + the full message body beneath it, so
+   students can read the whole announcement on the dashboard (previously only
+   the title showed, with no way to see the content). */
+.lrn-announcement__head { display: block; }
+.lrn-announcement__body {
+	display:            block;
+	margin-block-start: var(--lrn-sp-1);
+	color:              var(--lrn-text-secondary);
+	white-space:        pre-line;
+}
+
+.lrn-activity-list__time {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+/* Phone: stack the trailing timestamp under the text instead of holding a
+ * column beside it.
+ *
+ * The row is a three-part media object — avatar | text | time. The time never
+ * shrinks (it is a date), so at 390px it takes ~78px of a 318px row and leaves
+ * the sentence ~184px, which wraps "<name> enrolled in <course title>" to three
+ * or more lines. `align-items: center` then parks the 32px avatar halfway down
+ * that block, so it reads as floating in the middle of the text rather than
+ * belonging to the name (Basecamp 10143802598).
+ *
+ * Grid rather than flex-wrap: it keeps the avatar in its own column across both
+ * rows, so the text and the date share one left edge and the row still scans as
+ * one record. `align-items: start` puts the avatar beside the first line where
+ * a media object expects it. */
+@media (max-width: 640px) {
+	.lrn-activity-list__item {
+		display:               grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items:           start;
+		column-gap:            var(--lrn-sp-3);
+		row-gap:               var(--lrn-sp-1);
+	}
+
+	.lrn-activity-list__time {
+		grid-column: 2;
+	}
+}
+
+/* --------------------------------------------------------------------------
+   Badge variants (additional)
+   -------------------------------------------------------------------------- */
+
+.lrn-badge--red   { background: var(--lrn-danger-bg); color: var(--lrn-danger); }
+.lrn-badge--amber { background: var(--lrn-warn-bg);   color: var(--lrn-warn); }
+
+/* .lrn-dashboard__section-header + .lrn-dashboard__header extracted to
+   assets/css/dashboards.css. */
+
+/* Earnings summary (instructor dashboard). */
+.lrn-earnings-summary {
+	display:       flex;
+	gap:           var(--lrn-sp-8);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-earnings-summary__item {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+}
+
+.lrn-earnings-summary__label {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-earnings-summary__value {
+	font-size:   var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+/* Rating cell — star icon + numeric value in course table. */
+.lrn-rating-cell {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text);
+}
+
+.lrn-rating-cell__icon {
+	width:  var(--lrn-icon-sm);
+	height: var(--lrn-icon-sm);
+	color:  var(--lrn-warn);
+	fill:   var(--lrn-warn);
+}
+
+/* Earnings summary: stack vertically on narrow viewports. */
+@media (max-width: 640px) {
+	.lrn-earnings-summary {
+		flex-direction: column;
+		gap:            var(--lrn-sp-4);
+	}
+}
+
+/* .lrn-stats-row breakpoints moved to assets/css/dashboards.css. */
+
+/* Quiz cheat-warning + question-slide visibility moved to
+   assets/css/quiz-player.css alongside the rest of the quiz shell. */
+
+/* Catalog list view (.lrn-courses-grid.lrn-list-layout) extracted to
+   assets/css/catalog.css. Loaded conditionally on the catalog route. */
+
+/* --------------------------------------------------------------------------
+   Course card — missing stat / thumbnail-link classes
+   -------------------------------------------------------------------------- */
+
+/* Thumbnail link wraps the image but is tabindex=-1 (card title carries the
+   accessible link). No additional layout beyond block display is needed. */
+.lrn-course-card__thumbnail-link {
+	display: block;
+	text-decoration: none;
+}
+
+/* Rating count in parentheses, student count separator */
+.lrn-course-card__review-count {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-tertiary);
+}
+
+.lrn-course-card__students {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+/* .lrn-single-course__comments / __qa moved to assets/css/single-course.css. */
+
+/* Placeholder shown when no hook subscriber renders the comment UI. */
+.lrn-comments-placeholder {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+	margin:    0;
+}
+
+/* .lrn-sidebar-card__coupon-message* moved to assets/css/single-course.css. */
+
+/* --------------------------------------------------------------------------
+   Tap targets — the two techniques, and when to use which
+   --------------------------------------------------------------------------
+
+   The floor is `--lrn-touch-min` (44px), which clears the 40px portfolio
+   minimum with room to spare. `.lrn-btn`, `.lrn-action`, `.lrn-tab-nav__item`
+   and `.lrn-account-nav__link` already carry it as a `min-height`.
+
+   The floor is a minimum HIT AREA, not a minimum visual. Three techniques, and
+   the choice between them is mechanical:
+
+   1. GROW THE ROW — the control is in normal flow (a text link that owns its
+      line, a list row, a form field). Give it `min-height: var(--lrn-touch-min)`
+      inside the `@media (max-width: 640px)` block below. As a flex/block item
+      it grows the layout instead of overlapping it, so a bigger hit area can
+      never steal a tap from the neighbour above. This is the default: prefer
+      it every time the control can afford the height.
+
+   2. EXTEND WITH A PSEUDO — the control is an absolutely-positioned puck
+      floating over artwork, where growing it would move or cover the artwork.
+      Add the selector to the shared `::after` rule below and set its own
+      `--lrn-tap-inset`. Nothing about the visible box changes.
+
+   3. GROW AND COMPENSATE — the control is a tiny icon button in a dense row
+      where technique 1 would inflate the row. Raise `min-width`/`min-height`
+      to the floor and pull the same amount back with a negative
+      `margin-inline`, so the hit area grows while the visual footprint does
+      not. Pro's builder uses this for `.lrn-builder__action-btn` and
+      `.lrn-chip__remove`. It costs a hand-written calc per component, so reach
+      for it only when 1 and 2 are both wrong.
+
+   Whichever you pick, size it from `--lrn-touch-min`. There have been four
+   spellings of this one number in the codebase — `--lrn-touch-min`,
+   `--lrn-sp-10` (a spacing token that happens to be 40px), a literal `40px`,
+   and `--lrn-tap-target-min`, which was never declared anywhere and only ever
+   worked through its own fallback. Two of them silently LOWERED the floor,
+   because a later stylesheet ties on specificity and wins on source order.
+
+   Technique 2 has bitten us once (Basecamp #9927346859): the `--full` variant
+   of the wishlist button is `position: static`, so its absolute `::after`
+   resolved against a distant ancestor, ballooned to ~972x615 and shielded the
+   Buy Now button underneath. Two guards now make that class of bug survivable:
+   the `:not(.lrn-btn--full)` scoping keeps the extender off static hosts, and
+   `--lrn-tap-area-max` caps the pseudo so an escaped extender is at worst a
+   48px square instead of a page-sized click shield. Keep both when adding a
+   third component here.
+   -------------------------------------------------------------------------- */
+
+/* View-toggle halves are 40x40 in normal flow, so they need the host to be a
+   containing block before the extender can resolve against them. The wishlist
+   puck is already `position: absolute` and must stay that way. */
+.lrn-btn.lrn-view-btn {
+	position: relative;
+	--lrn-tap-inset: -4px;
+}
+
+/* The shared hit-area extender. Wishlist heart: 32x32 visible, -6px on each
+   side puts the touch target at 44x44 without moving the heart off the corner
+   of the thumbnail. */
+.lrn-wishlist-btn:not(.lrn-btn--full)::after,
+.lrn-btn.lrn-view-btn::after {
+	content:         '';
+	position:        absolute;
+	inset:           var(--lrn-tap-inset, -6px);
+	max-inline-size: var(--lrn-tap-area-max);
+	max-block-size:  var(--lrn-tap-area-max);
+}
+
+/* Technique 1 — the mobile tap floor for the shared components that live in
+   this file. Phone only: these are deliberately dense on desktop, where a
+   pointer does not need the help, and the extra block size is cheap at 640px
+   and below where every one of these layouts is already a single column.
+   Component-owned controls carry the same floor in their own stylesheet:
+   `.lrn-facet` (catalog/sidebar.css), `.lrn-search-suggest__item`
+   (catalog.css), `.lrn-report-btn` + `.lrn-block-btn` (report.css),
+   `.lrn-section-head__link` (account.css), `.lrn-social-link`
+   (dashboards.css). */
+@media (max-width: 640px) {
+	/* Course-card instructor byline. An inline <a> is only as wide as the
+	   name, so most of the row is dead space; as a flex item of
+	   `.lrn-course-card__info` it becomes the whole row. */
+	a.lrn-course-card__instructor-link {
+		display:     flex;
+		align-items: center;
+		min-height:  var(--lrn-touch-min);
+	}
+
+	/* "Resume" / "View all" style secondary links that sit at the end of a
+	   card or section-header row. */
+	.lrn-course-card__resume,
+	.lrn-notification-bell__mark-all {
+		display:     inline-flex;
+		align-items: center;
+		min-height:  var(--lrn-touch-min);
+	}
+
+	/* Instructor name in the course hero meta row, and every breadcrumb link.
+	   Both already centre their contents; only the floor is new. */
+	.lrn-hero__meta-link,
+	.lrn-breadcrumb__link {
+		display:     inline-flex;
+		align-items: center;
+		min-height:  var(--lrn-touch-min);
+	}
+
+	/* Text inputs and selects land at 39px from padding + line-height alone —
+	   one pixel under the floor, which is exactly the kind of miss that never
+	   shows up in a grep. */
+	.lrn-input,
+	.lrn-select {
+		min-height: var(--lrn-touch-min);
+	}
+}
+
+/* .lrn-sidebar-card__coupon / __membership-cta / __guarantee moved to assets/css/single-course.css. */
+
+/* .lrn-membership-card__header extracted to assets/css/dashboards.css. */
+
+/* ==========================================================================
+   5. Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+	.lrn-container {
+		padding-inline: var(--lrn-sp-4);
+	}
+
+	.lrn-grid {
+		grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+		gap: var(--lrn-sp-4);
+	}
+
+	/* .lrn-stats-row + .lrn-dashboard__header + .lrn-dashboard__actions
+	   + .lrn-instructor-profile__* responsive rules moved to
+	   assets/css/dashboards.css. */
+
+	.lrn-filter-bar {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+
+	.lrn-filter-bar__search {
+		min-width: 100%;
+	}
+
+	/* .lrn-single-course__layout / __sidebar responsive moved to assets/css/single-course.css. */
+	/* .lrn-dashboard__header / __actions responsive moved to assets/css/dashboards.css. */
+
+	.lrn-page-header {
+		padding-top: var(--lrn-sp-8);
+	}
+
+	.lrn-page-header__title {
+		font-size: var(--lrn-text-xl);
+	}
+
+	.lrn-modal {
+		max-width: 100%;
+		border-radius: var(--lrn-radius-lg) var(--lrn-radius-lg) 0 0;
+		margin-top: auto;
+	}
+
+	.lrn-modal__overlay {
+		align-items: flex-end;
+		padding: 0;
+	}
+
+	.lrn-toast-region {
+		bottom: var(--lrn-sp-4);
+		right:  var(--lrn-sp-4);
+		left:   var(--lrn-sp-4);
+	}
+
+	.lrn-toast {
+		min-width: unset;
+		max-width: 100%;
+		width: 100%;
+	}
+}
+
+/* .lrn-courses-grid responsive breakpoints moved to assets/css/catalog.css. */
+
+@media (max-width: 640px) {
+	.lrn-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-filter-bar__view-toggle {
+		display: none;
+	}
+
+	/* .lrn-stats-row mobile rule moved to assets/css/dashboards.css. */
+
+	.lrn-flex--between {
+		flex-direction: column;
+		align-items:    flex-start;
+		gap:            var(--lrn-sp-3);
+	}
+
+	.lrn-btn--lg {
+		width:           100%;
+		justify-content: center;
+	}
+
+	.lrn-table {
+		font-size: var(--lrn-text-sm);
+	}
+
+	.lrn-table th,
+	.lrn-table td {
+		padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	}
+}
+
+/* ==========================================================================
+   Small phone landscape / large phone portrait (480px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+	/* Cards: force single column with full-width images */
+	.lrn-course-card__thumbnail img {
+		border-radius: var(--lrn-radius-md) var(--lrn-radius-md) 0 0;
+	}
+
+	/* Catalog filters: stack vertically, full-width inputs */
+	.lrn-filter-bar {
+		gap: var(--lrn-sp-2);
+	}
+
+	.lrn-filter-bar .lrn-input,
+	.lrn-filter-bar .lrn-select,
+	.lrn-filter-bar__search {
+		width: 100%;
+	}
+
+	/* Hero text: reduce to readable size */
+	.lrn-hero__title {
+		font-size: var(--lrn-text-xl);
+	}
+
+	.lrn-hero__tagline {
+		font-size: var(--lrn-text-base);
+	}
+
+	/* Button groups: stack vertically */
+	.lrn-btn-group {
+		flex-direction: column;
+	}
+
+	.lrn-btn-group .lrn-btn {
+		width: 100%;
+		justify-content: center;
+	}
+
+	/* Tab bars: scrollable horizontal */
+	.lrn-tabs {
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		flex-wrap: nowrap;
+		scrollbar-width: none;
+	}
+
+	.lrn-tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.lrn-tab {
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	/* .lrn-stats-row mobile gap moved to assets/css/dashboards.css. */
+
+	/* .lrn-sidebar-card__price responsive moved to assets/css/single-course.css. */
+
+	/* .lrn-membership-plan__price + .lrn-checkout__layout responsive rules
+	   moved to assets/css/membership.css and assets/css/checkout.css. */
+
+	/* Quiz navigation buttons: full-width stack */
+	.lrn-quiz-nav {
+		flex-direction: column;
+	}
+
+	.lrn-quiz-nav .lrn-btn {
+		width: 100%;
+		justify-content: center;
+	}
+
+}
+
+/* ==========================================================================
+   iPhone SE, Galaxy A12, small phones (390px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+	/* Reduce body padding */
+	.lrn-container {
+		padding-inline: var(--lrn-sp-2);
+	}
+
+	/* Cap headings */
+	.lrn-hero__title {
+		font-size: var(--lrn-text-lg);
+	}
+
+	.lrn-page-header__title {
+		font-size: var(--lrn-text-lg);
+	}
+
+	/* Long words: prevent overflow */
+	.lrn-course-card__title,
+	.lrn-hero__title,
+	.lrn-page-header__title {
+		word-break: break-word;
+		overflow-wrap: break-word;
+	}
+
+	/* Images: less rounded at small sizes */
+	.lrn-course-card__thumbnail img {
+		border-radius: var(--lrn-radius-sm) var(--lrn-radius-sm) 0 0;
+	}
+
+	/* Horizontal overflow guard — applies to the chromeless <body>.lrn-app and
+	   the in-theme `.lrn-app` content wrapper alike. */
+	.lrn-app {
+		overflow-x: hidden;
+	}
+
+	/* Reduce card padding */
+	.lrn-card {
+		padding: var(--lrn-sp-3);
+	}
+
+	/* Smaller badge text */
+	.lrn-badge {
+		font-size: var(--lrn-text-xs);
+		padding: 1px var(--lrn-sp-1);
+	}
+}
+
+/* ---------------------------------------------------------------------------
+ * PWA: Offline banner
+ *
+ * Sticky notification that appears at the top of the viewport when the
+ * browser loses network connectivity. Dismissed automatically after
+ * reconnecting.
+ * ------------------------------------------------------------------------- */
+
+.lrn-offline-banner {
+	position:         fixed;
+	top:              0;
+	left:             0;
+	right:            0;
+	z-index:          99999;
+	padding:          var(--lrn-sp-3) var(--lrn-sp-4);
+	background-color: var(--lrn-warning-bg);
+	color:            var(--lrn-warning-text);
+	font-size:        var(--lrn-text-sm);
+	font-weight:      500;
+	text-align:       center;
+	border-bottom:    2px solid var(--lrn-warning-border);
+	animation:        lrn-slide-down 0.3s ease-out;
+}
+
+.lrn-offline-banner--online {
+	background-color: var(--lrn-success-banner-bg);
+	color:            var(--lrn-success-text);
+	border-color:     var(--lrn-success-border);
+}
+
+@keyframes lrn-slide-down {
+	from { transform: translateY(-100%); }
+	to   { transform: translateY(0); }
+}
+
+/* ---------------------------------------------------------------------------
+ * PWA: Offline fallback page
+ * ------------------------------------------------------------------------- */
+
+.lrn-offline {
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	min-height:      60vh;
+	min-height:      60dvh;
+	padding:         var(--lrn-sp-8);
+	text-align:      center;
+}
+
+.lrn-offline__inner {
+	max-width: 28rem;
+}
+
+.lrn-offline__icon {
+	color:         var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-offline__title {
+	font-size:     var(--lrn-text-2xl);
+	font-weight:   700;
+	margin-bottom: var(--lrn-sp-3);
+	color:         var(--lrn-text);
+}
+
+.lrn-offline__message {
+	font-size:     var(--lrn-text-base);
+	color:         var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-6);
+	line-height:   1.6;
+}
+
+.lrn-offline__retry {
+	min-width: 10rem;
+}
+
+/* ==========================================================================
+   Tab navigation (student dashboard)
+   ========================================================================== */
+
+.lrn-tab-nav {
+	display:       flex;
+	gap:           0;
+	border-bottom: 1px solid var(--lrn-border);
+	margin-bottom: var(--lrn-sp-6);
+	/* Scroll the tab strip when it is wider than the viewport (e.g. 4+ tabs at
+	   390px) — `.lrn-app` is overflow-x:hidden, so without this the last tab
+	   (and its count badge) is simply clipped and unreachable on a phone. */
+	overflow-x:                 auto;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width:            none; /* Firefox — hide the bar, keep scroll. */
+	scroll-snap-type:           x proximity;
+}
+
+.lrn-tab-nav::-webkit-scrollbar {
+	display: none; /* WebKit/Blink — hide the bar, keep scroll. */
+}
+
+.lrn-tab-nav__item {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+	min-height:      var(--lrn-touch-min);
+	flex:            0 0 auto; /* Never shrink — tabs keep their width and scroll. */
+	scroll-snap-align: start;
+	white-space:     nowrap;
+	font-size:       var(--lrn-text-sm);
+	font-weight:     500;
+	color:           var(--lrn-text-secondary);
+	background:      transparent;
+	border:          none;
+	border-bottom:   2px solid transparent;
+	cursor:          pointer;
+	transition:      color var(--lrn-dur) var(--lrn-ease),
+	                 border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-tab-nav__item:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+	border-radius:  var(--lrn-radius-sm);
+}
+
+.lrn-tab-nav__item:hover {
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-tab-nav__item--active {
+	color:        var(--lrn-accent);
+	border-color: var(--lrn-accent);
+}
+
+.lrn-tab-nav__count {
+	display:          inline-flex;
+	align-items:      center;
+	justify-content:  center;
+	min-width:        1.5rem;
+	height:           1.25rem;
+	padding:          0 var(--lrn-sp-1);
+	font-size:        var(--lrn-text-xs);
+	font-weight:      600;
+	border-radius:    var(--lrn-radius-sm);
+	background:       var(--lrn-bg-tertiary);
+	color:            var(--lrn-text-secondary);
+}
+
+.lrn-tab-nav__item--active .lrn-tab-nav__count {
+	background: var(--lrn-accent-bg);
+	color:      var(--lrn-accent-hover);
+}
+
+/* Theme-button defence. The dashboard tabs are <button>s, and themes style
+   every button + button:hover/:focus with their own background and (usually
+   white) text. Reign's `button:focus` (specificity 0,1,1) otherwise beats our
+   base `.lrn-tab-nav__item` (0,1,0) on the focused/active tab, repainting it as
+   a solid blue pill and dropping the count badge to blue-on-blue (~1.2:1,
+   invisible). Pin our own background + text colour on every interaction state,
+   scoped under `.lrn-tab-nav` for enough specificity to win, so the tabs keep
+   the intended underline style on any theme. */
+.lrn-tab-nav .lrn-tab-nav__item,
+.lrn-tab-nav .lrn-tab-nav__item:hover,
+.lrn-tab-nav .lrn-tab-nav__item:focus,
+.lrn-tab-nav .lrn-tab-nav__item:focus-visible,
+.lrn-tab-nav .lrn-tab-nav__item:active {
+	background: transparent;
+}
+
+.lrn-tab-nav .lrn-tab-nav__item {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-tab-nav .lrn-tab-nav__item:hover,
+.lrn-tab-nav .lrn-tab-nav__item:focus,
+.lrn-tab-nav .lrn-tab-nav__item:focus-visible {
+	color: var(--lrn-text);
+}
+
+/* Active tab (incl. while hovered/focused) stays accent with an accent
+   underline — the premium, unmistakable selected state on any theme. */
+.lrn-tab-nav .lrn-tab-nav__item--active,
+.lrn-tab-nav .lrn-tab-nav__item--active:hover,
+.lrn-tab-nav .lrn-tab-nav__item--active:focus,
+.lrn-tab-nav .lrn-tab-nav__item--active:focus-visible {
+	color:        var(--lrn-accent);
+	border-color: var(--lrn-accent);
+}
+
+.lrn-tab-panel {
+	min-height: 12rem;
+}
+
+/* ==========================================================================
+   Dashboard skeleton (check-9: loading_state)
+   Used when a tab panel is in a loading state, e.g., after an IAPI
+   data-fetch before the course grid renders. Apply .lrn-is-loading to
+   the tab panel to show skeletons in place of the course grid.
+   ========================================================================== */
+
+@keyframes lrn-shimmer {
+	from { background-position: -200% 0; }
+	to   { background-position: 200% 0; }
+}
+
+.lrn-skeleton {
+	background: linear-gradient(
+		90deg,
+		var(--lrn-bg-tertiary) 25%,
+		var(--lrn-bg-secondary) 50%,
+		var(--lrn-bg-tertiary) 75%
+	);
+	background-size: 200% 100%;
+	animation:       lrn-shimmer 1.4s ease-in-out infinite;
+	border-radius:   var(--lrn-radius-md);
+}
+
+/* Text-line skeleton width variants (replace inline `style="width:N%"` on the
+   loading placeholders). */
+.lrn-skeleton--w50 { width: 50%; }
+.lrn-skeleton--w60 { width: 60%; }
+.lrn-skeleton--w80 { width: 80%; }
+
+.lrn-skeleton-card {
+	border-radius:  var(--lrn-radius-xl);
+	overflow:       hidden;
+	border:         1px solid var(--lrn-border);
+}
+
+.lrn-skeleton-card__thumb {
+	aspect-ratio: 16 / 9;
+}
+
+.lrn-skeleton-card__body {
+	padding: var(--lrn-sp-4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-3);
+}
+
+.lrn-skeleton-card__title {
+	height: 1rem;
+	width:  80%;
+}
+
+.lrn-skeleton-card__meta {
+	height: 0.75rem;
+	width:  55%;
+}
+
+.lrn-skeleton-card__bar {
+	height: 6px;
+	width:  100%;
+	margin-top: var(--lrn-sp-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-skeleton {
+		animation: none;
+	}
+}
+
+/* ==========================================================================
+   Plyr video player overrides
+   ========================================================================== */
+
+/* ==========================================================================
+   Completion funnel (instructor dashboard)
+   ========================================================================== */
+
+/* No own box — the funnel sits directly in its dashboard section card, so a
+   background/border here would be a second nested box (card C). The bars carry
+   their own fills, so the wrapper only needs the column layout. */
+.lrn-funnel {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2);
+}
+
+/* Track + fill pattern: the bar itself is always full-width so the label
+   never wraps or gets crushed at low percentages. The colored fill grows
+   from left via the ::before pseudo-element keyed off --pct. */
+.lrn-funnel__bar {
+	position:      relative;
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	font-size:     var(--lrn-text-sm);
+	font-weight:   var(--lrn-weight-medium);
+	color:         var(--lrn-text);
+	border-radius: var(--lrn-radius-sm);
+	background:    color-mix(in srgb, var(--lrn-text) 4%, transparent);
+	width:         100%;
+	overflow:      hidden;
+	isolation:     isolate;
+}
+
+/* First funnel stage (enrolled) is always the 100% baseline; replaces an
+   inline `style="--pct:100%"`. The other stages set --pct dynamically. */
+.lrn-funnel__bar--full {
+	--pct: 100%;
+}
+
+.lrn-funnel__bar::before {
+	content:       '';
+	position:      absolute;
+	inset:         0 auto 0 0;
+	width:         var(--pct, 100%);
+	background:    var(--lrn-accent-bg);
+	border-radius: inherit;
+	transition:    width 0.4s ease-out;
+	z-index:       -1;
+}
+
+.lrn-funnel__bar:nth-child(1)::before { background: var(--lrn-accent-bg); }
+.lrn-funnel__bar:nth-child(2)::before { background: color-mix(in srgb, var(--lrn-accent) 15%, transparent); }
+.lrn-funnel__bar:nth-child(3)::before { background: color-mix(in srgb, var(--lrn-accent) 22%, transparent); }
+.lrn-funnel__bar:nth-child(4)::before { background: color-mix(in srgb, var(--lrn-success) 18%, transparent); }
+
+/* ==========================================================================
+   Engagement alerts (instructor dashboard)
+   ========================================================================== */
+
+.lrn-engagement-alerts {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-3);
+}
+
+.lrn-alert-card {
+	display:       flex;
+	/* Wrap the CTA onto its own line when the row gets too tight to hold the text
+	   at a readable width. This card also renders inside the narrow instructor
+	   dashboard column, so it can be cramped at a wide viewport too — wrapping is
+	   container-driven, not viewport-driven, so a media query would miss it
+	   (Basecamp 10115522876). */
+	flex-wrap:     wrap;
+	align-items:   center;
+	gap:           var(--lrn-sp-4);
+	padding:       var(--lrn-sp-4);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-inline-start:   3px solid var(--lrn-warn);
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-alert-card__icon {
+	flex-shrink: 0;
+	color:       var(--lrn-warn);
+}
+
+.lrn-alert-card__body {
+	/* A ~12rem basis keeps the text at a readable width and makes the flex row
+	   run out of room for the CTA (which then wraps below) BEFORE the text is
+	   squeezed to one word per line. min-width:0 still lets it shrink gracefully
+	   in the rare container narrower than the basis (Basecamp 10115522876). */
+	flex: 1 1 12rem;
+	min-width: 0;
+}
+
+/* Keep the CTA label on one line and let it drop below the text rather than
+   shrink into "View / Details" when the row wraps. */
+.lrn-alert-card > .lrn-btn {
+	flex-shrink: 0;
+}
+
+.lrn-alert-card__title {
+	margin:      0 0 var(--lrn-sp-1);
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-alert-card__subtitle {
+	margin:    0;
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Pending reviews card (instructor dashboard)
+   ========================================================================== */
+
+.lrn-review-item {
+	display:       flex;
+	align-items:   flex-start;
+	gap:           var(--lrn-sp-3);
+	padding:       var(--lrn-sp-3) 0;
+	border-bottom: 1px solid var(--lrn-border);
+}
+
+.lrn-review-item:last-child {
+	border-bottom: none;
+}
+
+.lrn-review-item__body {
+	flex: 1;
+}
+
+.lrn-review-item__meta {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+	margin:    0 0 var(--lrn-sp-1);
+}
+
+.lrn-review-item__text {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text);
+	margin:    0 0 var(--lrn-sp-2);
+}
+
+.lrn-review-item__stars {
+	color:     var(--lrn-warn);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-review-item__actions {
+	display: flex;
+	gap:     var(--lrn-sp-2);
+}
+
+/* ==========================================================================
+   Lesson Comments
+   ========================================================================== */
+
+/* Comment form */
+
+/* Comments list */
+
+/* Single comment */
+
+/* Reply indentation */
+
+/* ==========================================================================
+   Dark-mode toggle (floating, stacked above the notification bell)
+   ========================================================================== */
+
+.lrn-dark-toggle {
+	position:         fixed;
+	inset-block-end:  calc(var(--lrn-sp-6) + 60px);
+	inset-inline-end: var(--lrn-sp-6); /* logical, matches the bell it stacks above */
+	z-index:          9999;
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	width:           48px;
+	height:          48px;
+	border-radius:   50%;
+	background:      var(--lrn-bg, #ffffff);
+	color:           var(--lrn-text, #37352f);
+	border:          1px solid var(--lrn-border, rgba(55, 53, 47, 0.12));
+	cursor:          pointer;
+	box-shadow:      var(--lrn-shadow-lg);
+	transition:      transform var(--lrn-dur) var(--lrn-ease), box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-dark-toggle:hover {
+	transform: translateY(-2px);
+}
+
+.lrn-dark-toggle:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-dark-toggle__icon {
+	width:  20px;
+	height: 20px;
+}
+
+/* Moon shows in light mode (tap to go dark); sun shows in dark mode. */
+.lrn-dark-toggle__icon--sun {
+	display: none;
+}
+
+.lrn-dark .lrn-dark-toggle__icon--moon {
+	display: none;
+}
+
+.lrn-dark .lrn-dark-toggle__icon--sun {
+	display: inline-flex;
+}
+
+.lrn-dark .lrn-dark-toggle {
+	background:   var(--lrn-bg, #2a2a2a);
+	color:        var(--lrn-text, #e6e6e6);
+	border-color: var(--lrn-border, rgba(255, 255, 255, 0.12));
+}
+
+/* ==========================================================================
+   Notification Bell
+   ========================================================================== */
+
+.lrn-notification-bell {
+	position:         fixed;
+	inset-block-end:  var(--lrn-sp-6);
+	inset-inline-end: var(--lrn-sp-6); /* logical: keeps the FAB off the content edge in RTL too */
+	z-index:          9999;
+}
+
+/* Reserve room for the bell on narrow viewports.
+   It is a fixed 48px FAB pinned bottom-right. On desktop it sits in the gutter
+   beside the content column; below the breakpoint the column is full width, so
+   it lands ON the page — measured sitting over the Bio TEXTAREA on
+   /account/instructor-profile/, i.e. covering a control the instructor has to
+   tap, not just decorative text. Bottom-right is also where Save buttons tend
+   to be.
+   Padding the Learnomy wrapper (rather than <body>) keeps this inside our own
+   markup and off the theme's footer, and lets the page scroll clear of the
+   bell instead of ending underneath it. */
+@media (max-width: 768px) {
+	.lrn-app {
+		padding-block-end: calc( 48px + var(--lrn-sp-6) * 2 );
+	}
+}
+
+.lrn-notification-bell__trigger {
+	display:        flex;
+	align-items:    center;
+	justify-content: center;
+	width:          48px;
+	height:         48px;
+	/* Reset the theme's bare-<button> padding. Reign (and other themes)
+	   style every `button` with their own padding (Reign: 10px 20px); on
+	   this fixed 48px circular FAB that horizontal padding eats the content
+	   box and squashes the bell icon to ~8px wide. Pin padding so the icon
+	   keeps its intended size regardless of the active theme. */
+	padding:        0;
+	border-radius:  50%;
+	background:     var(--lrn-accent);
+	color:          var(--lrn-white);
+	border:         none;
+	cursor:         pointer;
+	box-shadow:     var(--lrn-shadow-lg);
+	position:       relative;
+	transition:     transform var(--lrn-dur) var(--lrn-ease), box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-notification-bell__trigger:hover {
+	transform:  scale(1.05);
+	box-shadow: var(--lrn-shadow-overlay);
+}
+
+.lrn-notification-bell__trigger svg {
+	width:       24px;
+	height:      24px;
+	flex-shrink: 0; /* never let the flex row collapse the icon (see padding note above) */
+}
+
+.lrn-notification-bell__count {
+	position:       absolute;
+	top:            -2px;
+	inset-inline-end: -2px;
+	background:     var(--lrn-danger);
+	color:          var(--lrn-white);
+	font-size:      var(--lrn-text-xs);
+	font-weight:    var(--lrn-weight-semibold);
+	min-width: 18px;
+	height:         18px;
+	line-height:    18px;
+	text-align:     center;
+	border-radius:  9px;
+	padding:        0 var(--lrn-sp-1);
+}
+
+/* Dropdown panel */
+
+.lrn-notification-bell__panel {
+	position:         absolute;
+	inset-block-end:  calc(100% + var(--lrn-sp-2));
+	inset-inline-end: 0;
+	width:          340px;
+	max-height:     400px;
+	background:     var(--lrn-bg);
+	border:         1px solid var(--lrn-border);
+	border-radius:  var(--lrn-radius-lg);
+	box-shadow:     var(--lrn-shadow-overlay);
+	overflow:       hidden;
+	flex-direction: column;
+}
+
+/* Scoped to the SHOWN state so the platform's `hidden` attribute stays the one
+   source of truth for visibility (Basecamp 10189962007).
+ *
+ * An unguarded `display: flex` here paints an element that `hidden` is trying
+ * to remove, and a class selector ties with `[hidden]` on specificity - so the
+ * winner is whichever stylesheet loads last. On this install the panel DOES
+ * hide, but only because the active theme happens to ship its own
+ * `[hidden] { display: none }` (measured: Reign's critical.min.css and
+ * main.min.css both do, and both load after ours). That is luck, not a
+ * contract: on a theme without that rule, or one loading before us, the panel
+ * renders permanently open over the page.
+ *
+ * That masking is exactly why this card drew two opposite verdicts - one
+ * reader tested the behaviour and saw it work, another read the CSS and saw it
+ * broken. Both were right about what they looked at.
+ *
+ * Deliberately NOT an `.is-open` class: the hidden attribute already owns this
+ * state and screen readers honour it, so a second flag would be state to keep
+ * in sync and the next drift bug. */
+.lrn-notification-bell__panel:not([hidden]) {
+	display: flex;
+}
+
+.lrn-notification-bell__header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+	border-bottom:   1px solid var(--lrn-divider);
+}
+
+.lrn-notification-bell__title {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	margin:      0;
+}
+
+.lrn-notification-bell__mark-all {
+	background:  none;
+	border:      none;
+	padding:     0;
+	font-family: var(--lrn-font);
+	font-size:   var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-accent);
+	cursor:      pointer;
+}
+
+.lrn-notification-bell__mark-all:hover {
+	text-decoration: underline;
+}
+
+.lrn-notification-bell__list {
+	overflow-y: auto;
+	flex:       1;
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-notification-item {
+	display:     flex;
+	gap:         var(--lrn-sp-3);
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	border-bottom: 1px solid var(--lrn-divider);
+	cursor:      pointer;
+	transition:  background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-notification-item:last-child {
+	border-bottom: none;
+}
+
+.lrn-notification-item:hover {
+	background: var(--lrn-bg-hover);
+}
+
+.lrn-notification-item--unread {
+	background: var(--lrn-accent-bg);
+}
+
+.lrn-notification-item__icon {
+	flex-shrink: 0;
+	color:       var(--lrn-accent);
+	font-size:   var(--lrn-text-md);
+	margin-top:  2px;
+}
+
+.lrn-notification-item__body {
+	flex: 1;
+	min-width: 0;
+}
+
+/* Title and message WRAP. Both carried `white-space: nowrap` with an ellipsis,
+   so every notification longer than the panel is wide was clipped to one line -
+   and the message was separately cut to 12 words server-side before it got here.
+   The panel scrolls, so there is room to simply read them (Basecamp 10199428997).
+   `overflow-wrap: anywhere` keeps a long unbroken token (a pasted URL in a
+   custom notification) inside the panel instead of widening it. */
+.lrn-notification-item__title {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+	margin:      0 0 2px;
+	overflow-wrap: anywhere;
+}
+
+.lrn-notification-item__message {
+	font-size:   var(--lrn-text-xs);
+	color:       var(--lrn-text-secondary);
+	margin:      0 0 2px;
+	overflow-wrap: anywhere;
+}
+
+.lrn-notification-item__time {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+.lrn-notification-bell__empty {
+	padding:    var(--lrn-sp-6) var(--lrn-sp-4);
+	text-align: center;
+	color:      var(--lrn-text-tertiary);
+	font-size:  var(--lrn-text-sm);
+}
+
+@media (max-width: 640px) {
+	/* Full-width sheet sized by its INSETS, never by a viewport unit.
+	   `100vw` includes the scrollbar while the fixed containing block excludes
+	   it, so the old `calc(100vw - var(--lrn-sp-8))` drifted by exactly the
+	   scrollbar width: measured at 390px with a 15px scrollbar the panel sat
+	   5px from the left edge and 12px from the right instead of 12/12, and the
+	   left gutter goes NEGATIVE once a scrollbar exceeds 20px (Windows themes
+	   reach that). Deriving the width from `inset-inline` makes it exact at
+	   every scrollbar width, including zero on touch devices.
+
+	   Anchored to the viewport rather than the 48px FAB because a percentage
+	   of a 48px parent is 48px — the panel is a sheet, not a dropdown, at this
+	   width. The 48px matches the FAB footprint the spacer rule below reserves.
+
+	   Third instance of this same rule: `lesson-player.css` and the
+	   distraction-free block later in this file both already carry a
+	   "100%, not 100vw" comment (Basecamp 10184327445). */
+	.lrn-notification-bell__panel {
+		position:         fixed;
+		inset-inline:     var(--lrn-sp-3);
+		width:            auto;
+		inset-block-end:  calc(var(--lrn-sp-6) + 48px + var(--lrn-sp-2));
+	}
+
+	/* Reserve the FAB's footprint at the end of the page so the last in-flow
+	   row (grade badges, course meta) can always scroll clear of the fixed
+	   bell instead of staying covered by it — the responsive contract says
+	   the bell never overlaps in-flow content (1.8.0 combo smoke,
+	   account-grades-mobile / release-lead audit). Desktop keeps no spacer:
+	   the wide layout leaves the bottom-right corner empty anyway. */
+	body:has(.lrn-notification-bell)::after {
+		content: '';
+		display: block;
+		height:  calc(48px + 2 * var(--lrn-sp-6, 1.5rem));
+	}
+}
+
+/* Admin/Instructor preview banner */
+.lrn-admin-preview-bar {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-2);
+	padding:       var(--lrn-sp-2-5) var(--lrn-sp-5);
+	background:    var(--lrn-warn-light-bg);
+	border:        1px solid var(--lrn-warn-light-border);
+	/* check 1: replaced hardcoded 6px → token */
+	border-radius: var(--lrn-radius-md);
+	color:         var(--lrn-warn-dark);
+	font-size:     var(--lrn-text-sm);
+	/* check 1: replaced hardcoded 500 → token */
+	font-weight:   var(--lrn-weight-medium);
+	/* check 1: replaced hardcoded 16px → token */
+	margin:        0 auto var(--lrn-sp-4);
+	max-width:     var(--lrn-container-width);
+}
+
+/* Inline variant — bar lives inside the lesson player wrapper, which is
+ * already container-constrained, so we drop the page-level auto-centering
+ * and the max-width. Used by templates/lesson/partials/player-content.php
+ * after Basecamp #9925339019. */
+.lrn-admin-preview-bar--inline {
+	margin:    0 0 var(--lrn-sp-4);
+	max-width: none;
+}
+.lrn-admin-preview-bar [data-lucide] {
+	width:       var(--lrn-icon-sm);
+	height:      var(--lrn-icon-sm);
+	flex-shrink: 0;
+}
+
+/* Sidebar reopen button (floating, visible when sidebar collapsed) */
+
+/* check 6: a11y_keyboard — focus ring for sidebar reopen button */
+
+/* Sub-lesson (topic) items — indented */
+
+/* Distraction-free layout — lesson player fills entire viewport */
+body.lrn-distraction-free {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+/* The player-scoped distraction-free rules (.lrn-lesson-player and
+   .lrn-player-sidebar) used to be repeated here verbatim. They live in
+   lesson-player.css, which declares itself the owner of player-scoped
+   variants; only the shared `body.lrn-distraction-free` base above stays here,
+   because standalone-quiz uses it too (Basecamp 10184327438). The declarations
+   were identical, so removing this copy cannot change the computed style
+   whichever file loads last. `.lrn-player-content` is deliberately NOT
+   consolidated - the two files declare DIFFERENT rules for it, so merging them
+   is a behaviour change and not a de-duplication. */
+body.lrn-distraction-free .lrn-player-content {
+    flex: 1;
+    overflow-y: auto;
+    height: 100vh;
+    height: 100dvh;
+    padding: var(--lrn-sp-6) var(--lrn-sp-10);
+}
+/* Immersive (distraction-free) quiz: the body is locked to overflow:hidden
+   above, so the quiz container itself must scroll. Without this a long results /
+   review screen (3-4+ sections) overflows the viewport with no scrollbar and the
+   lower sections are unreachable (Basecamp #9972794654). Mirrors the lesson
+   player's .lrn-player-content internal scroll. */
+body.lrn-distraction-free .lrn-quiz {
+    height:     100vh;
+    height:     100dvh;
+    overflow-y: auto;
+}
+body.lrn-distraction-free #wpadminbar { display: none !important; }
+/* WordPress reserves `html { margin-top: 32px }` for the admin bar via its
+   inline toolbar CSS. The immersive player hides the bar (rule above) but the
+   reserved strip stays, leaving a blank band above the player on a logged-in
+   screen (Basecamp #9971772644 — "blank space above the top header section").
+   Reclaim it so the player sits flush to the top. */
+html:has(body.lrn-distraction-free) { margin-top: 0 !important; }
+
+/* Access gate header — minimal nav when in distraction-free mode */
+
+/* Quiz question types (.lrn-question-ordering*, .lrn-question-matching*,
+   .lrn-ordering-*, .lrn-matching__*) moved to assets/css/quiz-player.css
+   so all quiz shell rules live in one slice. */
+
+/* ==========================================================================
+   Plan 09: lrn-action — canonical icon-button affordance
+   ==========================================================================
+   Used by every interactive icon (or icon + label) in the frontend
+   templates. Two render modes:
+     .lrn-action            icon-only square (44x44 touch target)
+     .lrn-action--labeled   icon + visible single-word label
+
+   Variants ride on the same base:
+     .lrn-action--primary   filled accent background
+     .lrn-action--danger    danger accent
+     .lrn-action--ghost     transparent until hover
+*/
+
+.lrn-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--lrn-sp-2);
+	min-width: var(--lrn-touch-min);
+	min-height: var(--lrn-touch-min);
+	padding: 0;
+	margin: 0;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--lrn-radius-md);
+	color: var(--lrn-text-secondary);
+	font-family: inherit;
+	font-size: var(--lrn-text-base);
+	font-weight: var(--lrn-weight-medium);
+	line-height: 1;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background var(--lrn-dur) var(--lrn-ease),
+		color var(--lrn-dur) var(--lrn-ease),
+		border-color var(--lrn-dur) var(--lrn-ease);
+	-webkit-tap-highlight-color: transparent;
+}
+
+.lrn-action:hover,
+.lrn-action:focus-visible {
+	background: var(--lrn-bg-hover);
+	color: var(--lrn-text);
+}
+
+.lrn-action:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-action:active {
+	background: var(--lrn-bg-active);
+}
+
+.lrn-action[disabled],
+.lrn-action[aria-disabled="true"] {
+	opacity: 0.4;
+	pointer-events: none;
+}
+
+.lrn-action i[data-lucide],
+.lrn-action svg {
+	width: var(--lrn-icon-md);
+	height: var(--lrn-icon-md);
+	flex-shrink: 0;
+	stroke-width: 1.5;
+	color: currentColor;
+	stroke: currentColor;
+}
+
+/*
+ * Theme-bleed neutraliser (2026-07). On a public credential page (certificate
+ * verify) the Share / Download anchors inherited the active theme's link color
+ * (red text) and the theme recoloured the icons (green LinkedIn) instead of our
+ * tokens — reads as broken, not premium. Pin every anchor text-state, and force
+ * the icons to follow the action's OWN colour. Mirrors the `--primary` anchor
+ * pinning below: `:link`/`:visited` (and the tag+svg selectors) raise
+ * specificity over theme `.entry-content a` / `a svg` rules without !important.
+ */
+a.lrn-action:link,
+a.lrn-action:visited {
+	color: var(--lrn-text-secondary);
+	text-decoration: none;
+}
+a.lrn-action--labeled:link,
+a.lrn-action--labeled:visited,
+a.lrn-action:hover,
+a.lrn-action:focus-visible {
+	color: var(--lrn-text);
+}
+a.lrn-action:link i[data-lucide],
+a.lrn-action:link svg,
+a.lrn-action:visited i[data-lucide],
+a.lrn-action:visited svg {
+	color: currentColor;
+	stroke: currentColor;
+}
+
+.lrn-action__label {
+	white-space: nowrap;
+}
+
+/* Labeled variant — icon plus single-word text. */
+.lrn-action--labeled {
+	padding: 0 var(--lrn-sp-4);
+	color: var(--lrn-text);
+}
+
+/*
+ * Primary fill — sparingly used for "Enroll", "Submit", "Create" etc.
+ *
+ * Themes commonly override <a> color via `.entry a`, `body a`, or visited
+ * pseudoclass selectors at higher specificity than our base rule. The
+ * Instructor Dashboard "Create" button rendered as a link inherited the
+ * theme's text color (matched the accent background → invisible text per
+ * bug card #12). Pinning every text-state on `&[href]` and visited/hover
+ * anchors bypasses the theme without `!important`.
+ */
+.lrn-action--primary {
+	background: var(--lrn-accent);
+	color: var(--lrn-white);
+	border-color: var(--lrn-accent);
+}
+
+a.lrn-action--primary,
+a.lrn-action--primary:link,
+a.lrn-action--primary:visited {
+	color: var(--lrn-white);
+}
+
+.lrn-action--primary:hover,
+.lrn-action--primary:focus-visible,
+a.lrn-action--primary:hover,
+a.lrn-action--primary:focus-visible,
+a.lrn-action--primary:visited:hover {
+	background: var(--lrn-accent-hover);
+	border-color: var(--lrn-accent-hover);
+	color: var(--lrn-white);
+}
+
+.lrn-action--danger {
+	color: var(--lrn-danger);
+}
+
+.lrn-action--danger:hover,
+.lrn-action--danger:focus-visible {
+	background: var(--lrn-danger-bg);
+	color: var(--lrn-danger);
+}
+
+.lrn-action--ghost {
+	color: var(--lrn-text-secondary);
+}
+
+/* Active toggle state — used by Wishlist heart, Bookmark, etc. */
+.lrn-action[aria-pressed="true"] {
+	color: var(--lrn-accent);
+}
+
+.lrn-action[aria-pressed="true"]:hover {
+	background: var(--lrn-accent-bg);
+}
+
+/* ==========================================================================
+   Plan 09: breadcrumb
+   ==========================================================================
+   Renders an ordered list of breadcrumb items with a subtle separator.
+   On screens below 768px, all items collapse except the parent (last
+   linked entry) which becomes a single back-link.
+*/
+
+.lrn-breadcrumb {
+	margin: 0 0 var(--lrn-sp-4);
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-breadcrumb__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lrn-sp-2);
+	align-items: center;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.lrn-breadcrumb__item {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+}
+
+/* The separator belongs to the crumb it FOLLOWS, so a hidden crumb takes its
+   own separator with it. Keyed on `+` (the next crumb's ::before) it did not:
+   `display: none` drops an element from layout but not from the DOM, so the
+   adjacent-sibling selector still matched and still painted. On mobile, where
+   the collapse rule hides the root, that left a "/" with nothing in front of
+   it — "/ ‹ Instructor Dashboard  Instructor profile". */
+.lrn-breadcrumb__item:not(:last-child)::after {
+	content: "/";
+	color: var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-sm);
+	margin-inline-start: var(--lrn-sp-1);
+}
+
+.lrn-breadcrumb__link {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+	color: var(--lrn-text-secondary);
+	text-decoration: none;
+	border-radius: var(--lrn-radius-sm);
+	padding: 2px 4px;
+	transition: color var(--lrn-dur) var(--lrn-ease),
+		background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-breadcrumb__link:hover,
+.lrn-breadcrumb__link:focus-visible {
+	color: var(--lrn-text);
+	background: var(--lrn-bg-hover);
+	text-decoration: none;
+}
+
+.lrn-breadcrumb__link:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-breadcrumb__current {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+	color: var(--lrn-text);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-breadcrumb__link i[data-lucide],
+.lrn-breadcrumb__current i[data-lucide] {
+	width: var(--lrn-icon-xs);
+	height: var(--lrn-icon-xs);
+	stroke-width: 1.5;
+}
+
+/* Mobile collapse: hide the chain, expose only the parent as a back-link. */
+@media (max-width: 768px) {
+	.lrn-breadcrumb__item:not(.lrn-breadcrumb__item--parent):not(:last-child) {
+		display: none;
+	}
+
+	/* No separator after the parent on mobile — the "‹" back-arrow already reads
+	   as the chain, which is what the collapsed form is for. `:not(:last-child)`
+	   is here to match the specificity of the base rule above (0,2,1); without it
+	   this override loses and the slash comes back. */
+	.lrn-breadcrumb__item--parent:not(:last-child)::after {
+		content: "";
+		margin-inline-start: 0;
+	}
+
+	.lrn-breadcrumb__item--parent .lrn-breadcrumb__link::before {
+		content: "\2039";
+		display: inline-block;
+		margin-inline-end: var(--lrn-sp-1);
+		font-size: var(--lrn-text-md);
+		line-height: 1;
+	}
+}
+
+/* ==========================================================================
+   Plan 09: page-transition
+   ==========================================================================
+   Subtle fade + 12px translate-Y on initial render of any frontend page.
+   The Interactivity API store `learnomy/page` adds the `.lrn-page-enter`
+   class on `domcontentloaded`, then removes it once the animation completes
+   (or after the 250ms ceiling, whichever comes first).
+
+   Honour reduced motion: animation is wrapped in a no-preference query.
+*/
+
+.lrn-page-enter {
+	will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	.lrn-page-enter {
+		opacity: 0;
+		transform: translateY(12px);
+		animation: lrn-page-enter-anim 200ms var(--lrn-ease-out-expo) forwards;
+	}
+
+	@keyframes lrn-page-enter-anim {
+		from {
+			opacity: 0;
+			transform: translateY(12px);
+		}
+
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+}
+
+/* .lrn-curriculum-drawer* rules moved to assets/css/single-course.css. */
+
+/* ── Live lesson player ────────────────────────────────────────────────────
+   Three states:
+     .lrn-lesson-live__card--pre  — session scheduled but not started
+     .lrn-lesson-live__card--live — session is live right now
+     .lrn-lesson-live__card--post — session has ended
+
+   Selector contract (asserted by journey 33-lesson-live.md):
+     .lrn-lesson-live           — outer wrapper; present for all three states
+     .lrn-lesson-live__cta      — the primary CTA button (enabled or disabled)
+     .lrn-lesson-live__badge    — "Live now" badge visible only in live state
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Pre-state: muted border, clock icon */
+
+/* Live state: accent left stripe to signal urgency without being garish */
+
+/* Post state: greyed accent */
+
+/* Pulsing dot inside the "Live now" badge */
+
+@keyframes lrn-pulse {
+	0%, 100% { opacity: 1;   transform: scale(1); }
+	50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Disabled CTA — greyed, not interactive */
+
+
+/* My Spaces (Pro-inactive fallback) — was inline styles on the stub template. */
+.lrn-my-spaces-stub__card {
+	max-width:  640px;
+	margin:     var(--lrn-sp-8) auto;
+	padding:    var(--lrn-sp-8);
+	text-align: center;
+}
+.lrn-my-spaces-stub__title {
+	margin-block-start: 0;
+}
+
+/* ==========================================================================
+   Status badges (frontend) — canonical .lrn-status-badge system.
+   Mirrors admin.css's badge so subscription / order / access statuses render
+   consistently on billing, membership-manage, and any frontend surface.
+   Token-driven; semantic colour buckets + the status aliases the templates emit.
+   ========================================================================== */
+.lrn-status-badge {
+	display:       inline-flex;
+	align-items:   center;
+	padding:       2px var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	border-radius: var(--lrn-radius-sm);
+	line-height:   1.5;
+	white-space:   nowrap;
+	/* Default (no modifier / unknown status) — muted. Modifiers below override. */
+	background:    var(--lrn-bg-secondary);
+	color:         var(--lrn-text-tertiary);
+}
+/* success / live */
+.lrn-status-badge--success,
+.lrn-status-badge--active,
+.lrn-status-badge--trialing,
+.lrn-status-badge--completed { background: var(--lrn-success-bg); color: var(--lrn-success); }
+/* warn / attention */
+.lrn-status-badge--warn,
+.lrn-status-badge--warning,
+.lrn-status-badge--pending,
+.lrn-status-badge--past_due  { background: var(--lrn-warn-bg); color: var(--lrn-warn); }
+/* danger / ended */
+.lrn-status-badge--danger,
+.lrn-status-badge--expired,
+.lrn-status-badge--failed,
+.lrn-status-badge--canceled,
+.lrn-status-badge--cancelled,
+.lrn-status-badge--refunded  { background: var(--lrn-danger-bg); color: var(--lrn-danger); }
+/* info */
+.lrn-status-badge--info      { background: var(--lrn-accent-bg); color: var(--lrn-accent); }
+/* muted / paused (explicit; base already supplies the default) */
+.lrn-status-badge--muted,
+.lrn-status-badge--paused,
+.lrn-status-badge--default   { background: var(--lrn-bg-secondary); color: var(--lrn-text-tertiary); }
+
+/* ==========================================================================
+   Smooth navigation — cross-document View Transitions
+   ==========================================================================
+   Same-origin moves between Learnomy pages (especially account endpoints) get
+   a smooth cross-fade instead of a hard full-page jump, so the account hub
+   reads as one app while each section stays a real, bookmarkable URL. The
+   account nav is named so it stays locked in place (morphs, not fades) while
+   only the section content transitions.
+
+   Progressive enhancement: browsers without cross-document view transitions
+   just navigate normally; reduced-motion users get an instant swap (the
+   browser suppresses the animation). */
+@view-transition {
+	navigation: auto;
+}
+
+/* Persistent account shell — the vertical nav holds still across navigations. */
+.lrn-account-nav {
+	view-transition-name: lrn-account-nav;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	::view-transition-group(*),
+	::view-transition-old(*),
+	::view-transition-new(*) {
+		animation: none !important;
+	}
+}
+
+/* "Powered by Learnomy" attribution on the distraction-free lesson/quiz player.
+   Subtle, muted, theme-agnostic. Pro White Label removes it entirely via the
+   learnomy_show_branding filter (the helper returns an empty string). */
+.lrn-powered-by {
+	margin-block-start: var(--lrn-sp-6);
+	padding-block:      var(--lrn-sp-4);
+	text-align:         center;
+	font-size:          var(--lrn-text-xs);
+	color:              var(--lrn-text-secondary);
+}
+.lrn-powered-by a {
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+}
+.lrn-powered-by a:hover,
+.lrn-powered-by a:focus-visible {
+	color: var(--lrn-accent);
+}
+
+/* Count-pinned grid responsiveness (placed last so it wins over the generic
+   .lrn-grid breakpoint rules above). Wide screens keep the exact column count
+   from .lrn-grid--cols-N; tablets drop 3+ to two columns; phones go single. */
+@media (max-width: 1024px) {
+	.lrn-grid--cols-3,
+	.lrn-grid--cols-4,
+	.lrn-grid--cols-5,
+	.lrn-grid--cols-6 {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 640px) {
+	[class*="lrn-grid--cols-"] {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Lesson Content block (learnomy/lesson-content) prose lists — same fix as the
+   lesson player: bare Editor.js <ul>/<ol> need inside-the-column markers so
+   disc/number markers don't stray into the gutter. */
+.lrn-lesson-content__body ul,
+.lrn-lesson-content__body ol {
+	padding-inline-start: 1.5em;
+	margin:               0 0 var(--lrn-sp-4);
+}
+.lrn-lesson-content__body ul { list-style: disc; }
+.lrn-lesson-content__body ol { list-style: decimal; }
+.lrn-lesson-content__body ul.lrn-checklist { list-style: none; padding-inline-start: 0; }

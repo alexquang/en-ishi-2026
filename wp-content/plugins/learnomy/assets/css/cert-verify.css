@@ -1,0 +1,277 @@
+/**
+ * Learnomy — Certificate verify stylesheet.
+ *
+ * Page-specific styles for the public verification route
+ * /verify/{uuid}/ (template templates/certificate-verify.php). Loaded
+ * only on $route === 'certificate-verify' via Template_Loader::enqueue_assets()
+ * so the ~10 other frontend pages don't pay for the verify card +
+ * preview scaler + share/download button CSS.
+ *
+ * Shared primitives consumed but not owned here:
+ *   .lrn-container, .lrn-card, .lrn-btn* — live in learnomy.css because
+ *   dashboards, single-course, and blocks all render them.
+ *
+ * Out-of-scope siblings:
+ *   .lrn-certificate-card*  → assets/css/dashboards.css (student list)
+ *
+ * Responsive contract: exactly two @media viewport queries — 1024px
+ * (tablet ↔ desktop) and 640px (mobile). The previous 3-breakpoint
+ * set (640 / 1024 / 1440) collapses the 1440 widening into the 1024
+ * block per ux-foundation responsive rules.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Verify card — header, status, details, QR
+   ========================================================================== */
+
+.lrn-certificate-verify {
+	max-width: 640px;
+	margin-inline: auto;
+}
+
+.lrn-certificate-verify__header {
+	text-align:        center;
+	margin-block-end:  var(--lrn-sp-8);
+}
+
+.lrn-certificate-verify__header h1 {
+	font-size:        var(--lrn-text-2xl);
+	font-weight:      var(--lrn-weight-semibold);
+	margin:           0;
+	margin-block-end: var(--lrn-sp-2);
+}
+
+.lrn-certificate-verify__subtitle {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-certificate-verify__result {
+	padding: var(--lrn-sp-8);
+}
+
+.lrn-certificate-verify__status {
+	display:          flex;
+	align-items:      center;
+	gap:              var(--lrn-sp-2);
+	font-size:        var(--lrn-text-lg);
+	margin-block-end: var(--lrn-sp-6);
+}
+
+.lrn-certificate-verify__result--valid .lrn-certificate-verify__status {
+	color: var(--lrn-success);
+}
+
+/*
+ * Success green is for the STATUS checkmark only. The old
+ * `.lrn-certificate-verify__result--valid svg` matched every icon in the valid
+ * card (QR, Share, Copy, Download), turning them green — mistaken for theme
+ * bleed. Scope it to the status icon so the share/download actions keep their
+ * own token colours.
+ */
+.lrn-certificate-verify__result--valid .lrn-certificate-verify__status svg {
+	color: var(--lrn-success);
+	stroke: var(--lrn-success);
+}
+
+.lrn-certificate-verify__result--revoked,
+.lrn-certificate-verify__result--invalid {
+	text-align: center;
+}
+
+.lrn-certificate-verify__result--revoked svg { color: var(--lrn-danger); width: var(--lrn-icon-xl); height: var(--lrn-icon-xl); }
+.lrn-certificate-verify__result--invalid svg { color: var(--lrn-warn);   width: var(--lrn-icon-xl); height: var(--lrn-icon-xl); }
+
+.lrn-certificate-verify__details {
+	margin: 0;
+}
+
+.lrn-certificate-verify__detail-row {
+	display:              flex;
+	padding-block:        var(--lrn-sp-3);
+	border-block-end:     1px solid var(--lrn-divider);
+}
+
+.lrn-certificate-verify__detail-row:last-child { border-block-end: none; }
+
+.lrn-certificate-verify__detail-row dt {
+	width:       var(--lrn-dt-width, 140px);
+	flex-shrink: 0;
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-certificate-verify__detail-row dd {
+	margin: 0;
+}
+
+/* Why a fact on this record is thinner than usual — currently only the course
+   whose row was deleted after the certificate was issued. Secondary weight so it
+   reads as an explanation, never as a warning about the credential itself. */
+.lrn-certificate-verify__note {
+	display:            block;
+	margin-block-start: var(--lrn-sp-1);
+	font-size:          var(--lrn-text-sm);
+	line-height:        var(--lrn-leading-normal);
+	color:              var(--lrn-text-secondary);
+}
+
+.lrn-certificate-verify__qr {
+	margin-block-start: var(--lrn-sp-6);
+	text-align:         center;
+}
+
+/* ==========================================================================
+   Verify-by-UUID form — fallback when the URL had no certificate id
+   ========================================================================== */
+
+.lrn-certificate-verify__form {
+	padding:    var(--lrn-sp-6);
+	text-align: center;
+}
+
+.lrn-certificate-verify__form form {
+	display:            flex;
+	gap:                var(--lrn-sp-3);
+	margin-block-start: var(--lrn-sp-4);
+	justify-content:    center;
+}
+
+/* ==========================================================================
+   Share + download actions
+   ========================================================================== */
+
+.lrn-certificate-verify__share {
+	margin-block-start:  var(--lrn-sp-8);
+	padding-block-start: var(--lrn-sp-6);
+	border-block-start:  1px solid var(--lrn-divider);
+	text-align:          center;
+}
+
+.lrn-certificate-verify__share h3 {
+	font-size:        var(--lrn-text-base);
+	font-weight:      var(--lrn-weight-semibold);
+	margin-block-end: var(--lrn-sp-4);
+}
+
+.lrn-certificate-verify__share-buttons {
+	display:         flex;
+	flex-wrap:       wrap;
+	justify-content: center;
+	gap:             var(--lrn-sp-3);
+}
+
+.lrn-certificate-verify__share-buttons svg {
+	margin-inline-end: var(--lrn-sp-1);
+	vertical-align:    middle;
+	width:             var(--lrn-icon-sm);
+	height:            var(--lrn-icon-sm);
+}
+
+/* Keyboard focus visibility — match the rest of the design system so
+   share / download buttons keep a visible focus ring without leaving
+   a permanent outline on mouse click. */
+.lrn-certificate-verify__share-buttons .lrn-btn:focus,
+.lrn-certificate-verify__download-actions .lrn-btn:focus {
+	outline: none;
+}
+
+.lrn-certificate-verify__share-buttons .lrn-btn:focus-visible,
+.lrn-certificate-verify__download-actions .lrn-btn:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+/* ==========================================================================
+   Certificate preview — scales the rendered certificate HTML to fit the
+   column width. The inline <style> block was removed from the template
+   and consolidated here so all design values are in one place.
+   ========================================================================== */
+
+.lrn-certificate-verify__preview {
+	border:           1px solid var(--lrn-border);
+	border-radius:    var(--lrn-radius-md);
+	overflow:         hidden;
+	margin-block-end: var(--lrn-sp-6);
+	background:       var(--lrn-bg-secondary);
+	/* Reserve the cert's 297:210 print aspect so the box has the right height
+	   before certificate-verify-view.js scales the frame (no layout jump). */
+	aspect-ratio:     297 / 210;
+}
+
+/* The certificate renders at its native print size inside a sandboxed iframe;
+   certificate-verify-view.js sets `transform: scale()` to fit this container's
+   width and matches the container height, so the preview fills the column at
+   the correct aspect on every breakpoint with zero style leakage to the page
+   (Basecamp #9976411641 — the cert's global `html, body { width: 297mm }` used
+   to squeeze the whole theme layout). */
+.lrn-certificate-verify__preview-frame {
+	width:            1122.52px; /* 297mm in CSS px */
+	height:           793.7px;   /* 210mm in CSS px */
+	border:           0;
+	display:          block;
+	transform-origin: top left;
+}
+
+.lrn-certificate-verify__download-actions {
+	display:          flex;
+	flex-wrap:        wrap;
+	justify-content:  center;
+	gap:              var(--lrn-sp-2);
+	margin-block-end: var(--lrn-sp-6);
+}
+
+/* Tap target: share / download buttons must reach 40 px on mobile. */
+.lrn-certificate-verify__share-buttons .lrn-btn,
+.lrn-certificate-verify__download-actions .lrn-btn {
+	min-height: 40px;
+}
+
+/* ==========================================================================
+   Responsive — exactly two breakpoints
+
+   Per ux-foundation responsive rules: 1024px (tablet ↔ desktop) and
+   640px (mobile). The previous 1440px breakpoint that bumped the card
+   from 720 → 760px was collapsed into the 1024 block so the canonical
+   contract holds.
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+	/* Tablet + desktop: slightly wider verify card. */
+	.lrn-certificate-verify {
+		max-width: 768px;
+	}
+}
+
+@media (max-width: 640px) {
+	/* Mobile: full-width card and stacked actions. */
+	.lrn-certificate-verify {
+		max-width: 100%;
+	}
+
+	.lrn-certificate-verify__share-buttons,
+	.lrn-certificate-verify__download-actions {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+
+	.lrn-certificate-verify__share-buttons .lrn-btn,
+	.lrn-certificate-verify__download-actions .lrn-btn {
+		width:           100%;
+		justify-content: center;
+	}
+
+	.lrn-certificate-verify__detail-row {
+		flex-direction: column;
+		gap:            var(--lrn-sp-1);
+	}
+
+	.lrn-certificate-verify__detail-row dt {
+		width: auto;
+	}
+
+	/* Preview scaling is handled responsively by certificate-verify-view.js
+	   (scales the iframe to the container width at any breakpoint), so no
+	   per-breakpoint scale override is needed here. */
+}

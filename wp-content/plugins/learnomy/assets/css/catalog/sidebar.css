@@ -1,0 +1,259 @@
+/**
+ * Catalog — SIDEBAR layout variant.
+ *
+ * Loaded only when Settings -> Layouts -> Course catalog = "Filter sidebar"
+ * (see Template_Loader::enqueue_assets). Layers on top of catalog.css, which
+ * still owns the card grid + list-view. Tokens only — dark mode + RTL inherit.
+ */
+
+/* Width comes from the shared .lrn-container (the plugin's Container Width
+   setting) — no per-page override, so the catalog matches every other frontend
+   surface instead of jumping wider. */
+
+.lrn-catalog--sidebar .lrn-catalog-layout {
+	display: grid;
+	grid-template-columns: minmax(220px, 280px) 1fr;
+	gap: var(--lrn-sp-6);
+	align-items: start;
+}
+
+.lrn-catalog-filters {
+	position: sticky;
+	top: var(--lrn-sp-4);
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-5);
+	padding: var(--lrn-sp-5);
+	/* --lrn-bg flips to the dark surface in .lrn-dark (the fixed --lrn-white did
+	   not, leaving this panel glaring white in dark mode). The border keeps it
+	   distinct from the page in light mode where --lrn-bg is also white. */
+	background: var(--lrn-bg);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+}
+
+.lrn-catalog-filters__form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-5);
+}
+
+.lrn-catalog-filters__group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-catalog-filters__heading {
+	margin: 0;
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-facet-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-1);
+}
+
+/* Facet links are `<a>` tags inside `.lrn-app`, so they pick up the
+   `.lrn-app a { color: var(--lrn-accent) }` brand-red rule. Bump specificity
+   on every facet rule to .lrn-app .lrn-facet so we win source-order over
+   the generic anchor rule. */
+.lrn-app .lrn-facet {
+	display:         block;
+	padding:         var(--lrn-sp-2) var(--lrn-sp-3);
+	border-radius:   var(--lrn-radius-md);
+	color:           var(--lrn-text-secondary);
+	font-size:       var(--lrn-text-sm);
+	text-decoration: none;
+	transition:      background var(--lrn-dur) var(--lrn-ease),
+	                 color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-app .lrn-facet:hover {
+	background: var(--lrn-bg-tertiary);
+	color:      var(--lrn-text);
+}
+
+/* Active facet — tint surface + brand-text, NOT a solid brand fill. The
+   solid red pill blew the accent budget for the whole sidebar; this pairs
+   the same one-active-at-a-time signal with a quiet visual treatment.
+   color-mix hex fallback runs first so older browsers still get a tint. */
+.lrn-app .lrn-facet.is-active {
+	background:  var(--lrn-accent-bg);
+	background:  color-mix(in srgb, var(--lrn-accent) 12%, transparent);
+	color:       var(--lrn-accent);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-facet:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+/* Results column — min-width:0 stops the card grid from overflowing the track. */
+.lrn-catalog-results {
+	min-width: 0;
+}
+
+.lrn-catalog-results__bar {
+	display:          flex;
+	justify-content:  space-between;
+	align-items:      center;
+	gap:              var(--lrn-sp-3);
+	margin-block-end: var(--lrn-sp-4);
+}
+
+.lrn-catalog-results__showing {
+	margin:    0;
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+@media (max-width: 1024px) {
+	.lrn-catalog--sidebar .lrn-catalog-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-catalog-filters {
+		position: static;
+	}
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Catalog Facets framework — auto-rendered by Facet_Renderer on the
+   `learnomy_catalog_filter_facets` hook. Site owners can register N facets
+   with one register() call; this stylesheet covers checkbox-list + pills
+   without any per-customer CSS.
+   ─────────────────────────────────────────────────────────────────────── */
+
+.lrn-catalog-facet {
+	border:       0;
+	margin:       0 0 var(--lrn-sp-5);
+	padding:      0;
+}
+
+.lrn-catalog-facet__list {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+	list-style:     none;
+	margin:         0;
+	padding:        0;
+}
+
+.lrn-catalog-facet__row {
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-2);
+	padding:        var(--lrn-sp-1) 0;
+	font-size:      var(--lrn-text-sm);
+	color:          var(--lrn-text);
+	cursor:         pointer;
+	border-bottom:  1px dashed var(--lrn-divider);
+}
+
+.lrn-catalog-facet__row input {
+	margin: 0;
+}
+
+.lrn-catalog-facet__label {
+	flex: 1;
+}
+
+.lrn-catalog-facet__count {
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-xs);
+	font-variant-numeric: tabular-nums;
+}
+
+.lrn-catalog-facet__pills {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2);
+}
+
+.lrn-catalog-facet__pill {
+	display:        inline-flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-1);
+	padding:        var(--lrn-sp-1) var(--lrn-sp-3);
+	border:         1px solid var(--lrn-border);
+	border-radius:  var(--lrn-radius-pill);
+	background:     var(--lrn-bg);
+	color:          var(--lrn-text);
+	font-size:      var(--lrn-text-sm);
+	font-weight:    var(--lrn-weight-medium);
+	cursor:         pointer;
+	transition:     background-color var(--lrn-dur) var(--lrn-ease),
+	                border-color     var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-catalog-facet__pill:hover {
+	background:   var(--lrn-bg-muted);
+	border-color: var(--lrn-text-secondary);
+}
+
+.lrn-catalog-facet__pill.is-on {
+	background:   color-mix(in srgb, var(--lrn-accent) 12%, transparent);
+	border-color: var(--lrn-accent);
+	color:        var(--lrn-accent);
+}
+
+/* ── Mobile filter drawer ───────────────────────────────────────────────────
+   On phones the filter rail stacks above the grid and consumes the whole first
+   screenful (results started ~980px down). Collapse it behind a "Filters"
+   toggle so the course grid is the first thing in view; the rail expands in
+   place when tapped. Desktop/tablet keep the always-visible rail. */
+.lrn-catalog-filters-toggle {
+	display:         none; /* shown only on mobile below */
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	margin:          0 0 var(--lrn-sp-4);
+	padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+	min-height:      var(--lrn-touch-min);
+	font-weight:     600;
+	color:           var(--lrn-text);
+	background:      var(--lrn-bg);
+	border:          1px solid var(--lrn-border-heavy);
+	border-radius:   var(--lrn-radius-lg);
+	cursor:          pointer;
+}
+.lrn-catalog-filters-toggle svg {
+	width: 18px;
+	height: 18px;
+}
+
+@media (max-width: 640px) {
+	.lrn-catalog-filters-toggle {
+		display: inline-flex;
+	}
+
+	/* Rail collapsed by default; revealed when the layout carries the
+	   open class (toggled by the Interactivity store). */
+	.lrn-catalog--sidebar .lrn-catalog-filters {
+		display: none;
+	}
+	.lrn-catalog--sidebar .lrn-catalog-layout.lrn-filters-open .lrn-catalog-filters {
+		display: block;
+		margin-bottom: var(--lrn-sp-5);
+	}
+
+	/* Tap floor (technique 1, see "Tap targets" in learnomy.css). A facet is
+	   8px of padding around 13px text, so it renders ~35px — under the floor,
+	   and the miss is invisible to a grep because no dimension is declared.
+	   These are full-width rows in a vertical list, so growing them costs
+	   nothing but a slightly roomier filter drawer. */
+	.lrn-app .lrn-facet {
+		display:     flex;
+		align-items: center;
+		min-height:  var(--lrn-touch-min);
+	}
+}

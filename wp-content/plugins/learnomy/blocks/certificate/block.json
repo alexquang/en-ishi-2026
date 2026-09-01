@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/certificate",
+    "version": "1.0.0",
+    "title": "Certificate Verification",
+    "category": "learnomy",
+    "icon": "awards",
+    "description": "Display a certificate verification badge by UUID.",
+    "textdomain": "learnomy",
+    "attributes": {
+        "uuid": {
+            "type": "string",
+            "default": ""
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

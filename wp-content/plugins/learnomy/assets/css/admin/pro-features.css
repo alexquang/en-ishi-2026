@@ -1,0 +1,409 @@
+/**
+ * Learnomy — Pro Features admin page styling
+ *
+ * Plan-08 / Phase 3. Cards grouped by category, status pills, no external CTAs.
+ * Tokens come from .learnomy-admin (defined in admin.css). Values fall back
+ * to hardcoded hex so the page works even if admin.css fails to load.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Page chrome
+   ========================================================================== */
+
+.lrn-pro-features-page {
+	max-width: 1200px;
+	background: transparent;
+}
+
+.lrn-pro-features-page > h1.wp-heading-inline {
+	font-size:    var(--lrn-text-xl, 24px);
+	font-weight:  600;
+	color:        var(--lrn-text, var(--lrn-wp-text));
+	margin:       0 0 var(--lrn-sp-2, 8px);
+}
+
+.lrn-pro-features-page .lrn-pro-intro {
+	max-width: 768px;
+	margin-top:  var(--lrn-sp-2, 8px);
+	font-size:   var(--lrn-text-base, 14px);
+	line-height: 1.6;
+	color:       var(--lrn-text-secondary, var(--lrn-wp-text-secondary));
+}
+
+.lrn-pro-features-page hr.wp-header-end {
+	border:        none;
+	border-top:    1px solid var(--lrn-border, var(--lrn-wp-border));
+	margin:        var(--lrn-sp-4, 16px) 0 0;
+}
+
+/* ==========================================================================
+   Pro Features intro row
+   --------------------------------------------------------------------------
+   Two stat tiles (Free count + Pro count) reuse the canonical
+   `.lrn-admin-stat-card` defined in `assets/css/admin.css` so they read
+   identically to every other admin KPI tile. Per the upscale model
+   (Pro extends Free, never duplicates) the canonical pattern ships in
+   Free and Pro consumes it; the same goes for any future "modules
+   available" page we might add in Pro. The only Pro-specific styling
+   below is the tier-accent border on the canonical card, plus the small
+   legend card that sits beside the two stats.
+   --------------------------------------------------------------------------
+   The deleted `.lrn-pro-summary*` recipe was a parallel reinvention of
+   `.lrn-admin-stat-card` — see plan/2026-05-23-admin-ux-audit/REPORT.md
+   §2.4 for the drift inventory.
+   ========================================================================== */
+
+/* Tier accent on the canonical stat card. The card stays in the standard
+   admin-stat shape; just paint a 3px start-edge in the tier color. */
+.lrn-admin-stat-card--accent-free {
+	border-inline-start: 3px solid var(--lrn-success, var(--lrn-success));
+}
+
+.lrn-admin-stat-card--accent-pro {
+	border-inline-start: 3px solid var(--lrn-pro-gold, var(--lrn-cat-amber-strong));
+}
+
+/* The tier badge sits inline with the stat label (Free / Pro pill after
+   "Included modules" / "Additional modules"). Vertically centered with
+   the text via inline-flex. */
+.lrn-admin-stat-card__label .lrn-pro-pill {
+	margin-inline-start: var(--lrn-sp-2, 8px);
+	vertical-align:      middle;
+}
+
+/* The third grid slot on Pro Features is a LEGEND, not a stat tile. It
+   shares the `.lrn-admin-stats` grid for layout uniformity but uses the
+   neutral `.lrn-admin-card` chrome and its own internal slots. */
+.lrn-tier-legend {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2, 8px);
+}
+
+.lrn-tier-legend__pills {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2, 8px);
+}
+
+.lrn-tier-legend__note {
+	margin:      0;
+	font-size:   var(--lrn-text-sm, 13px);
+	color:       var(--lrn-text-secondary, var(--lrn-wp-text-secondary));
+	line-height: 1.5;
+}
+
+/* ==========================================================================
+   Tier filters
+   ========================================================================== */
+
+.lrn-pro-filters {
+	display:       flex;
+	gap:           var(--lrn-sp-2, 8px);
+	flex-wrap:     wrap;
+	margin-bottom: var(--lrn-sp-4, 16px);
+}
+
+.lrn-pro-filter {
+	display:        inline-flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-2, 8px);
+	padding:        var(--lrn-sp-2, 8px) 14px;
+	background:     var(--lrn-bg, var(--lrn-white));
+	border:         1px solid var(--lrn-border, var(--lrn-wp-border));
+	border-radius:  9999px;
+	font-size:      var(--lrn-text-sm, 13px);
+	font-weight:    var(--lrn-weight-medium, 500);
+	color:          var(--lrn-text, var(--lrn-wp-text));
+	cursor:         pointer;
+	transition:     background 120ms ease, border-color 120ms ease;
+}
+
+.lrn-pro-filter:hover {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+}
+
+.lrn-pro-filter.is-active {
+	background:   var(--lrn-text, var(--lrn-wp-text));
+	border-color: var(--lrn-text, var(--lrn-wp-text));
+	color:        var(--lrn-white, var(--lrn-white));
+}
+
+.lrn-pro-filter__count {
+	display:        inline-flex;
+	align-items:    center;
+	justify-content: center;
+	min-width: 22px;
+	padding:        2px 6px; /* hairline pill: tight border-like spacing */
+	background:     var(--lrn-tint-neutral-strong, rgba(55, 53, 47, 0.08));
+	border-radius:  9999px;
+	font-size:      var(--lrn-text-2xs, 10px);
+	font-weight:    var(--lrn-weight-semibold, 600);
+}
+
+.lrn-pro-filter.is-active .lrn-pro-filter__count {
+	background: rgba(255, 255, 255, 0.18);
+	color:      var(--lrn-white, var(--lrn-white));
+}
+
+/* ==========================================================================
+   Status pills
+   ========================================================================== */
+
+.lrn-pro-pill {
+	display:        inline-flex;
+	align-items:    center;
+	font-size:      var(--lrn-text-2xs, 10px);
+	font-weight:    var(--lrn-weight-medium, 500);
+	line-height:    1;
+	padding:        var(--lrn-sp-1, 4px) var(--lrn-sp-2, 8px);
+	border-radius:  9999px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.lrn-pro-pill--stable {
+	background: var(--lrn-success-bg, rgba(46, 164, 79, 0.12));
+	color:      var(--lrn-success, var(--lrn-success-dark));
+}
+
+.lrn-pro-pill--beta {
+	background: var(--lrn-warn-bg, rgba(217, 119, 6, 0.14));
+	color:      var(--lrn-warn, var(--lrn-cat-amber-dark));
+}
+
+.lrn-pro-pill--alpha,
+.lrn-pro-pill--neutral {
+	background: var(--lrn-tint-neutral-strong, rgba(55, 53, 47, 0.08));
+	color:      var(--lrn-text-secondary, var(--lrn-wp-text-secondary));
+}
+
+/* Tier pills: the strongest visual cue on every card. Free is green
+   (included), Pro is gold (paid add-on). */
+.lrn-pro-pill--tier-free {
+	background: var(--lrn-success-bg, rgba(46, 164, 79, 0.12));
+	color:      var(--lrn-success, var(--lrn-success-dark));
+}
+
+.lrn-pro-pill--tier-pro {
+	background: rgba(240, 195, 60, 0.20);
+	color:      #8a5a00;
+}
+
+.lrn-pro-pill--required {
+	background: rgba(124, 58, 237, 0.10);
+	color:      #5b21b6;
+}
+
+/* Category pills — soft tinted backgrounds per category bucket so the
+   eye groups cards even though they're in one flat grid. */
+.lrn-pro-pill--category {
+	background: rgba(55, 53, 47, 0.06);
+	color:      var(--lrn-text-secondary, var(--lrn-wp-text-secondary));
+}
+
+.lrn-pro-pill--cat-content {
+	background: rgba(35, 131, 226, 0.10);
+	color:      #1b6ec2;
+}
+
+.lrn-pro-pill--cat-student {
+	background: rgba(124, 58, 237, 0.10);
+	color:      var(--lrn-purple, var(--lrn-purple));
+}
+
+.lrn-pro-pill--cat-commerce {
+	background: var(--lrn-green-bg, rgba(46, 164, 79, 0.12));
+	color:      var(--lrn-success-dark, var(--lrn-success-dark));
+}
+
+.lrn-pro-pill--cat-community {
+	background: var(--lrn-amber-bg, rgba(217, 119, 6, 0.12));
+	color:      var(--lrn-amber-text, var(--lrn-cat-amber-dark));
+}
+
+.lrn-pro-pill--cat-integrations {
+	background: rgba(15, 118, 110, 0.10);
+	color:      #0f766e;
+}
+
+.lrn-pro-pill--cat-operations {
+	background: rgba(75, 85, 99, 0.10);
+	color:      #4b5563;
+}
+
+.lrn-pro-pill--cat-course-management {
+	background: rgba(219, 39, 119, 0.10);
+	color:      #be185d;
+}
+
+/* ==========================================================================
+   Grid + cards
+   ========================================================================== */
+
+.lrn-pro-grid {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap:                   var(--lrn-sp-4, 16px);
+}
+
+.lrn-pro-card {
+	display:        flex;
+	flex-direction: column;
+	background:     var(--lrn-bg, var(--lrn-white));
+	border:         1px solid var(--lrn-border, var(--lrn-wp-border));
+	border-radius:  var(--lrn-radius-lg, 8px);
+	padding:        var(--lrn-sp-4, 16px);
+	box-shadow:     var(--lrn-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+	transition:     border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.lrn-pro-card:hover {
+	border-color: var(--lrn-border-heavy, #c7c8cc);
+	transform:    translateY(-1px);
+	box-shadow:   var(--lrn-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.lrn-pro-card--free {
+	border-top: 3px solid var(--lrn-success, var(--lrn-success));
+}
+
+.lrn-pro-card--pro {
+	border-top: 3px solid var(--lrn-pro-gold, var(--lrn-cat-amber-strong));
+}
+
+.lrn-pro-card--active {
+	border-color: var(--lrn-accent, #2271b1);
+	box-shadow:   inset 0 0 0 1px var(--lrn-accent-bg, rgba(35, 131, 226, 0.16));
+}
+
+.lrn-pro-card__tag--free {
+	color: var(--lrn-success, var(--lrn-success-dark));
+}
+
+.lrn-pro-card__head {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-2, 8px);
+	margin-bottom:   var(--lrn-sp-2, 8px);
+}
+
+.lrn-pro-card__meta {
+	display:        flex;
+	flex-wrap:      wrap;
+	gap:            var(--lrn-sp-2, 8px);
+	margin-bottom:  var(--lrn-sp-3, 12px);
+}
+
+.lrn-pro-card__title {
+	margin:      0;
+	font-size:   var(--lrn-text-md, 16px);
+	font-weight: var(--lrn-weight-semibold, 600);
+	color:       var(--lrn-text, var(--lrn-wp-text));
+	line-height: 1.3;
+}
+
+.lrn-pro-card__desc {
+	margin:      0 0 var(--lrn-sp-3, 12px);
+	font-size:   var(--lrn-text-sm, 13px);
+	line-height: 1.6;
+	color:       var(--lrn-text-secondary, var(--lrn-wp-text-secondary));
+}
+
+.lrn-pro-card__stories {
+	list-style:  none;
+	margin:      0 0 var(--lrn-sp-3, 12px);
+	padding:     0;
+	font-size:   var(--lrn-text-sm, 13px);
+	line-height: 1.55;
+	color:       var(--lrn-text, var(--lrn-wp-text));
+}
+
+.lrn-pro-card__stories li {
+	position:      relative;
+	padding-inline-start:  var(--lrn-sp-4, 16px);
+	margin-bottom: var(--lrn-sp-2, 8px);
+}
+
+.lrn-pro-card__stories li::before {
+	content:     "";
+	position:    absolute;
+	inset-inline-start: 0;
+	top:         var(--lrn-sp-2);
+	width:       6px;
+	height:      6px;
+	border-radius: 50%;
+	background:  var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+}
+
+.lrn-pro-card__stories li:last-child {
+	margin-bottom: 0;
+}
+
+.lrn-pro-card__foot {
+	margin-top:    auto;
+	padding-top:   var(--lrn-sp-3, 12px);
+	border-top:    1px dashed var(--lrn-border, var(--lrn-wp-border));
+}
+
+.lrn-pro-card__tag {
+	display:        inline-flex;
+	align-items:    center;
+	font-size:      var(--lrn-text-2xs, 10px);
+	font-weight:    var(--lrn-weight-medium, 500);
+	color:          var(--lrn-text-secondary, var(--lrn-wp-text-secondary));
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.lrn-pro-card__tag--active {
+	color: var(--lrn-success, var(--lrn-success-dark));
+}
+
+/*
+ * "Off. Turn it on in Modules" — a link, not a label, because it is the
+ * only route from this page to switching the module on. Token-driven and
+ * underlined on hover/focus so it reads as actionable next to the two
+ * inert tags beside it.
+ */
+.lrn-pro-card__tag--off {
+	color:           var(--lrn-primary, var(--lrn-wp-primary));
+	text-decoration: none;
+}
+
+.lrn-pro-card__tag--off:hover,
+.lrn-pro-card__tag--off:focus-visible {
+	color:           var(--lrn-primary-hover, var(--lrn-primary));
+	text-decoration: underline;
+}
+
+/* ==========================================================================
+   Mobile (< 600px)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+	.lrn-pro-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-pro-legend {
+		gap: var(--lrn-sp-2, 8px);
+	}
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-pro-card {
+		transition: none;
+	}
+
+	.lrn-pro-card:hover {
+		transform: none;
+	}
+}

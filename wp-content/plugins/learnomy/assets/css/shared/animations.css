@@ -1,0 +1,139 @@
+/**
+ * Learnomy micro-interaction utilities.
+ *
+ * Small, composable animation classes for buttons, hover effects,
+ * scroll reveals, progress bars, and attention-drawing pulses.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Button press effect
+   ========================================================================== */
+
+.lrn-btn:active,
+.lrn-admin-btn:active {
+	transform: scale(0.97);
+}
+
+/* ==========================================================================
+   Hover lift
+   ========================================================================== */
+
+.lrn-hover-lift {
+	transition: transform var(--lrn-dur, 120ms) var(--lrn-ease, ease-out),
+	            box-shadow var(--lrn-dur, 120ms) var(--lrn-ease, ease-out);
+}
+
+.lrn-hover-lift:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--lrn-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+/* ==========================================================================
+   Fade-in on scroll (driven by Intersection Observer in animations.js)
+   ========================================================================== */
+
+.lrn-fade-in {
+	opacity: 0;
+	transform: translateY(10px);
+	transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.lrn-fade-in--visible {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+/* ==========================================================================
+   Pulse for attention
+   ========================================================================== */
+
+.lrn-pulse {
+	animation: lrn-pulse 2s infinite;
+}
+
+@keyframes lrn-pulse {
+	0%, 100% { opacity: 1; }
+	50%      { opacity: 0.6; }
+}
+
+/* ==========================================================================
+   Count-up placeholder (the actual counting is done in animations.js)
+   ========================================================================== */
+
+.lrn-count-up {
+	display: inline-block;
+}
+
+/* ==========================================================================
+   Checkmark animation (lesson complete)
+   ========================================================================== */
+
+.lrn-check-anim {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.lrn-check-anim svg {
+	stroke-dasharray: 50;
+	stroke-dashoffset: 50;
+	animation: lrn-check-draw 0.5s ease forwards;
+}
+
+@keyframes lrn-check-draw {
+	to { stroke-dashoffset: 0; }
+}
+
+/* ==========================================================================
+   Spinner (used on loading buttons, e.g. test-connection in payments settings)
+   ========================================================================== */
+
+.lrn-spin {
+	animation: lrn-spin 0.8s linear infinite;
+}
+
+@keyframes lrn-spin {
+	from { transform: rotate(0deg); }
+	to   { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Progress bar fill
+   ========================================================================== */
+
+.lrn-progress-fill {
+	transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-hover-lift:hover {
+		transform: none;
+	}
+
+	.lrn-fade-in {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
+
+	.lrn-pulse {
+		animation: none;
+	}
+
+	.lrn-check-anim svg {
+		animation: none;
+		stroke-dashoffset: 0;
+	}
+
+	.lrn-progress-fill {
+		transition: none;
+	}
+
+	/* Button press is instant — no transition needed, still feels responsive. */
+}

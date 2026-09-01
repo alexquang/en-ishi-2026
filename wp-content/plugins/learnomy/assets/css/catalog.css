@@ -1,0 +1,329 @@
+/**
+ * Learnomy — Catalog stylesheet.
+ *
+ * Page-specific styles for /courses/ (course-archive.php) and
+ * /courses/category/{slug}/ (category-archive.php). Loaded only on
+ * those routes via Template_Loader::enqueue_assets() so other pages
+ * don't pay for the filter-bar + view-toggle + list-view CSS.
+ *
+ * Shared primitives consumed but not owned here:
+ *   .lrn-course-card*, .lrn-wishlist-btn*, .lrn-empty-state*,
+ *   .lrn-grid (base grid utility), .lrn-load-more
+ * Those live in learnomy.css because dashboards, single-course, and
+ * blocks all render them too.
+ *
+ * Responsive contract: exactly two @media queries at the bottom of the
+ * file — 1024px (tablet ↔ desktop) and 640px (mobile). No intermediate
+ * breakpoints. The previous 17-breakpoint sprawl is what this slice is
+ * extracting away from.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Filter bar — search + category + sort + grid/list toggle
+   ========================================================================== */
+
+.lrn-filter-bar {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	flex-wrap:     wrap;
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-filter-bar__form {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	flex-wrap:   wrap;
+	flex:        1;
+	margin:      0;
+	padding:     0;
+}
+
+.lrn-filter-bar__search {
+	flex:      1;
+	min-width: 180px;
+}
+
+.lrn-filter-bar__category,
+.lrn-filter-bar__sort {
+	flex-shrink: 0;
+}
+
+/* Grid/list toggle — a single bordered segmented control so BOTH icons read as
+   proper square buttons (not one boxed + one bare), visually consistent with the
+   neighbouring select boxes (Basecamp #9972665769). */
+.lrn-filter-bar__view-toggle {
+	display:       inline-flex;
+	gap:           0;
+	flex-shrink:   0;
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	overflow:      hidden;
+	background:    var(--lrn-bg);
+}
+
+/* Each half: icon-only square. Inherits .lrn-btn base; drop its own
+   border/radius so the segmented wrapper owns the box. Sized to 40px so the
+   1px-bordered wrapper renders at 42px — flush with the neighbouring 42px
+   search/category/sort controls (Basecamp #9981880849; the toggle read 46px
+   because .lrn-btn's min-height: var(--lrn-touch-min) (~44px) overrode the old
+   36px). min-height:0 lets the explicit height win; the ::after extender
+   (learnomy.css, inset:-4px) keeps the tap target ≥44px for accessibility. */
+.lrn-btn.lrn-view-btn {
+	width:           40px;
+	height:          40px;
+	min-width:       40px;
+	min-height:      0;
+	padding:         0;
+	flex-shrink:     0;
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	border:          0;
+	border-radius:   0;
+	background:      transparent;
+	color:           var(--lrn-text-secondary);
+}
+
+/* Divider between the two halves. */
+.lrn-btn.lrn-view-btn + .lrn-view-btn {
+	border-inline-start: 1px solid var(--lrn-border);
+}
+
+.lrn-view-btn svg {
+	width:       18px;
+	height:      18px;
+	flex-shrink: 0;
+}
+
+.lrn-view-btn:hover:not(.is-active) {
+	background: var(--lrn-bg-hover);
+	color:      var(--lrn-text);
+}
+
+.lrn-view-btn.is-active {
+	background: var(--lrn-accent-bg);
+	color:      var(--lrn-accent);
+}
+
+/* ==========================================================================
+   Course grid — three explicit tiers (mobile / tablet / desktop)
+
+   Below 640px: 1 column (mobile @media at bottom).
+   640px-1023px: 2 columns (base).
+   1024px-1439px: 2 columns (retained — most desktops here).
+   1440px+: 3 columns (wide-desktop @media at bottom).
+   ========================================================================== */
+
+.lrn-courses-grid {
+	grid-template-columns: repeat(2, 1fr);
+}
+
+/* Force every card in the grid to fill its row height so a row of cards
+ * with varied content lengths reads as a uniform tile band, not stair-
+ * stepped boxes. The grid's direct children are `<li>` wrappers, so two
+ * rules are needed: make the li a flex column (the li IS the grid item
+ * and stretches by default) and let the card inside grow to fill the li.
+ * The card root is already `display: flex; flex-direction: column`, so
+ * the inner content distributes correctly. See Basecamp #9924817927. */
+.lrn-courses-grid > li {
+	display:        flex;
+	flex-direction: column;
+	list-style:     none;
+}
+
+.lrn-courses-grid > li > .lrn-course-card {
+	flex: 1;
+	height: 100%;
+}
+
+/* ==========================================================================
+   List view — toggled by the filter-bar's "list" button.
+
+   Compound selector .lrn-courses-grid.lrn-list-layout intentionally
+   wins specificity over the 1440px @media that forces 3 columns. Each
+   course renders as a full-width horizontal row: image left (280px),
+   content right (flex 1), price pinned to the bottom of the row.
+   Mobile collapses back to vertical stack — 280px thumbnails leave no
+   room for content on a phone.
+   ========================================================================== */
+
+.lrn-courses-grid.lrn-list-layout {
+	grid-template-columns: 1fr;
+	gap:                   var(--lrn-sp-4);
+}
+
+.lrn-courses-grid.lrn-list-layout .lrn-course-card {
+	flex-direction: row;
+	align-items:    stretch;
+	min-height:     180px;
+}
+
+.lrn-courses-grid.lrn-list-layout .lrn-course-card__thumbnail-link {
+	flex:       0 0 280px;
+	display:    block;
+	align-self: stretch;
+}
+
+.lrn-courses-grid.lrn-list-layout .lrn-course-card__thumbnail {
+	width:        100%;
+	height:       100%;
+	aspect-ratio: auto;
+}
+
+.lrn-courses-grid.lrn-list-layout .lrn-course-card__info {
+	flex:    1 1 auto;
+	padding: var(--lrn-sp-5) var(--lrn-sp-6);
+	gap:     var(--lrn-sp-2);
+}
+
+.lrn-courses-grid.lrn-list-layout .lrn-course-card__title {
+	font-size: var(--lrn-text-lg);
+}
+
+.lrn-courses-grid.lrn-list-layout .lrn-course-card__footer {
+	margin-top:  auto;
+	padding-top: var(--lrn-sp-3);
+}
+
+/* Wishlist heart sits at the top-right of the content pane in list
+   view so the visual hierarchy mirrors the grid view. */
+.lrn-courses-grid.lrn-list-layout .lrn-wishlist-btn {
+	top:   var(--lrn-sp-3);
+	inset-inline-end: var(--lrn-sp-4);
+}
+
+/* ==========================================================================
+   Responsive — exactly two breakpoints
+
+   Per ux-foundation responsive rules: 1024px (tablet ↔ desktop) and
+   640px (mobile). No intermediate widths.
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+	/* Wide desktop: catalog jumps to 3 columns. The previous code had a
+	   separate 1440px breakpoint; consolidating here keeps the catalog
+	   on the canonical breakpoint and still gives most laptops the
+	   3-column layout (1280-1440px range). */
+	.lrn-courses-grid {
+		grid-template-columns: repeat(3, 1fr);
+	}
+
+	/* Site-wide "Catalog columns" setting (2-5, default 3). Mobile (<=640px)
+	   stays 1 column and 640-1024px stays 2 (the responsive contract) — this
+	   only sets the desktop count. Listed after the base rule so the chosen
+	   count wins (same specificity, source order). 5 columns are reserved for
+	   very wide screens (see the 1440px block) so cards never get cramped. */
+	.lrn-courses-grid--cols-2 { grid-template-columns: repeat(2, 1fr); }
+	.lrn-courses-grid--cols-3 { grid-template-columns: repeat(3, 1fr); }
+	.lrn-courses-grid--cols-4 { grid-template-columns: repeat(4, 1fr); }
+	.lrn-courses-grid--cols-5 { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (min-width: 1440px) {
+	.lrn-courses-grid--cols-5 { grid-template-columns: repeat(5, 1fr); }
+}
+
+@media (max-width: 640px) {
+	/* Mobile: single column. Filter bar stays as flex-wrap, so the
+	   search input takes the full row and category/sort/toggle wrap
+	   beneath it. */
+	.lrn-courses-grid {
+		grid-template-columns: 1fr;
+	}
+
+	/* List view on mobile: revert to the same vertical card layout as
+	   grid view. 280px-wide thumbnails are too aggressive at this width. */
+	.lrn-courses-grid.lrn-list-layout .lrn-course-card {
+		flex-direction: column;
+		min-height:     0;
+	}
+
+	.lrn-courses-grid.lrn-list-layout .lrn-course-card__thumbnail-link {
+		flex: 0 0 auto;
+	}
+
+	.lrn-courses-grid.lrn-list-layout .lrn-course-card__thumbnail {
+		aspect-ratio: 16 / 9;
+		height:       auto;
+	}
+}
+
+/* ── Search autocomplete dropdown (BC #10043289391) ─────────────────────── */
+.lrn-search-suggest-wrap {
+	position: relative;
+}
+
+.lrn-search-suggest {
+	position: absolute;
+	inset-inline: 0;
+	top: calc(100% + var(--lrn-sp-2));
+	z-index: 20;
+	background: var(--lrn-bg);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	box-shadow: 0 6px 24px color-mix(in srgb, var(--lrn-text) 14%, transparent);
+	max-height: 320px;
+	overflow-y: auto;
+}
+
+.lrn-search-suggest[hidden] {
+	display: none;
+}
+
+.lrn-search-suggest__item {
+	display: block;
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	color: var(--lrn-text);
+	text-decoration: none;
+	border-bottom: 1px solid color-mix(in srgb, var(--lrn-border) 60%, transparent);
+}
+
+.lrn-search-suggest__item:last-child {
+	border-bottom: 0;
+}
+
+.lrn-search-suggest__item:hover,
+.lrn-search-suggest__item:focus,
+.lrn-search-suggest__item.is-active {
+	background: var(--lrn-bg-hover);
+	color: var(--lrn-accent);
+}
+
+.lrn-search-suggest__empty {
+	margin: 0;
+	padding: var(--lrn-sp-3);
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-search-suggest__empty[hidden] {
+	display: none;
+}
+
+/* Tap floor (technique 1, see "Tap targets" in learnomy.css). A suggestion row
+   is 8px of padding around 14px text, so it renders ~37px. It sits at the end
+   of the file rather than in the 640px block above because the component's own
+   `display: block` is declared later and would otherwise win on source order. */
+@media (max-width: 640px) {
+	.lrn-search-suggest__item {
+		display:     flex;
+		align-items: center;
+		min-height:  var(--lrn-touch-min);
+	}
+}
+
+/*
+ * Catalog search submit.
+ *
+ * The grid layout shipped without one: its only buttons were the view
+ * toggles, so Enter was the sole way to run a search and nothing said so
+ * (Basecamp 10171341067). Typing deliberately does not live-filter, since a
+ * debounced reload used to eat characters mid-word (10042899710), which makes
+ * a visible control the only honest affordance.
+ */
+.lrn-filter-bar__submit {
+	flex-shrink: 0;
+}

@@ -1,0 +1,232 @@
+/**
+ * Dashboard chart styles.
+ *
+ * All values use --lrn-* tokens defined in admin.css.
+ *
+ * @package Learnomy
+ */
+
+/* ── Chart grid ─────────────────────────────────────────────────────────── */
+
+.lrn-charts-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--lrn-sp-4);
+}
+
+@media (max-width: 1024px) {
+	.lrn-charts-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ── Chart card ─────────────────────────────────────────────────────────── */
+
+.lrn-chart-card {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.lrn-chart-card__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--lrn-sp-3);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-chart-card__header .lrn-admin-card-heading {
+	margin: 0;
+	display: flex;
+	align-items: baseline;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-chart-card__total {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-normal);
+	color: var(--lrn-text-secondary);
+}
+
+/* ── Period selector ────────────────────────────────────────────────────── */
+
+.lrn-period-selector {
+	display: flex;
+	gap: var(--lrn-sp-1);
+	flex-shrink: 0;
+}
+
+.lrn-period-btn {
+	padding: var(--lrn-sp-1) var(--lrn-sp-2);
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	line-height: 1.4;
+	color: var(--lrn-text-secondary);
+	background: var(--lrn-bg-secondary);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-sm);
+	cursor: pointer;
+	transition: background var(--lrn-dur) var(--lrn-ease),
+	            color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-period-btn:hover {
+	background: var(--lrn-bg-hover);
+	color: var(--lrn-text);
+}
+
+.lrn-period-btn--active {
+	background: var(--lrn-accent-bg);
+	color: var(--lrn-accent);
+	border-color: var(--lrn-accent);
+}
+
+.lrn-period-btn--active:hover {
+	background: var(--lrn-accent-bg);
+	color: var(--lrn-accent);
+}
+
+/* ── Chart containers ───────────────────────────────────────────────────── */
+
+.lrn-chart-container {
+	width: 100%;
+	min-height: 260px;
+}
+
+.lrn-chart-container--donut {
+	min-height: 280px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ── Top courses table ──────────────────────────────────────────────────── */
+
+.lrn-top-courses-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-top-courses-table thead th {
+	text-align: start;
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	border-bottom: 1px solid var(--lrn-border-heavy);
+}
+
+.lrn-top-courses-table tbody td {
+	padding: var(--lrn-sp-3);
+	border-bottom: 1px solid var(--lrn-divider);
+	color: var(--lrn-text);
+	vertical-align: middle;
+}
+
+.lrn-top-courses-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.lrn-top-courses-table .lrn-course-title {
+	font-weight: var(--lrn-weight-medium);
+	max-width: 200px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-top-courses-table .lrn-sparkline-cell {
+	width: 100px;
+	min-width: 80px;
+}
+
+.lrn-top-courses-table .lrn-completion-badge {
+	display: inline-block;
+	padding: 2px var(--lrn-sp-2);
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	border-radius: var(--lrn-radius-sm);
+	background: var(--lrn-success-bg);
+	color: var(--lrn-success);
+}
+
+/* Empty state for the table when no courses exist. */
+.lrn-top-courses-table .lrn-empty-row td {
+	text-align: center;
+	color: var(--lrn-text-tertiary);
+	padding: var(--lrn-sp-6);
+}
+
+/* ==========================================================================
+   Chart empty state — shown inside .lrn-chart-container when there's no
+   data for the period. Keeps the chart card the same height so the page
+   doesn't reflow when data lands (or doesn't).
+   ========================================================================== */
+
+.lrn-chart-container--empty {
+	display:         flex;
+	flex-direction:  column;
+	align-items:     center;
+	justify-content: center;
+	gap:             var(--lrn-sp-3);
+	color:           var(--lrn-text-secondary);
+	text-align:      center;
+	background:      var(--lrn-bg-secondary);
+	border:          1px dashed var(--lrn-border-heavy);
+	border-radius:   var(--lrn-radius-md);
+}
+
+.lrn-chart-container--empty svg {
+	width:  40px;
+	height: 40px;
+	color:  var(--lrn-text-tertiary);
+}
+
+.lrn-chart-container--empty p {
+	margin:    0;
+	max-width: 360px;
+	font-size: var(--lrn-text-sm);
+}
+
+/* ==========================================================================
+   Stat delta — the "↑+12.4% vs last 30 days" pill below a stat number.
+   Modifiers: --up (green), --down (red), --flat (neutral).
+   ========================================================================== */
+
+.lrn-admin-stat-card__delta {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             4px;
+	margin-block-start: var(--lrn-sp-1);
+	padding:         2px 8px;
+	font-size:       var(--lrn-text-xs);
+	font-weight:     var(--lrn-weight-medium);
+	border-radius:   9999px;
+	background:      var(--lrn-bg-secondary);
+	color:           var(--lrn-text-secondary);
+	line-height:     1.4;
+}
+
+.lrn-admin-stat-card__delta svg {
+	width:  12px;
+	height: 12px;
+}
+
+.lrn-admin-stat-card__delta--up {
+	background: rgba(18, 184, 134, 0.12);
+	color:      #0b8c69;
+}
+
+.lrn-admin-stat-card__delta--down {
+	background: rgba(245, 75, 75, 0.12);
+	color:      #c92a2a;
+}
+
+.lrn-admin-stat-card__delta--flat {
+	background: var(--lrn-bg-secondary);
+	color:      var(--lrn-text-secondary);
+}

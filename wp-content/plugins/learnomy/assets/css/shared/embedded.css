@@ -1,0 +1,542 @@
+/**
+ * Embedded surfaces — the components that exist ONLY outside a Learnomy route.
+ *
+ * Widgets, shortcodes and blocks render markup that no route template emits
+ * (`.lrn-widget-list`, `.lrn-instructor-card`, `.lrn-quiz-embed`,
+ * `.lrn-certificate-badge`, the block wrappers), so those class names had no
+ * rules anywhere in the plugin: a sidebar widget or a `[learnomy_instructor]`
+ * card fell back to whatever the active theme happened to do with a `<ul>`.
+ *
+ * This sheet is the home for exactly those components. It ships with every
+ * embedded bundle (Template_Loader::SURFACE_BUNDLES) and with nothing else —
+ * route pages never render this markup.
+ *
+ * Everything is token-driven (`--lrn-*`), so it inherits the theme's palette in
+ * light and dark alike, and logical properties (`margin-inline`, `padding-inline`)
+ * keep it correct in RTL.
+ *
+ * @package Learnomy
+ */
+
+/* --------------------------------------------------------------------------
+   Shared reset for embedded roots
+
+   A route wraps its template in `.lrn-app`, which owns the base reset. Embedded
+   markup lands directly in theme content, so each embedded root carries the one
+   rule the components actually depend on.
+   -------------------------------------------------------------------------- */
+
+.lrn-widget-list,
+.lrn-widget-progress,
+.lrn-instructor-widget,
+.lrn-course-search,
+.lrn-search-form,
+.lrn-instructor-card,
+.lrn-quiz-embed,
+.lrn-certificate-badge,
+.lrn-progress-bar-block,
+.lrn-my-progress,
+.lrn-student-dashboard {
+	box-sizing:  border-box;
+	font-family: var(--lrn-font);
+	font-size:   var(--lrn-text-base);
+	line-height: var(--lrn-leading-normal);
+	color:       var(--lrn-text);
+}
+
+.lrn-widget-list *,
+.lrn-widget-progress *,
+.lrn-instructor-widget *,
+.lrn-course-search *,
+.lrn-search-form *,
+.lrn-instructor-card *,
+.lrn-quiz-embed *,
+.lrn-certificate-badge *,
+.lrn-progress-bar-block *,
+.lrn-my-progress *,
+.lrn-student-dashboard * {
+	box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   Widget lists — Popular / Recent Courses, Course Categories
+   -------------------------------------------------------------------------- */
+
+.lrn-widget-list {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-widget-list__item {
+	display:        flex;
+	flex-wrap:      wrap;
+	align-items:    baseline;
+	gap:            var(--lrn-sp-1) var(--lrn-sp-2);
+	padding-block:  var(--lrn-sp-2);
+	border-bottom:  1px solid var(--lrn-divider);
+}
+
+.lrn-widget-list__item:last-child {
+	border-bottom: 0;
+}
+
+.lrn-widget-list__link {
+	flex:            1 1 auto;
+	min-width:       0;
+	color:           var(--lrn-text);
+	font-weight:     var(--lrn-weight-medium);
+	line-height:     var(--lrn-leading-tight);
+	text-decoration: none;
+}
+
+.lrn-widget-list__link:hover,
+.lrn-widget-list__link:focus-visible {
+	color: var(--lrn-accent);
+}
+
+.lrn-widget-list__meta,
+.lrn-widget-list__count {
+	flex:      0 0 auto;
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-xs);
+}
+
+/* --------------------------------------------------------------------------
+   My Course Progress widget
+   -------------------------------------------------------------------------- */
+
+.lrn-widget-progress__item {
+	display:        flex;
+	flex-wrap:      wrap;
+	align-items:    center;
+	gap:            var(--lrn-sp-1) var(--lrn-sp-2);
+	padding-block:  var(--lrn-sp-2-5);
+}
+
+.lrn-widget-progress__item .lrn-widget-list__link {
+	flex-basis: 100%;
+}
+
+.lrn-widget-progress__item .lrn-progress-bar {
+	flex:      1 1 auto;
+	min-width: 0;
+}
+
+.lrn-widget-progress__pct {
+	flex:        0 0 auto;
+	color:       var(--lrn-text-secondary);
+	font-size:   var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	font-variant-numeric: tabular-nums;
+}
+
+/* A sidebar column is narrow — the standard 6px track reads as a slab there. */
+.lrn-progress-bar--xs {
+	height: var(--lrn-sp-1);
+}
+
+/* --------------------------------------------------------------------------
+   Featured Instructor widget
+   -------------------------------------------------------------------------- */
+
+.lrn-instructor-widget {
+	display:     flex;
+	align-items: flex-start;
+	gap:         var(--lrn-sp-3);
+}
+
+.lrn-instructor-widget__avatar-wrap {
+	flex: 0 0 auto;
+}
+
+.lrn-instructor-widget__avatar,
+.lrn-instructor-widget .avatar {
+	display:       block;
+	border-radius: var(--lrn-radius-full);
+}
+
+.lrn-instructor-widget__info {
+	min-width: 0;
+}
+
+.lrn-instructor-widget__name {
+	display:     block;
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+}
+
+.lrn-instructor-widget__bio {
+	margin:    var(--lrn-sp-1) 0 0;
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-instructor-widget__courses {
+	display:   block;
+	margin-block-start: var(--lrn-sp-1);
+	color:     var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Search — the Course Search widget and the [learnomy_search] form
+
+   Two markups, one look: a field and a button on one row that stack under the
+   phone breakpoint rather than squeezing the input to nothing.
+   -------------------------------------------------------------------------- */
+
+.lrn-course-search__inner,
+.lrn-search-form__row {
+	display: flex;
+	gap:     var(--lrn-sp-2);
+}
+
+.lrn-course-search__input,
+.lrn-search-form__input {
+	flex:          1 1 auto;
+	min-width:     0;
+	min-height:    var(--lrn-touch-min);
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+}
+
+.lrn-course-search__input:focus,
+.lrn-search-form__input:focus {
+	outline:      2px solid var(--lrn-accent);
+	outline-offset: 1px;
+	border-color: var(--lrn-accent);
+}
+
+.lrn-course-search__btn,
+.lrn-search-form__btn {
+	flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   [learnomy_instructor] card
+   -------------------------------------------------------------------------- */
+
+.lrn-instructor-card {
+	display:       flex;
+	align-items:   flex-start;
+	gap:           var(--lrn-sp-4);
+	padding:       var(--lrn-sp-5);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+}
+
+.lrn-instructor-card__avatar-wrap {
+	flex: 0 0 auto;
+}
+
+.lrn-instructor-card__avatar {
+	display:       block;
+	border-radius: var(--lrn-radius-full);
+}
+
+.lrn-instructor-card__body {
+	min-width: 0;
+}
+
+.lrn-instructor-card__name {
+	margin:      0;
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+}
+
+.lrn-instructor-card__name a {
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-instructor-card__name a:hover,
+.lrn-instructor-card__name a:focus-visible {
+	color: var(--lrn-accent);
+}
+
+.lrn-instructor-card__meta {
+	margin:    var(--lrn-sp-1) 0 0;
+	color:     var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-xs);
+}
+
+.lrn-instructor-card__bio {
+	margin:    var(--lrn-sp-2) 0 var(--lrn-sp-3);
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+/* --------------------------------------------------------------------------
+   [learnomy_quiz] embed card
+   -------------------------------------------------------------------------- */
+
+.lrn-quiz-embed {
+	padding:       var(--lrn-sp-5);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+}
+
+.lrn-quiz-embed__title {
+	margin:      0;
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+}
+
+.lrn-quiz-embed__description {
+	margin:    var(--lrn-sp-2) 0 0;
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-quiz-embed__meta {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2) var(--lrn-sp-4);
+	margin:    var(--lrn-sp-3) 0 var(--lrn-sp-4);
+}
+
+.lrn-quiz-embed__meta-item {
+	color:     var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Quiz block card — the rules list and action row the player sheet never had
+   (the player styles the RUNNER, which is a different surface entirely).
+   -------------------------------------------------------------------------- */
+
+.lrn-quiz__rules {
+	list-style: none;
+	margin:     var(--lrn-sp-3) 0 var(--lrn-sp-4);
+	padding:    0;
+	display:    flex;
+	flex-wrap:  wrap;
+	gap:        var(--lrn-sp-2) var(--lrn-sp-4);
+}
+
+.lrn-quiz__rule {
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-quiz__actions {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2);
+}
+
+.lrn-quiz__login-notice {
+	margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   [learnomy_certificate_verify] badge
+   -------------------------------------------------------------------------- */
+
+.lrn-certificate-badge {
+	display:       flex;
+	align-items:   flex-start;
+	gap:           var(--lrn-sp-3);
+	padding:       var(--lrn-sp-4);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+}
+
+.lrn-certificate-badge--valid {
+	background:   var(--lrn-success-bg);
+	border-color: var(--lrn-success);
+}
+
+.lrn-certificate-badge--invalid {
+	background:   var(--lrn-danger-bg);
+	border-color: var(--lrn-danger);
+}
+
+.lrn-certificate-badge__icon {
+	flex: 0 0 auto;
+}
+
+.lrn-certificate-badge--valid .lrn-certificate-badge__icon {
+	color: var(--lrn-success);
+}
+
+.lrn-certificate-badge--invalid .lrn-certificate-badge__icon {
+	color: var(--lrn-danger);
+}
+
+.lrn-certificate-badge__status {
+	margin:      0;
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+}
+
+.lrn-certificate-badge__detail {
+	margin:    var(--lrn-sp-1) 0 0;
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-certificate-badge__date {
+	margin:    var(--lrn-sp-1) 0 0;
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-xs);
+}
+
+/* --------------------------------------------------------------------------
+   Certificate block
+   -------------------------------------------------------------------------- */
+
+.lrn-certificate__badge {
+	margin-block-end: var(--lrn-sp-3);
+}
+
+.lrn-certificate__details p {
+	margin:    0 0 var(--lrn-sp-2);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-certificate__uuid {
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-certificate--revoked {
+	border-color: var(--lrn-warn);
+}
+
+/* --------------------------------------------------------------------------
+   Progress-bar block
+   -------------------------------------------------------------------------- */
+
+.lrn-progress-bar-block__header {
+	display:          flex;
+	flex-wrap:        wrap;
+	align-items:      baseline;
+	justify-content:  space-between;
+	gap:              var(--lrn-sp-2);
+	margin-block-end: var(--lrn-sp-2);
+}
+
+.lrn-progress-bar-block__course {
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-progress-bar-block__pct {
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+	font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   My Progress + Student Dashboard blocks
+
+   Both render a stack of course rows: title, the canonical progress bar, a
+   percentage. One rule set, two block wrappers.
+   -------------------------------------------------------------------------- */
+
+.lrn-my-progress__item,
+.lrn-student-dashboard__item {
+	display:               grid;
+	grid-template-columns: 1fr auto;
+	align-items:           center;
+	gap:                   var(--lrn-sp-2) var(--lrn-sp-3);
+	padding:               var(--lrn-sp-4);
+	margin-block-end:      var(--lrn-sp-3);
+}
+
+.lrn-my-progress__course-title,
+.lrn-student-dashboard__course-title {
+	grid-column:     1 / -1;
+	color:           var(--lrn-text);
+	font-weight:     var(--lrn-weight-medium);
+	line-height:     var(--lrn-leading-tight);
+	text-decoration: none;
+}
+
+.lrn-my-progress__course-title:hover,
+.lrn-my-progress__course-title:focus-visible,
+.lrn-student-dashboard__course-title:hover,
+.lrn-student-dashboard__course-title:focus-visible {
+	color: var(--lrn-accent);
+}
+
+.lrn-my-progress__pct,
+.lrn-student-dashboard__pct {
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+	font-variant-numeric: tabular-nums;
+}
+
+.lrn-my-progress__view-all {
+	display:   inline-block;
+	margin-block-start: var(--lrn-sp-2);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-my-progress__all-done {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-student-dashboard__header {
+	display:          flex;
+	flex-wrap:        wrap;
+	align-items:      baseline;
+	justify-content:  space-between;
+	gap:              var(--lrn-sp-2);
+	margin-block-end: var(--lrn-sp-4);
+}
+
+.lrn-student-dashboard__greeting {
+	margin:      0;
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+.lrn-student-dashboard__count {
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-student-dashboard__thumbnail {
+	grid-column: 1 / -1;
+}
+
+.lrn-student-dashboard__thumbnail img {
+	display:       block;
+	width:         100%;
+	height:        auto;
+	border-radius: var(--lrn-radius-md);
+}
+
+/* --------------------------------------------------------------------------
+   Phone
+
+   A sidebar is already narrow; below this width the two-up rows have nowhere
+   left to go and read better stacked.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+
+	.lrn-course-search__inner,
+	.lrn-search-form__row {
+		flex-direction: column;
+	}
+
+	.lrn-course-search__btn,
+	.lrn-search-form__btn {
+		width: 100%;
+	}
+
+	.lrn-instructor-card {
+		flex-direction: column;
+	}
+}

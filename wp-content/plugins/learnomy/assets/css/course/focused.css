@@ -1,0 +1,142 @@
+/**
+ * Learnomy — single course FOCUSED variant overlay.
+ *
+ * Layered on top of single-course.css (handle dep `learnomy-single-course`).
+ * Owns only the focused-variant chrome: the tight light header bar, the
+ * centered single-column reading body, and the mobile sticky bottom enroll
+ * bar. Token-driven only; dark mode + RTL inherit from root tokens and logical
+ * properties.
+ *
+ * @package Learnomy
+ */
+
+.lrn-course--focused .lrn-course-headbar {
+	background:           var(--lrn-bg);
+	border-block-end:     1px solid var(--lrn-border);
+	padding-block:        var(--lrn-sp-5);
+}
+
+.lrn-course-headbar__inner {
+	display:         flex;
+	flex-wrap:       wrap;
+	gap:             var(--lrn-sp-4);
+	align-items:     center;
+	justify-content: space-between;
+}
+
+.lrn-course-headbar__badges {
+	display:       flex;
+	flex-wrap:     wrap;
+	gap:           var(--lrn-sp-2);
+	margin-block-end: var(--lrn-sp-2);
+}
+
+.lrn-course-headbar__title {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+	margin:      0;
+	color:       var(--lrn-text);
+}
+
+.lrn-course-headbar__meta {
+	display:       flex;
+	flex-wrap:     wrap;
+	gap:           var(--lrn-sp-4);
+	margin-block-start: var(--lrn-sp-2);
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text-secondary);
+}
+
+.lrn-course-headbar__meta-item {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-1);
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+}
+
+.lrn-course-headbar__meta-item svg {
+	width:  var(--lrn-icon-sm);
+	height: var(--lrn-icon-sm);
+}
+
+.lrn-course-headbar__actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+}
+
+.lrn-course-headbar__price {
+	font-size:   var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+/* Centered reading body. */
+.lrn-course-focused-body {
+	padding-block: var(--lrn-sp-8);
+}
+
+.lrn-course-focused-body__main {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-6);
+}
+
+/* The foot-of-content enroll card reuses the shared sidebar partial, which
+   was sized for a 300-360px sidebar. In the focused variant the body column
+   is up to 640px wide (lrn-container--narrow), so an unbounded card stretches
+   the preview thumbnail and the includes list across the full reading width
+   and dominates the page. Cap it at sidebar proportions and center. */
+.lrn-course-focused-body__card {
+	padding:       0;
+	max-width:     420px;
+	margin-inline: auto;
+}
+
+/* Mobile sticky bottom enroll bar — hidden on desktop, shown on mobile. */
+.lrn-course-stickybar {
+	display: none;
+}
+
+@media (max-width: 640px) {
+	.lrn-course-headbar__inner {
+		flex-direction: column;
+		align-items:    flex-start;
+	}
+
+	.lrn-course-headbar__actions {
+		width: 100%;
+	}
+
+	.lrn-course-stickybar {
+		position:         fixed;
+		inset-block-end:  0;
+		inset-inline:     0;
+		z-index:          50;
+		display:          flex;
+		align-items:      center;
+		gap:              var(--lrn-sp-3);
+		padding:          var(--lrn-sp-3) var(--lrn-sp-4);
+		background:       var(--lrn-bg);
+		border-block-start: 1px solid var(--lrn-border);
+		box-shadow:       var(--lrn-shadow-lg);
+	}
+
+	.lrn-course-stickybar__price {
+		font-size:   var(--lrn-text-lg);
+		font-weight: var(--lrn-weight-semibold);
+		color:       var(--lrn-text);
+		white-space: nowrap;
+	}
+
+	.lrn-course-stickybar .lrn-btn {
+		flex: 1;
+	}
+
+	/* Keep the foot-of-content card from duplicating the sticky bar on mobile. */
+	.lrn-course-focused-body__card {
+		display: none;
+	}
+}

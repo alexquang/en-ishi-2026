@@ -1,0 +1,151 @@
+/**
+ * Learnomy admin — Learning Standards hub.
+ *
+ * Styles the single map of every learning-standard integration (xAPI, SCORM,
+ * LTI, H5P, QTI) shown at the top of Settings → Learning Standards. Each card
+ * links to the one place that standard is configured. Token-only (no raw
+ * hex/px/font); dark mode + RTL fall out of the shared --lrn-* tokens.
+ *
+ * Markup contract — includes/admin/views/partials/integrations-hub.php.
+ *
+ * @package Learnomy\Admin
+ */
+
+.lrn-standards-grid {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap:                   var(--lrn-sp-4);
+	margin-block-start:    var(--lrn-sp-4);
+}
+
+.lrn-standard-card {
+	display:         flex;
+	align-items:     flex-start;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-4);
+	background:      var(--lrn-bg);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	color:           var(--lrn-text);
+	text-decoration: none;
+	transition:      border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lrn-standard-card:hover,
+.lrn-standard-card:focus {
+	border-color:    var(--lrn-accent);
+	box-shadow:      var(--lrn-shadow-md);
+	color:           var(--lrn-text);
+	text-decoration: none;
+	transform:       translateY(-1px);
+}
+
+.lrn-standard-card:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-standard-card__icon {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	flex-shrink:     0;
+	width:           var(--lrn-sp-8);
+	height:          var(--lrn-sp-8);
+	background:      var(--lrn-accent-bg);
+	color:           var(--lrn-accent);
+	border-radius:   var(--lrn-radius-sm);
+}
+
+.lrn-standard-card__icon svg {
+	width:  var(--lrn-sp-5);
+	height: var(--lrn-sp-5);
+}
+
+.lrn-standard-card__body {
+	display:        flex;
+	flex:           1 1 auto;
+	flex-direction: column;
+	min-width:      0;
+	gap:            var(--lrn-sp-1);
+}
+
+.lrn-standard-card__head {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	flex-wrap:   wrap;
+}
+
+.lrn-standard-card__name {
+	font-size:   var(--lrn-text-md);
+	font-weight: 600;
+	color:       var(--lrn-text);
+}
+
+.lrn-standard-card__badge {
+	display:        inline-flex;
+	align-items:    center;
+	padding-block:  var(--lrn-sp-1);
+	padding-inline: var(--lrn-sp-2);
+	font-size:      var(--lrn-text-2xs);
+	font-weight:    600;
+	line-height:    1;
+	border-radius:  var(--lrn-radius-sm);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.lrn-standard-card__badge--available {
+	background: var(--lrn-bg-muted);
+	color:      var(--lrn-text-secondary);
+}
+
+.lrn-standard-card__badge--active {
+	background: var(--lrn-accent-bg);
+	color:      var(--lrn-accent);
+}
+
+.lrn-standard-card__summary {
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+	line-height: 1.5;
+}
+
+.lrn-standard-card__cta {
+	display:            inline-flex;
+	align-items:        center;
+	gap:                var(--lrn-sp-1);
+	margin-block-start: var(--lrn-sp-1);
+	font-size:          var(--lrn-text-sm);
+	font-weight:        600;
+	color:              var(--lrn-accent);
+}
+
+.lrn-standard-card__cta svg {
+	width:      var(--lrn-sp-4);
+	height:     var(--lrn-sp-4);
+	transition: transform 0.15s ease;
+}
+
+.lrn-standard-card:hover .lrn-standard-card__cta svg,
+.lrn-standard-card:focus .lrn-standard-card__cta svg {
+	transform: translateX(2px);
+}
+
+/* RTL — nudge the CTA arrow the other way. */
+[dir="rtl"] .lrn-standard-card:hover .lrn-standard-card__cta svg,
+[dir="rtl"] .lrn-standard-card:focus .lrn-standard-card__cta svg {
+	transform: translateX(-2px);
+}
+
+@media (max-width: 640px) {
+	.lrn-standards-grid {
+		grid-template-columns: 1fr;
+		gap:                   var(--lrn-sp-3);
+	}
+
+	.lrn-standard-card {
+		padding: var(--lrn-sp-3);
+	}
+}

@@ -1,0 +1,20 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/course-card",
+    "version": "1.0.0",
+    "title": "Course Card",
+    "category": "learnomy",
+    "icon": "book-alt",
+    "description": "Display a single course card with title, thumbnail, and key details.",
+    "textdomain": "learnomy",
+    "attributes": {
+        "courseId": {
+            "type": "integer"
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

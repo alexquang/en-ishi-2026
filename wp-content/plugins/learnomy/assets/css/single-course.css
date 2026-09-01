@@ -1,0 +1,909 @@
+/**
+ * Learnomy — Single course stylesheet.
+ *
+ * Page-specific styles for /courses/{slug}/ (single-course.php).
+ * Loaded only on that route via Template_Loader::enqueue_assets() so the
+ * catalog, dashboards, blocks, and other surfaces don't pay for the
+ * sidebar-card + curriculum + curriculum-drawer CSS.
+ *
+ * Shared primitives consumed but not owned here:
+ *   .lrn-course-card*, .lrn-wishlist-btn*, .lrn-empty-state*,
+ *   .lrn-load-more, .lrn-grid, .lrn-breadcrumb, .lrn-hero*, .lrn-btn,
+ *   .lrn-badge*, .lrn-card
+ * Those live in learnomy.css because dashboards, catalog, instructor
+ * profiles, and blocks all render them too.
+ *
+ * Responsive contract: exactly two @media queries at the bottom of the
+ * file — 1024px (tablet ↔ desktop) and 640px (mobile). No intermediate
+ * breakpoints. The previous mix of 480px / 767px / 768px stops folded
+ * into the canonical pair.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Course intro video — prominent trailer at top of main column for
+   classic/focused/split layouts. Hero layout renders its own trailer
+   inside the hero band, so body.php skips this block when active.
+   ========================================================================== */
+
+.lrn-course-intro-video {
+	margin-block-end: var(--lrn-sp-6);
+}
+
+.lrn-course-intro-video__frame {
+	aspect-ratio:    16 / 9;
+	overflow:        hidden;
+	border-radius:   var(--lrn-radius-lg);
+	background:      var(--lrn-bg-tertiary);
+	box-shadow:      var(--lrn-shadow-md);
+}
+
+.lrn-course-intro-video__frame iframe,
+.lrn-course-intro-video__frame video {
+	width:      100%;
+	height:     100%;
+	border:     0;
+	display:    block;
+	object-fit: cover;
+}
+
+/* ==========================================================================
+   Sidebar card — purchase / enroll / membership panel
+   ========================================================================== */
+
+/*
+ * The card's children own their own insets, so the card itself carries none.
+ *
+ * It is a .lrn-card, and .lrn-card pads itself by sp-6 - correct for a plain
+ * content card, wrong for this one. Every child here already pays for its own
+ * spacing: the preview is a media band meant to bleed to the edge, and each
+ * body pads itself by sp-5. Inheriting the card padding on top of that inset
+ * the image from the border and doubled the spacing at every body edge, so an
+ * integration action rendered in the footer slot sat 40px below the enrol CTAs
+ * with nothing in between.
+ *
+ * Zeroing it here fixes both at the cause. `overflow: hidden` is what going
+ * flush requires - without it the preview's square corners overhang the card's
+ * radius.
+ */
+.lrn-sidebar-card {
+	padding:  0;
+	overflow: hidden;
+}
+
+.lrn-sidebar-card__preview {
+	aspect-ratio: 16 / 9;
+	overflow:     hidden;
+	background:   var(--lrn-bg-tertiary);
+}
+
+.lrn-sidebar-card__preview img,
+.lrn-sidebar-card__preview iframe,
+.lrn-sidebar-card__preview video {
+	width:      100%;
+	height:     100%;
+	object-fit: cover;
+	display:    block;
+	border:     0;
+}
+
+.lrn-sidebar-card__body {
+	padding: var(--lrn-sp-5);
+}
+
+/*
+ * Stacked bodies must not stack their padding.
+ *
+ * The integration footer slot renders in a card body of its OWN, so an action
+ * added there met the first body's bottom padding AND its own top padding -
+ * two gaps where the design has one. Collapsing the shared edge holds for any
+ * future slot rendered the same way, not just the one that exposed it.
+ */
+.lrn-sidebar-card__body + .lrn-sidebar-card__body {
+	padding-block-start: 0;
+}
+
+.lrn-sidebar-card__price {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-sidebar-card__price-current {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+/* Recurring interval suffix ("/mo", "/yr") — smaller + muted next to the price. */
+.lrn-sidebar-card__price-interval {
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-normal);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-sidebar-card__price-original {
+	font-size:       var(--lrn-text-md);
+	color:           var(--lrn-text-tertiary);
+	text-decoration: line-through;
+}
+
+.lrn-sidebar-card__sale-timer {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-danger);
+	margin:    0 0 var(--lrn-sp-4);
+}
+
+/* Icon + sentence notes in the sidebar card.
+ *
+ * Both of these shipped with markup and no CSS, so the icon sat inline in a
+ * <p> on the text baseline and the second line of a wrapping sentence ran back
+ * underneath it — the note read as a hanging indent nobody asked for.
+ *
+ * `flex-start`, not the `center` the includes-list uses: that list holds
+ * single-line items where centring is invisible, while these are sentences
+ * that WILL wrap at a narrow sidebar or a longer translation. Centring a
+ * badge against a two-line block floats it into the gap between the lines.
+ * The icon belongs beside the first line, so it is nudged down by half the
+ * difference between the line box and the icon to sit on that line's optical
+ * centre rather than its top edge.
+ */
+.lrn-sidebar-card__owner-note,
+.lrn-sidebar-card__external-note {
+	display:     flex;
+	align-items: flex-start;
+	gap:         var(--lrn-sp-2);
+	margin:      0 0 var(--lrn-sp-4);
+	font-size:   var(--lrn-text-sm);
+	line-height: var(--lrn-leading-normal);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-sidebar-card__owner-note svg,
+.lrn-sidebar-card__external-note svg {
+	width:       16px;
+	height:      16px;
+	flex-shrink: 0;
+	margin-top:  0.125em;
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-sidebar-card__includes {
+	margin-top:  var(--lrn-sp-5);
+	padding-top: var(--lrn-sp-5);
+	border-top:  1px solid var(--lrn-divider);
+}
+
+.lrn-sidebar-card__includes-title {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-3);
+}
+
+.lrn-sidebar-card__includes-list {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-sidebar-card__includes-list li {
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-2);
+	padding-bottom: var(--lrn-sp-2);
+	font-size:      var(--lrn-text-sm);
+	color:          var(--lrn-text-secondary);
+}
+
+/* Icons here are descriptive bullets ("8 lessons", "Certificate", "Lifetime
+   access"), not actions. Tinting them with `--lrn-accent` (the same red as
+   the primary Buy Now CTA right above) created a stack of five red bullets
+   competing with the single primary action — five small CTAs in disguise.
+   Using `--lrn-text-secondary` keeps them legible while letting the Buy Now
+   button stay the only accent-colored element in the card. */
+.lrn-sidebar-card__includes-list svg {
+	width:       14px;
+	height:      14px;
+	color:       var(--lrn-text-secondary);
+	flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Sidebar card — coupon, membership CTA, guarantee, feedback messages
+   ========================================================================== */
+
+.lrn-sidebar-card__coupon {
+	margin-top:  var(--lrn-sp-4);
+	padding-top: var(--lrn-sp-4);
+	border-top:  1px solid var(--lrn-divider);
+}
+
+.lrn-sidebar-card__coupon-label {
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-2);
+	display:       block;
+}
+
+.lrn-sidebar-card__coupon-row {
+	display: flex;
+	gap:     var(--lrn-sp-2);
+}
+
+.lrn-sidebar-card__coupon-message {
+	font-size:     var(--lrn-text-sm);
+	margin:        var(--lrn-sp-2) 0 0;
+	padding:       var(--lrn-sp-1) var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+	color:         var(--lrn-text-secondary);
+}
+
+.lrn-sidebar-card__coupon-message--success {
+	background: var(--lrn-success-bg);
+	color:      var(--lrn-success);
+}
+
+.lrn-sidebar-card__coupon-message--error {
+	background: var(--lrn-danger-bg);
+	color:      var(--lrn-danger);
+}
+
+.lrn-sidebar-card__membership-cta {
+	margin-top:  var(--lrn-sp-4);
+	padding-top: var(--lrn-sp-4);
+	border-top:  1px solid var(--lrn-divider);
+	text-align:  center;
+}
+
+.lrn-sidebar-card__membership-text {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+	margin:    0 0 var(--lrn-sp-3);
+}
+
+.lrn-sidebar-card__guarantee {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+	margin-top:  var(--lrn-sp-4);
+	padding-top: var(--lrn-sp-4);
+	border-top:  1px solid var(--lrn-divider);
+}
+
+.lrn-sidebar-card__guarantee svg {
+	width:  16px;
+	height: 16px;
+	color:  var(--lrn-success);
+}
+
+/* ==========================================================================
+   Single-course main column — section rhythm, layout, title, meta, progress
+   ========================================================================== */
+
+.lrn-single-course__section {
+	margin-bottom: var(--lrn-sp-10);
+}
+
+.lrn-single-course__section h2 {
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-5);
+}
+
+.lrn-single-course__progress {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-single-course__progress-header {
+	display:         flex;
+	justify-content: space-between;
+	margin-bottom:   var(--lrn-sp-2);
+	font-size:       var(--lrn-text-sm);
+}
+
+.lrn-single-course__layout {
+	display:               grid;
+	grid-template-columns: 1fr 340px;
+	gap:                   var(--lrn-sp-8);
+	align-items:           start;
+}
+
+.lrn-single-course__title {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-3);
+}
+
+.lrn-single-course__curriculum {
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-single-course__sidebar {
+	position: sticky;
+	/* Clear a theme's sticky/pinned header so the card doesn't slide up UNDER it
+	   on scroll (Basecamp #9972595954 — Reign pins a 90px header at top:0).
+	   single-course-sticky.js measures the active sticky header and sets
+	   --lrn-sticky-header-offset; it defaults to 0 on themes without one, so the
+	   card keeps its plain sp-8 gap there (no regression). */
+	top:      calc(var(--lrn-sticky-header-offset, 0px) + var(--lrn-sp-8));
+}
+
+/* The "Already have an account? Log in" line sits under the full-width sign-up
+   button; centre it so it reads as balanced beneath the button (BC #9972620106). */
+.lrn-sidebar-card__login-alt {
+	text-align: center;
+}
+
+/* Comments + Q&A sit inside __main and share the section rhythm. The card
+   border/padding comes from the companion .lrn-card class; this just adds
+   the bottom spacing. */
+.lrn-single-course__comments {
+	margin-bottom: var(--lrn-sp-10);
+	padding:       var(--lrn-sp-6);
+}
+
+.lrn-single-course__qa {
+	margin-bottom: var(--lrn-sp-10);
+}
+
+/* ==========================================================================
+   Curriculum — accordion of sections, each holding a list of lessons,
+   topics, and quizzes. Renders both in the sales view (locked) and the
+   learning view (with completion checkmarks).
+   ========================================================================== */
+
+.lrn-curriculum {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-curriculum__section {
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	margin-bottom: var(--lrn-sp-3);
+	overflow:      hidden;
+}
+
+.lrn-curriculum__section[open] {
+	border-color: var(--lrn-border-heavy);
+}
+
+.lrn-curriculum__section-title {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	padding:         var(--lrn-sp-4);
+	font-weight:     var(--lrn-weight-semibold);
+	font-size:       var(--lrn-text-base);
+	cursor:          pointer;
+	background:      var(--lrn-bg-secondary);
+	list-style:      none;
+}
+
+.lrn-curriculum__section-title::-webkit-details-marker {
+	display: none;
+}
+
+.lrn-curriculum__section-count {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-normal);
+	color:       var(--lrn-text-tertiary);
+}
+
+.lrn-curriculum__lessons {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-curriculum__lesson {
+	border-top: 1px solid var(--lrn-divider);
+}
+
+.lrn-curriculum__lesson-row {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+}
+
+.lrn-curriculum__lesson-row a {
+	color:           var(--lrn-text);
+	text-decoration: none;
+	flex:            1;
+}
+
+/* Only the LINK used to take the free space, so a locked or unlinkable row
+   bunched its meta against the title while its unlocked neighbours pushed the
+   same meta to the row end. Barely visible with one type label; an obvious
+   ragged column once every row carries a duration. The title takes the space
+   whichever element it happens to be. */
+.lrn-curriculum__lesson-row > .lrn-curriculum__title,
+.lrn-curriculum__lesson-row > .lrn-curriculum__title--locked {
+	flex: 1;
+}
+
+.lrn-curriculum__lesson-row a:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-curriculum__lesson--done .lrn-curriculum__lesson-row a {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-curriculum__icon {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	color:           var(--lrn-accent);
+	flex-shrink:     0;
+	width:           20px;
+}
+
+.lrn-curriculum__check {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	font-size:       var(--lrn-text-sm);
+	color:           var(--lrn-success);
+	flex-shrink:     0;
+	width:           20px;
+}
+
+/* Lucide icons default to 24px and would overflow the icon column, crowding
+   the title and swallowing the row gap. Constrain every curriculum glyph to a
+   consistent size so the gap before the title reads correctly. */
+.lrn-curriculum__icon svg,
+.lrn-curriculum__quiz-icon svg,
+.lrn-curriculum__section-label svg {
+	width:  18px;
+	height: 18px;
+}
+
+.lrn-curriculum__type-label {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+/* Runtime for one row. Sits last on the line, in the same quiet register as the
+   type label — it is a fact about the lesson, not a call to action, and a column
+   of these should be scannable without pulling the eye off the titles.
+   tabular-nums keeps the digits on a grid so "9 min" and "12 min" line up.
+   The title above takes flex:1, so this is pushed to the end of the row on its
+   own; `white-space: nowrap` stops "1h 05m" breaking across the space. */
+.lrn-curriculum__duration {
+	font-size:             var(--lrn-text-xs);
+	color:                 var(--lrn-text-tertiary);
+	font-variant-numeric:  tabular-nums;
+	white-space:           nowrap;
+	flex-shrink:           0;
+}
+
+.lrn-curriculum__topics {
+	list-style:          none;
+	margin:              0;
+	padding-block:       0;
+	padding-inline-start: var(--lrn-sp-10);
+	padding-inline-end:  0;
+}
+
+.lrn-curriculum__topic {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	padding:     var(--lrn-sp-2) var(--lrn-sp-4);
+	font-size:   var(--lrn-text-sm);
+}
+
+.lrn-curriculum__topic-icon {
+	color:       var(--lrn-text-tertiary);
+	flex-shrink: 0;
+}
+
+.lrn-curriculum__topic a {
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+}
+
+.lrn-curriculum__topic a:hover {
+	color: var(--lrn-accent);
+}
+
+/* Quiz rows are list items in a bare list wherever they appear — under a lesson,
+   at the end of a section, or in the final-assessment block. The list markers
+   are suppressed here rather than per-list so a new placement cannot ship with
+   stray bullets. */
+.lrn-curriculum__lesson-quizzes,
+.lrn-curriculum__section-quizzes {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-curriculum__quiz {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	border-top:  1px solid var(--lrn-divider);
+	background:  var(--lrn-accent-bg);
+}
+
+/* A quiz that belongs to a lesson is indented to the same rail as that lesson's
+   topics, so the outline reads as a hierarchy rather than a flat run of rows:
+   the student can see at a glance which lesson the quiz closes out. Padding
+   rather than margin keeps the tinted background running the full row width. */
+.lrn-curriculum__quiz--in-lesson {
+	padding-inline-start: var(--lrn-sp-10);
+}
+
+.lrn-curriculum__quiz-icon {
+	display:     inline-flex;
+	align-items: center;
+	color:       var(--lrn-accent);
+	flex-shrink: 0;
+	width:       20px;
+}
+
+/* Icon + label group on the left of a section summary (e.g. the award icon
+   beside "Final assessment"), so the count can sit flush-right via the
+   parent's space-between. */
+.lrn-curriculum__section-label {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-curriculum__quiz a {
+	color:           var(--lrn-text);
+	text-decoration: none;
+	font-weight:     var(--lrn-weight-medium);
+	flex:            1;
+}
+
+.lrn-curriculum__quiz a:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-curriculum__quiz-pass {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+/* ==========================================================================
+   Curriculum drawer — mobile bottom sheet
+
+   Below the desktop breakpoint the inline sidebar is hidden and the
+   drawer toggle becomes visible. Tapping it slides the curriculum up
+   from the bottom of the viewport, backed by a tinted overlay.
+   ========================================================================== */
+
+.lrn-curriculum-drawer__toggle {
+	display: none;
+}
+
+.lrn-curriculum-drawer {
+	display:  none;
+	position: fixed;
+	inset:    0;
+	z-index:  400;
+}
+
+.lrn-curriculum-drawer--open {
+	display: block;
+}
+
+.lrn-curriculum-drawer__backdrop {
+	position:                absolute;
+	inset:                   0;
+	background:              rgba(0, 0, 0, 0.4);
+	backdrop-filter:         blur(2px);
+	-webkit-backdrop-filter: blur(2px);
+}
+
+.lrn-curriculum-drawer__sheet {
+	position:                absolute;
+	left:                    0;
+	right:                   0;
+	bottom:                  0;
+	max-height:              calc(100 * var(--lrn-vh) - var(--lrn-sp-12));
+	display:                 flex;
+	flex-direction:          column;
+	background:              var(--lrn-bg);
+	border-top-left-radius:  var(--lrn-radius-xl);
+	border-top-right-radius: var(--lrn-radius-xl);
+	box-shadow:              var(--lrn-shadow-overlay);
+	padding-bottom:          env(safe-area-inset-bottom, 0px);
+	transform:               translateY(100%);
+	transition:              transform 200ms var(--lrn-ease-out-expo);
+}
+
+.lrn-curriculum-drawer--open .lrn-curriculum-drawer__sheet {
+	transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-curriculum-drawer__sheet {
+		transition: none;
+	}
+}
+
+.lrn-curriculum-drawer__header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-4) var(--lrn-sp-5);
+	border-bottom:   1px solid var(--lrn-divider);
+}
+
+.lrn-curriculum-drawer__title {
+	margin:      0;
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-curriculum-drawer__body {
+	overflow-y: auto;
+	padding:    var(--lrn-sp-3) var(--lrn-sp-4) var(--lrn-sp-5);
+}
+
+/* ==========================================================================
+   Responsive — exactly two breakpoints
+
+   Per ux-foundation responsive rules: 1024px (tablet ↔ desktop) and
+   640px (mobile). The previous slice held three stops (480 / 767 / 768);
+   they collapse into this pair.
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+	/* Desktop: keep the inline curriculum sidebar visible and hide the
+	   drawer that would otherwise float above the layout. */
+	.lrn-curriculum-drawer {
+		display: none;
+	}
+}
+
+@media (max-width: 640px) {
+	/* Mobile: the sidebar drops below the main column, the price chip
+	   shrinks for readability, and the drawer toggle becomes the
+	   primary way to view the curriculum. */
+	.lrn-single-course__layout {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-single-course__sidebar {
+		position: static;
+	}
+
+	.lrn-sidebar-card__price {
+		font-size: var(--lrn-text-xl);
+	}
+
+	.lrn-curriculum-drawer__toggle {
+		display: inline-flex;
+	}
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   Review form (J-01.20) — write-or-posted card shown to enrolled
+   students. Stars use radio inputs styled as ★ glyphs with hover/focus
+   highlighting through sibling/has selectors. Posted state shares the
+   container class so the resting layout doesn't reflow on submit.
+   ─────────────────────────────────────────────────────────────────── */
+.lrn-review-form {
+	padding: var(--lrn-sp-6);
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-4);
+}
+
+.lrn-review-form__title {
+	margin: 0;
+	font-size: var(--lrn-text-lg);
+	font-weight: 600;
+}
+
+.lrn-review-form__subtitle {
+	margin: 0;
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-review-form__alert {
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-md);
+	background: var(--lrn-danger-soft, #fdecea);
+	background: color-mix(in srgb, var(--lrn-danger, #d04040) 12%, transparent);
+	color: var(--lrn-danger, #d04040);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-review-form__rating {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-review-form__rating legend {
+	font-size: var(--lrn-text-sm);
+	font-weight: 600;
+	margin-bottom: var(--lrn-sp-1);
+}
+
+.lrn-review-form__stars {
+	display: flex;
+	gap: var(--lrn-sp-1);
+}
+
+.lrn-review-form__star-label {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+}
+
+.lrn-review-form__star-label input[type="radio"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.lrn-review-form__star {
+	display: inline-block;
+	font-size: var(--lrn-text-2xl);
+	line-height: 1;
+	/* Empty stars must be clearly visible on the white form card. The old
+	   --lrn-bg-tertiary (#f6f6f6) was near-white, so the rating selector looked
+	   blank / unrenderable and users could not see what to click
+	   (Basecamp #9972752478). */
+	color: var(--lrn-border-heavy);
+	transition: color 120ms ease;
+}
+
+/* Selected: the checked star + every star before it. DOM order is 1→5, so a
+   star is "before" the checked one when it has a LATER checked sibling. (The
+   old rule relied on an `.is-before` class no JS ever set, so only the single
+   clicked star ever filled.) */
+.lrn-review-form__star-label:has(input:checked) .lrn-review-form__star,
+.lrn-review-form__star-label:has(~ .lrn-review-form__star-label input:checked) .lrn-review-form__star {
+	color: var(--lrn-gold);
+}
+
+/* Hover preview takes over from the selected state: reset the whole group, then
+   gold the hovered star + every star before it. */
+.lrn-review-form__stars:hover .lrn-review-form__star {
+	color: var(--lrn-border-heavy);
+}
+
+.lrn-review-form__stars:hover .lrn-review-form__star-label:hover .lrn-review-form__star,
+.lrn-review-form__stars:hover .lrn-review-form__star-label:has(~ .lrn-review-form__star-label:hover) .lrn-review-form__star {
+	color: var(--lrn-gold);
+}
+
+.lrn-review-form__star-label input[type="radio"]:focus-visible + .lrn-review-form__star {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+	border-radius: 2px;
+}
+
+/* The :has-based "highlight every star up to checked" requires sibling
+   ordering, which the simpler :has selector above only resolves on the
+   element with the checked input. Fall back to a JS-free progressive
+   fill: every label before the checked one inherits the gold via the
+   :has(~ ...) selector below. */
+.lrn-review-form__stars:has(input[value="5"]:checked) .lrn-review-form__star-label .lrn-review-form__star { color: var(--lrn-gold); }
+.lrn-review-form__stars:has(input[value="4"]:checked) .lrn-review-form__star-label:nth-of-type(-n+4) .lrn-review-form__star { color: var(--lrn-gold); }
+.lrn-review-form__stars:has(input[value="3"]:checked) .lrn-review-form__star-label:nth-of-type(-n+3) .lrn-review-form__star { color: var(--lrn-gold); }
+.lrn-review-form__stars:has(input[value="2"]:checked) .lrn-review-form__star-label:nth-of-type(-n+2) .lrn-review-form__star { color: var(--lrn-gold); }
+.lrn-review-form__stars:has(input[value="1"]:checked) .lrn-review-form__star-label:nth-of-type(1)     .lrn-review-form__star { color: var(--lrn-gold); }
+
+.lrn-review-form--posted {
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-review-form__posted-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: var(--lrn-sp-4);
+}
+
+.lrn-review-form__posted-date {
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-review-form__posted-stars {
+	display: flex;
+	gap: var(--lrn-sp-1);
+	font-size: var(--lrn-text-xl);
+}
+
+.lrn-review-form__posted-title {
+	margin: var(--lrn-sp-2) 0 0;
+	font-size: var(--lrn-text-base);
+	font-weight: 600;
+}
+
+.lrn-review-form__posted-body {
+	margin: 0;
+	color: var(--lrn-text);
+}
+
+/* ── Mobile sticky buy bar ──────────────────────────────────────────────────
+   On phones the purchase card is the last thing on the page (~4000px down), so
+   a visitor has no visible price/CTA without scrolling to the end. This pins a
+   compact price + primary action to the bottom of the viewport. Hidden on
+   desktop, where the sidebar purchase card is always visible. */
+.lrn-sticky-buy-bar {
+	display: none;
+}
+
+@media (max-width: 640px) {
+	.lrn-sticky-buy-bar {
+		position:        fixed;
+		inset-inline:    0;
+		bottom:          0;
+		z-index:         50;
+		display:         flex;
+		align-items:     center;
+		gap:             var(--lrn-sp-3);
+		padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+		background:      var(--lrn-bg);
+		border-top:      1px solid var(--lrn-border);
+		box-shadow:      0 -2px 12px color-mix(in srgb, var(--lrn-text) 12%, transparent);
+		padding-bottom:  calc(var(--lrn-sp-3) + env(safe-area-inset-bottom, 0px));
+	}
+
+	.lrn-sticky-buy-bar__price {
+		font-size:   var(--lrn-text-lg);
+		font-weight: 700;
+		color:       var(--lrn-text);
+		white-space: nowrap;
+	}
+
+	.lrn-sticky-buy-bar__cta {
+		flex:        1 1 auto;
+		text-align:  center;
+		min-height:  var(--lrn-touch-min);
+		display:     inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Keep page content clear of the fixed bar so the footer/last card isn't
+	   hidden behind it. */
+	.lrn-single-course,
+	main.lrn-single-course {
+		padding-bottom: calc(var(--lrn-touch-min) + var(--lrn-sp-8));
+	}
+
+	/* Lift the notifications FAB clear of this bar.
+	   The bell is `position: fixed` bottom-right at z-index 9999; this bar is
+	   fixed at bottom: 0 with z-index 50. On a phone they occupy the same
+	   corner, so the bell landed ON the primary CTA - measured at 390px, the
+	   bar's top edge at y=775 and the bell spanning 772-820, i.e. sitting over
+	   the right end of Buy Now / Enroll Now (Basecamp 10186166939). The button
+	   still worked, but the control a buyer is meant to press was wearing
+	   another control.
+	   Offset = this bar's own box: the CTA's min-height plus its block padding
+	   plus the safe-area inset, so the two stay separated if the bar's padding
+	   is ever retuned. `:has()` because the bell lives outside .lrn-app - it is
+	   appended near <body> - so it cannot be reached by descending from the
+	   course markup, and it must only move on pages that actually show a bar. */
+	body:has(.lrn-sticky-buy-bar) .lrn-notification-bell {
+		inset-block-end: calc(
+			var(--lrn-touch-min) + var(--lrn-sp-3) * 2 + var(--lrn-sp-4)
+			+ env(safe-area-inset-bottom, 0px)
+		);
+	}
+}

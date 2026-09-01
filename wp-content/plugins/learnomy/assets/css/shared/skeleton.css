@@ -1,0 +1,117 @@
+/**
+ * Learnomy skeleton loading states.
+ *
+ * Reusable shimmer placeholders for any content area. Works in both
+ * admin (.learnomy-admin) and frontend (.lrn-app) contexts.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Base skeleton
+   ========================================================================== */
+
+.lrn-skeleton {
+	background: linear-gradient(
+		90deg,
+		var(--lrn-bg-secondary, #f7f7f5) 25%,
+		var(--lrn-bg-tertiary, #f0f0ed) 50%,
+		var(--lrn-bg-secondary, #f7f7f5) 75%
+	);
+	background-size: 200% 100%;
+	animation: lrn-shimmer 1.5s infinite;
+	border-radius: var(--lrn-radius-md, 6px);
+}
+
+@keyframes lrn-shimmer {
+	0%   { background-position: 200% 0; }
+	100% { background-position: -200% 0; }
+}
+
+/* ==========================================================================
+   Skeleton variants
+   ========================================================================== */
+
+.lrn-skeleton--text {
+	height: 14px;
+	width: 100%;
+	margin-bottom: var(--lrn-sp-2, 8px);
+	border-radius: var(--lrn-radius-sm, 3px);
+}
+
+.lrn-skeleton--title {
+	height: 22px;
+	width: 70%;
+	margin-bottom: var(--lrn-sp-3, 12px);
+	border-radius: var(--lrn-radius-sm, 3px);
+}
+
+.lrn-skeleton--avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+
+.lrn-skeleton--card {
+	height: 200px;
+	width: 100%;
+	border-radius: var(--lrn-radius-lg, 8px);
+}
+
+.lrn-skeleton--table-row {
+	height: 16px;
+	width: 100%;
+	margin-bottom: var(--lrn-sp-3, 12px);
+	border-radius: var(--lrn-radius-sm, 3px);
+}
+
+.lrn-skeleton--chart {
+	height: 180px;
+	width: 100%;
+	border-radius: var(--lrn-radius-lg, 8px);
+}
+
+.lrn-skeleton--image {
+	width: 100%;
+	aspect-ratio: 16 / 9;
+	border-radius: var(--lrn-radius-lg, 8px);
+}
+
+/* ==========================================================================
+   Skeleton row (table context)
+   ========================================================================== */
+
+.lrn-skeleton-row td {
+	padding: var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px);
+}
+
+/* ==========================================================================
+   Skeleton course card wrapper
+   ========================================================================== */
+
+.lrn-course-card--skeleton {
+	padding: var(--lrn-sp-4, 16px);
+	border: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-lg, 8px);
+	background: var(--lrn-bg, var(--lrn-white));
+}
+
+.lrn-course-card--skeleton .lrn-skeleton + .lrn-skeleton {
+	margin-top: var(--lrn-sp-2, 8px);
+}
+
+.lrn-course-card--skeleton .lrn-skeleton--image {
+	margin-bottom: var(--lrn-sp-3, 12px);
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-skeleton {
+		animation: none;
+		background: var(--lrn-bg-secondary, #f7f7f5);
+	}
+}

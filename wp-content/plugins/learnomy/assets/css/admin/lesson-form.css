@@ -1,0 +1,241 @@
+/**
+ * Lesson form — scoped admin styles for the completion rules card,
+ * attachments uploader, content-type switcher and video-provider badge.
+ *
+ * The lesson editor reuses the Course-form layout primitives
+ * (`.lrn-course-form__layout / __main / __sidebar`) so metadata cards live
+ * in the main column where they can breathe, and the sidebar holds only
+ * the Publish box. This file adds the lesson-specific card internals
+ * (completion rules, attachments, provider badge) without redeclaring the
+ * outer layout — that's owned by `admin.css`.
+ *
+ * All values reference `--lrn-*` tokens (see assets/css/learnomy.css for
+ * the base token table). No hardcoded hex / px / font values.
+ */
+
+/* Page header — keep the breadcrumb under the title without crowding the
+   action buttons on the right. Mirrors the Course form page header. */
+
+/* Completion rules card ─────────────────────────────────────────────── */
+
+/* Even vertical rhythm for every row in the card — the completion-rule select,
+   each revealed threshold panel, and standalone toggles like "Lock next lesson"
+   all share one spacing step so nothing crowds its neighbour. */
+.lrn-lesson-completion-card > .lrn-form-field {
+	margin-top: var( --lrn-sp-3 );
+}
+
+/* Revealed threshold panel. Muted fill alone groups it — no border, which would
+   double up against the card's own border. */
+.lrn-lesson-completion-card .lrn-lesson-completion__rule {
+	display: none;
+	padding: var( --lrn-sp-3 ) var( --lrn-sp-4 );
+	background: var( --lrn-bg-muted );
+	border-radius: var( --lrn-radius-md );
+}
+
+.lrn-lesson-completion-card .lrn-lesson-completion__rule.is-active {
+	display: block;
+}
+
+.lrn-lesson-completion-card .lrn-lesson-completion__rule.is-disabled {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.lrn-lesson-completion__slider {
+	display: flex;
+	align-items: center;
+	gap: var( --lrn-sp-2 );
+}
+
+.lrn-lesson-completion__slider input[type="range"] {
+	flex: 1 1 auto;
+}
+
+.lrn-lesson-completion__slider output {
+	min-width: 3ch;
+	text-align: end;
+	font-variant-numeric: tabular-nums;
+	color: var( --lrn-text, var(--lrn-text) );
+}
+
+/* Video provider badge ──────────────────────────────────────────────── */
+
+.lrn-lesson-editor__provider-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: var( --lrn-sp-1, 4px );
+	margin-top: var( --lrn-sp-2, 8px );
+	padding: var( --lrn-sp-1, 4px ) var( --lrn-sp-2, 8px );
+	background: var( --lrn-accent-soft, #eef2ff );
+	color: var( --lrn-accent, #4f46e5 );
+	border-radius: var( --lrn-radius-sm, 4px );
+	font-size: var( --lrn-text-xs, 12px );
+	line-height: 1.4;
+}
+
+.lrn-lesson-editor__provider-badge[hidden] {
+	display: none;
+}
+
+/* Attachments card ──────────────────────────────────────────────────── */
+
+.lrn-lesson-attachments__list {
+	list-style: none;
+	margin: 0 0 var( --lrn-sp-3, 12px );
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var( --lrn-sp-1, 4px );
+}
+
+.lrn-lesson-attachments__item {
+	display: flex;
+	align-items: center;
+	gap: var( --lrn-sp-2, 8px );
+	padding: var( --lrn-sp-2, 8px ) var( --lrn-sp-3, 12px );
+	background: var( --lrn-bg, var(--lrn-white) );
+	border: 1px solid var( --lrn-border, var(--lrn-wp-border-light) );
+	border-radius: var( --lrn-radius-sm, 4px );
+	cursor: grab;
+}
+
+.lrn-lesson-attachments__item[draggable="true"]:active {
+	cursor: grabbing;
+}
+
+.lrn-lesson-attachments__item.is-dragging {
+	opacity: 0.4;
+}
+
+.lrn-lesson-attachments__handle {
+	color: var( --lrn-text-muted, var(--lrn-text-secondary) );
+	display: inline-flex;
+	align-items: center;
+}
+
+.lrn-lesson-attachments__filename {
+	flex: 1 1 auto;
+	color: var( --lrn-text, var(--lrn-text) );
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-lesson-attachments__size {
+	color: var( --lrn-text-muted, var(--lrn-text-secondary) );
+	font-variant-numeric: tabular-nums;
+	font-size: var( --lrn-text-xs, 12px );
+}
+
+.lrn-lesson-attachments__remove {
+	color: var( --lrn-text-muted, var(--lrn-text-secondary) );
+	background: transparent;
+	border: 0;
+	padding: var( --lrn-sp-1, 4px );
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.lrn-lesson-attachments__remove:hover,
+.lrn-lesson-attachments__remove:focus {
+	color: var( --lrn-danger, var(--lrn-danger-dark) );
+}
+
+.lrn-lesson-attachments__status {
+	display: inline-block;
+	margin-inline-start: var( --lrn-sp-2 );
+	color: var( --lrn-text-muted, var(--lrn-text-secondary) );
+	font-size: var( --lrn-text-xs, 12px );
+}
+
+.lrn-lesson-attachments__hint {
+	margin: 0;
+	color: var( --lrn-text-muted, var(--lrn-text-secondary) );
+	font-style: italic;
+}
+
+/* Lucide icons inside buttons/handles ───────────────────────────────── */
+
+.lrn-lesson-attachments__item svg,
+.lrn-lesson-attachments__remove svg,
+#lrn-lesson-attachments-upload svg {
+	width: var( --lrn-icon-size, 16px );
+	height: var( --lrn-icon-size, 16px );
+}
+
+/* Attachments row + uploader ────────────────────────────────────────────
+   Living in the main column now gives the uploader real estate — make sure
+   the list and action bar span the full card width so filenames and sizes
+   aren't truncated. */
+
+.lrn-lesson-attachments-card .lrn-lesson-attachments__list,
+.lrn-lesson-attachments-card #lrn-lesson-attachments-upload {
+	width: 100%;
+	max-width: 100%;
+}
+
+.lrn-lesson-attachments-card #lrn-lesson-attachments-upload {
+	display: inline-flex;
+	align-items: center;
+	gap: var( --lrn-sp-2, 8px );
+}
+
+/* Completion rule rows ─────────────────────────────────────────────────
+   Completion rules sit inside `.lrn-form-field` wrappers. When a rule is
+   revealed we want the underlying control (select, slider, duration input)
+   to stretch to the card width rather than inherit the tight sidebar
+   defaults that used to surround them. */
+
+.lrn-lesson-completion-card select,
+.lrn-lesson-completion-card .lrn-duration-input {
+	width: 100%;
+	max-width: 100%;
+}
+
+.lrn-lesson-completion-card .lrn-lesson-completion__slider {
+	width: 100%;
+}
+
+/* Form grid inside lesson cards ────────────────────────────────────────
+   `.lrn-form-grid` is already defined globally as two equal columns; at
+   narrower widths the grid collapses to a single column. Keep our cards
+   consistent by making every direct child select / input fill its cell. */
+
+.lrn-course-form__main .lrn-admin-card .lrn-form-grid > .lrn-form-field select,
+.lrn-course-form__main .lrn-admin-card .lrn-form-grid > .lrn-form-field input[type="number"],
+.lrn-course-form__main .lrn-admin-card .lrn-form-grid > .lrn-form-field input[type="url"],
+.lrn-course-form__main .lrn-admin-card .lrn-form-grid > .lrn-form-field input[type="text"] {
+	width: 100%;
+	max-width: 100%;
+}
+
+/* Within a duration field the two number inputs stay short (mm / ss) even when
+   the surrounding field is full-width. This must out-specify the width:100%
+   rule above (which matches `.lrn-form-grid > .lrn-form-field input[type=number]`),
+   so it repeats that path — otherwise the min/sec boxes stretch full-width and
+   stack vertically instead of sitting inline. */
+.lrn-course-form__main .lrn-admin-card .lrn-form-grid > .lrn-form-field .lrn-duration-input input.small-text,
+.lrn-course-form__main .lrn-admin-card .lrn-duration-input input.small-text {
+	width: 4.5rem;
+	max-width: 4.5rem;
+}
+
+/* Publish sidebar button — full-width like the Course form Publish box. */
+
+.lrn-course-form__sidebar .lrn-admin-btn--full {
+	width: 100%;
+	justify-content: center;
+}
+
+/* Secondary action row (Delete) — separated from the primary save so the
+   destructive button never sits flush against Update. */
+.lrn-form-actions--secondary {
+	margin-block-start: var( --lrn-space-2, 0.5rem );
+}
+
+/* .lrn-meta-list (read-only Details metadata) lives in the shared admin.css —
+   reused by the lesson + question editors. */

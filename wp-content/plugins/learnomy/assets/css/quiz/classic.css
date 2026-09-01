@@ -1,0 +1,290 @@
+/**
+ * Classic quiz template styles — all questions on one scrollable page.
+ *
+ * Uses exclusively --lrn-* design tokens from learnomy.css.
+ * No hardcoded colors, sizes, or font families.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Sticky top bar
+   ========================================================================== */
+
+.lrn-quiz-classic__top-bar {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-3);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	background: var(--lrn-bg);
+	background: color-mix(in srgb, var(--lrn-bg) 85%, transparent);
+	-webkit-backdrop-filter: blur(12px);
+	backdrop-filter: blur(12px);
+	border-bottom: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg) var(--lrn-radius-lg) 0 0;
+}
+
+/* Row 1 — answered count + timer */
+.lrn-quiz-classic__top-bar-row {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-4);
+}
+
+.lrn-quiz-classic__answered-count {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-secondary);
+	white-space: nowrap;
+}
+
+.lrn-quiz-classic__top-bar-row .lrn-quiz__timer {
+	margin-inline-start: auto;
+}
+
+/* Row 2 — category jump-nav (A2). Lives inside the sticky top bar so the
+   chips stay reachable while scrolling a long grouped quiz. */
+.lrn-quiz-classic__cat-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lrn-sp-2);
+}
+
+/* [hidden] must beat display:flex when grouping is off. */
+.lrn-quiz-classic__cat-nav[hidden] {
+	display: none;
+}
+
+.lrn-quiz-classic__cat-chip {
+	display: inline-flex;
+	align-items: baseline;
+	gap: var(--lrn-sp-2);
+	padding: var(--lrn-sp-1) var(--lrn-sp-3);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-pill);
+	background: var(--lrn-bg);
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	cursor: pointer;
+	transition: background-color var(--lrn-dur) var(--lrn-ease),
+	            border-color var(--lrn-dur) var(--lrn-ease),
+	            color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-quiz-classic__cat-chip:hover {
+	border-color: var(--lrn-accent);
+	color: var(--lrn-text);
+	background: color-mix(in srgb, var(--lrn-accent) 8%, transparent);
+}
+
+.lrn-quiz-classic__cat-chip-name {
+	text-transform: uppercase;
+	letter-spacing: .03em;
+}
+
+.lrn-quiz-classic__cat-chip-count {
+	color: var(--lrn-text-tertiary);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Question cards — stacked vertically
+   ========================================================================== */
+
+.lrn-quiz-classic__questions {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-1);
+}
+
+/* A2: each question is wrapped in a group-item so a category heading can sit
+   above the first question of each category run. The wrapper is layout-neutral
+   (contents flow as before). */
+.lrn-quiz-classic__group-item {
+	display: contents;
+}
+
+/* No border-bottom: the category jump-nav chips + the uppercase label + each
+   card's left accent bar already establish the grouping. An underline here sat
+   right under the sticky top-bar's own border on the first heading, reading as
+   a double border. The label + spacing alone is calmer and still clearly a
+   section header. */
+.lrn-quiz-classic__category-heading {
+	margin: var(--lrn-sp-5) 0 var(--lrn-sp-3);
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: .03em;
+	color: var(--lrn-text-secondary);
+
+	/* Clear the two-row sticky top bar when jumped to from the jump-nav. */
+	scroll-margin-top: 104px;
+}
+/* First heading: a little breathing room from the sticky bar, not flush. */
+.lrn-quiz-classic__group-item:first-child .lrn-quiz-classic__category-heading {
+	margin-block-start: var(--lrn-sp-3);
+}
+
+.lrn-quiz-classic__question-card {
+	position: relative;
+	padding: var(--lrn-sp-6);
+	border-inline-start: 3px solid var(--lrn-accent-bg);
+	background: var(--lrn-bg);
+	border-bottom: 1px solid var(--lrn-divider);
+	transition: border-color var(--lrn-dur) var(--lrn-ease),
+	            background-color var(--lrn-dur) var(--lrn-ease);
+
+	/* Account for sticky bar when scrolling via anchor or scrollIntoView */
+	scroll-margin-top: 72px;
+}
+
+/* Unanswered — neutral "to-do" border. (Was a solid accent/red bar on every
+   card, which reads as an error state when the whole quiz is unanswered at the
+   start; neutral -> success green as the learner answers is calmer + premium.) */
+.lrn-quiz-classic__question-card:not(.lrn-quiz-classic__question-card--answered) {
+	border-inline-start-color: var(--lrn-border);
+}
+
+/* Answered — subtle success border */
+.lrn-quiz-classic__question-card--answered {
+	border-inline-start-color: var(--lrn-success);
+}
+
+/* Highlight animation when "Jump to first" is used */
+.lrn-quiz-classic__question-card--highlight {
+	background: var(--lrn-accent-bg);
+	transition: background-color 300ms var(--lrn-ease);
+}
+
+/* Question header row: number + answered badge */
+.lrn-quiz-classic__question-header {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-2);
+}
+
+.lrn-quiz-classic__question-number {
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text-tertiary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.lrn-quiz-classic__answered-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--lrn-sp-5);
+	height: var(--lrn-sp-5);
+	color: var(--lrn-success);
+}
+
+.lrn-quiz-classic__answered-badge svg,
+.lrn-quiz-classic__answered-badge i {
+	width: var(--lrn-sp-4);
+	height: var(--lrn-sp-4);
+}
+
+/* ==========================================================================
+   Bottom bar — unanswered notice + submit
+   ========================================================================== */
+
+.lrn-quiz-classic__bottom-bar {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--lrn-sp-4);
+	padding: var(--lrn-sp-8) var(--lrn-sp-4);
+	border-top: 1px solid var(--lrn-border);
+}
+
+.lrn-quiz-classic__unanswered-notice {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-warn);
+	margin: 0;
+}
+
+.lrn-quiz-classic__unanswered-notice svg,
+.lrn-quiz-classic__unanswered-notice i {
+	width: var(--lrn-sp-4);
+	height: var(--lrn-sp-4);
+	flex-shrink: 0;
+}
+
+.lrn-quiz-classic__submit-bottom {
+	min-width: 200px;
+}
+
+/* ==========================================================================
+   Responsive: mobile adjustments
+   ========================================================================== */
+
+@media (max-width: 768px) {
+	.lrn-quiz-classic__top-bar {
+		padding: var(--lrn-sp-2) var(--lrn-sp-3);
+		gap: var(--lrn-sp-2);
+	}
+
+	.lrn-quiz-classic__question-card {
+		padding: var(--lrn-sp-4) var(--lrn-sp-3);
+		scroll-margin-top: 56px;
+	}
+
+	.lrn-quiz-classic__category-heading {
+		scroll-margin-top: 96px;
+	}
+
+	.lrn-quiz-classic__submit-bottom {
+		width: 100%;
+	}
+}
+
+@media (max-width: 640px) {
+	/* Collapse top bar to minimal: count + submit only, timer below */
+	.lrn-quiz-classic__top-bar {
+		flex-wrap: wrap;
+	}
+
+	.lrn-quiz-classic__top-bar .lrn-quiz__timer {
+		order: 3;
+		width: 100%;
+		text-align: center;
+		margin-inline-start: 0;
+		font-size: var(--lrn-text-xs);
+	}
+
+	.lrn-quiz-classic__answered-count {
+		flex: 1;
+	}
+}
+
+/* Small phones — plan-02 phase D */
+@media (max-width: 640px) {
+	.lrn-quiz-classic__card,
+	.lrn-quiz-classic__question {
+		padding: var(--lrn-sp-3);
+	}
+
+	.lrn-quiz-classic__timer {
+		font-size: var(--lrn-text-sm);
+	}
+
+	.lrn-quiz-classic__nav {
+		flex-direction: column;
+		gap: var(--lrn-sp-2);
+	}
+
+	.lrn-quiz-classic__nav .lrn-btn {
+		width: 100%;
+		justify-content: center;
+	}
+}

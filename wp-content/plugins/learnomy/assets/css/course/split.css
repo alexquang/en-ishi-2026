@@ -1,0 +1,223 @@
+/**
+ * Learnomy — single course SPLIT / magazine variant overlay.
+ *
+ * Layered on top of single-course.css (handle dep `learnomy-single-course`).
+ * Owns only the split-variant chrome: the asymmetric editorial split header,
+ * the two-column body, and the slim persistent right utility rail (progress
+ * ring + quick links for enrolled, enroll card for sales). Token-driven only;
+ * dark mode + RTL inherit from root tokens and logical properties.
+ *
+ * @package Learnomy
+ */
+
+.lrn-course-split-head {
+	padding-block: var(--lrn-sp-10);
+	border-block-end: 1px solid var(--lrn-border);
+}
+
+.lrn-course-split-head__inner {
+	display:               grid;
+	grid-template-columns: 1.4fr 1fr;
+	gap:                   var(--lrn-sp-10);
+	align-items:           center;
+}
+
+.lrn-course-split-head__badges {
+	display:          flex;
+	flex-wrap:        wrap;
+	gap:              var(--lrn-sp-2);
+	margin-block-end: var(--lrn-sp-4);
+}
+
+.lrn-course-split-head__title {
+	font-size:   var(--lrn-text-4xl);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+	margin:      0 0 var(--lrn-sp-4);
+	color:       var(--lrn-text);
+}
+
+.lrn-course-split-head__tagline {
+	font-size:   var(--lrn-text-lg);
+	line-height: var(--lrn-leading-relaxed);
+	color:       var(--lrn-text-secondary);
+	margin:      0 0 var(--lrn-sp-6);
+}
+
+.lrn-course-split-head__facts {
+	display:               grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap:                   var(--lrn-sp-4);
+	margin:                0;
+}
+
+.lrn-course-split-head__fact dt {
+	font-size:      var(--lrn-text-xs);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color:          var(--lrn-text-muted);
+	margin-block-end: var(--lrn-sp-1);
+}
+
+.lrn-course-split-head__fact dd {
+	margin:      0;
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+}
+
+.lrn-course-split-head__cover {
+	border-radius: var(--lrn-radius-lg);
+	overflow:      hidden;
+	aspect-ratio:  4 / 3;
+	box-shadow:    var(--lrn-shadow-md);
+}
+
+.lrn-course-split-head__cover img {
+	width:      100%;
+	height:     100%;
+	object-fit: cover;
+	display:    block;
+}
+
+/* Two-column body + slim rail. */
+.lrn-course-split-body {
+	display:               grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 300px);
+	gap:                   var(--lrn-sp-8);
+	padding-block:         var(--lrn-sp-8);
+	align-items:           start;
+}
+
+.lrn-course-split-body__main {
+	min-width: 0;
+}
+
+.lrn-course-split-rail {
+	position:       sticky;
+	top:            var(--lrn-sp-6);
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-4);
+}
+
+.lrn-course-split-rail__progress {
+	display:         flex;
+	flex-direction:  column;
+	align-items:     center;
+	gap:             var(--lrn-sp-4);
+	padding:         var(--lrn-sp-5);
+}
+
+.lrn-course-ring {
+	position: relative;
+	width:    120px;
+	height:   120px;
+}
+
+.lrn-course-ring__svg {
+	width:     100%;
+	height:    100%;
+	transform: rotate(-90deg);
+}
+
+.lrn-course-ring__track {
+	stroke: var(--lrn-border);
+}
+
+.lrn-course-ring__fill {
+	stroke:     var(--lrn-progress);
+	transition: stroke-dashoffset var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-course-ring__label {
+	position:    absolute;
+	inset:       0;
+	display:     flex;
+	align-items: center;
+	justify-content: center;
+	font-size:   var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-course-split-rail__links {
+	display:        flex;
+	flex-direction: column;
+	padding:        var(--lrn-sp-2);
+}
+
+.lrn-course-split-rail__links a {
+	display:         flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-2) var(--lrn-sp-3);
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+	border-radius:   var(--lrn-radius-sm);
+	font-size:       var(--lrn-text-sm);
+	transition:      color var(--lrn-dur) var(--lrn-ease), background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-course-split-rail__links a:hover,
+.lrn-course-split-rail__links a:focus-visible {
+	color:      var(--lrn-accent);
+	background: var(--lrn-accent-bg);
+}
+
+.lrn-course-split-rail__links svg {
+	width:  var(--lrn-icon-sm);
+	height: var(--lrn-icon-sm);
+}
+
+.lrn-course-split-rail__enroll {
+	padding: 0;
+}
+
+/* Split's editorial header already shows the course cover at top right
+   (.lrn-course-split-head__cover). The shared enroll-card partial renders
+   the same image inside the rail — visual duplication. Suppress the rail
+   preview so the cover is shown once. (The classic and hero variants do not
+   show a cover in the header, so they still render the preview in the card.) */
+.lrn-course-split-rail__enroll .lrn-sidebar-card__preview {
+	display: none;
+}
+
+/* The shared enroll card floats the wishlist heart absolutely (over the
+   preview media in the classic layout). The split rail is narrow and the
+   preview is hidden (rule above), so let the wishlist flow normally below
+   the CTA instead of overlapping the price. */
+.lrn-course-split-rail__enroll .lrn-wishlist-btn {
+	position:           static;
+	margin-block-start: var(--lrn-sp-3);
+}
+
+/* Below the desktop tier — split-head stacks, split-body drops to one
+   column, rail stops sticking. `max-width: 1023.98px` (not 1024px) so an
+   exactly-1024-wide viewport (iPad landscape) keeps the editorial 2-col
+   layout, matching `single-course.css` which uses `min-width: 1024px` for
+   the same tier boundary. See the matching comment in `course/hero.css`. */
+@media (max-width: 1023.98px) {
+	.lrn-course-split-head__inner {
+		grid-template-columns: 1fr;
+		gap:                   var(--lrn-sp-6);
+	}
+
+	.lrn-course-split-body {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-course-split-rail {
+		position: static;
+	}
+}
+
+@media (max-width: 640px) {
+	.lrn-course-split-head__title {
+		font-size: var(--lrn-text-3xl);
+	}
+
+	.lrn-course-split-head__facts {
+		grid-template-columns: 1fr;
+	}
+}

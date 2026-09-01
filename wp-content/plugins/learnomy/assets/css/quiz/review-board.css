@@ -1,0 +1,434 @@
+/**
+ * Review Board quiz styles -- split-panel question list + detail.
+ *
+ * Uses lrn-rb__* prefix. All values reference --lrn-* tokens.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Top bar: progress + timer + submit
+   ========================================================================== */
+
+.lrn-rb__top-bar {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-4);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	background: var(--lrn-bg);
+	background: color-mix(in srgb, var(--lrn-bg) 85%, transparent);
+	-webkit-backdrop-filter: blur(12px);
+	backdrop-filter: blur(12px);
+	border-bottom: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg) var(--lrn-radius-lg) 0 0;
+}
+
+.lrn-rb__progress-text {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-secondary);
+	white-space: nowrap;
+}
+
+.lrn-rb__top-bar .lrn-quiz__timer {
+	margin-inline-start: auto;
+}
+
+.lrn-rb__submit-btn {
+	flex-shrink: 0;
+}
+
+/* When there's no timer, push submit to the right */
+.lrn-rb__top-bar .lrn-quiz__timer[hidden] + .lrn-rb__submit-btn {
+	margin-inline-start: auto;
+}
+
+/* ==========================================================================
+   Two-column grid layout
+   ========================================================================== */
+
+.lrn-rb__grid {
+	display: grid;
+	grid-template-columns: 280px 1fr;
+	min-height: calc(100vh - 64px);
+	min-height: calc(100dvh - 64px);
+}
+
+/* ==========================================================================
+   Left panel: sidebar question list
+   ========================================================================== */
+
+.lrn-rb__sidebar {
+	display: flex;
+	flex-direction: column;
+	border-inline-end: 1px solid var(--lrn-border);
+	background: var(--lrn-bg-muted);
+	overflow: hidden;
+}
+
+/* Filter pills */
+.lrn-rb__filters {
+	display: flex;
+	gap: var(--lrn-sp-1);
+	padding: var(--lrn-sp-3);
+	border-bottom: 1px solid var(--lrn-divider);
+	flex-shrink: 0;
+}
+
+.lrn-rb__filter-pill {
+	flex: 1;
+	padding: var(--lrn-sp-1) var(--lrn-sp-2);
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	font-family: var(--lrn-font);
+	color: var(--lrn-text-secondary);
+	background: transparent;
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-full);
+	cursor: pointer;
+	transition: all var(--lrn-dur) var(--lrn-ease);
+	white-space: nowrap;
+	text-align: center;
+}
+
+.lrn-rb__filter-pill:hover {
+	border-color: var(--lrn-accent);
+	color: var(--lrn-accent);
+}
+
+.lrn-rb__filter-pill--active {
+	background: var(--lrn-accent);
+	border-color: var(--lrn-accent);
+	color: var(--lrn-white);
+}
+
+.lrn-rb__filter-pill--active:hover {
+	background: var(--lrn-accent-hover);
+	border-color: var(--lrn-accent-hover);
+	color: var(--lrn-white);
+}
+
+/* Scrollable question list */
+.lrn-rb__question-list {
+	flex: 1;
+	overflow-y: auto;
+	padding: var(--lrn-sp-2) 0;
+}
+
+/* Individual list item */
+.lrn-rb__list-item {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	width: 100%;
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	background: transparent;
+	border: none;
+	border-inline-start: 3px solid transparent;
+	font-family: var(--lrn-font);
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text);
+	cursor: pointer;
+	text-align: start;
+	transition: all var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-rb__list-item:hover {
+	background: var(--lrn-accent-bg);
+}
+
+/* Current question -- blue left border + subtle background */
+.lrn-rb__list-item--current {
+	border-inline-start-color: var(--lrn-accent);
+	background: var(--lrn-accent-bg);
+}
+
+/* Answered indicator on list item */
+.lrn-rb__list-item--answered .lrn-rb__list-item-status {
+	color: var(--lrn-success);
+}
+
+/* Flagged indicator on list item */
+.lrn-rb__list-item--flagged .lrn-rb__list-item-status {
+	color: var(--lrn-warn);
+}
+
+.lrn-rb__list-item-number {
+	flex-shrink: 0;
+	width: var(--lrn-sp-6);
+	font-weight: var(--lrn-weight-semibold);
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-tertiary);
+	text-align: center;
+}
+
+.lrn-rb__list-item-title {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-rb__list-item-status {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-rb__list-item-status svg,
+.lrn-rb__list-item-status i {
+	width: 14px;
+	height: 14px;
+}
+
+/* ==========================================================================
+   Right panel: active question detail
+   ========================================================================== */
+
+.lrn-rb__main {
+	display: flex;
+	flex-direction: column;
+	padding: var(--lrn-sp-6);
+}
+
+.lrn-rb__question-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-rb__question-number {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text-tertiary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+/* Flag button */
+.lrn-rb__flag-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--lrn-sp-8);
+	height: var(--lrn-sp-8);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	background: transparent;
+	color: var(--lrn-text-tertiary);
+	cursor: pointer;
+	transition: all var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-rb__flag-btn:hover {
+	border-color: var(--lrn-warn);
+	color: var(--lrn-warn);
+}
+
+.lrn-rb__flag-btn--active {
+	background: var(--lrn-warn-bg);
+	border-color: var(--lrn-warn);
+	color: var(--lrn-warn);
+}
+
+.lrn-rb__flag-btn svg,
+.lrn-rb__flag-btn i {
+	width: 16px;
+	height: 16px;
+}
+
+/* ==========================================================================
+   Mobile bottom sheet (< 768px)
+   ========================================================================== */
+
+.lrn-rb__bottom-sheet {
+	display: none;
+}
+
+@media (max-width: 768px) {
+	/* Single column on mobile */
+	.lrn-rb__grid {
+		display: block;
+	}
+
+	/* Hide desktop sidebar */
+	.lrn-rb__sidebar {
+		display: none;
+	}
+
+	/* Show bottom sheet */
+	.lrn-rb__bottom-sheet {
+		display: block;
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		z-index: 20;
+		background: var(--lrn-bg);
+		border-top: 1px solid var(--lrn-border);
+		border-radius: var(--lrn-radius-xl) var(--lrn-radius-xl) 0 0;
+		box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+		box-shadow: 0 -4px 16px color-mix(in srgb, var(--lrn-text) 10%, transparent);
+		transform: translateY(calc(100% - 48px));
+		transition: transform 0.3s var(--lrn-ease);
+		max-height: 70vh;
+		max-height: 70dvh;
+	}
+
+	.lrn-rb__bottom-sheet--open {
+		transform: translateY(0);
+	}
+
+	/* Peek handle bar */
+	.lrn-rb__bottom-sheet-handle {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--lrn-sp-1);
+		width: 100%;
+		padding: var(--lrn-sp-3);
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		font-family: var(--lrn-font);
+	}
+
+	.lrn-rb__bottom-sheet-bar {
+		width: 36px;
+		height: 4px;
+		background: var(--lrn-border-heavy);
+		border-radius: 2px;
+	}
+
+	.lrn-rb__bottom-sheet-label {
+		font-size: var(--lrn-text-xs);
+		color: var(--lrn-text-secondary);
+		font-weight: var(--lrn-weight-medium);
+	}
+
+	/* Bottom sheet inner content */
+	.lrn-rb__bottom-sheet-content {
+		overflow-y: auto;
+		max-height: calc(70vh - 48px);
+		max-height: calc(70dvh - 48px);
+		padding-bottom: var(--lrn-sp-4);
+	}
+
+	/* Main panel adjustments for bottom sheet clearance */
+	.lrn-rb__main {
+		padding: var(--lrn-sp-4) var(--lrn-sp-3);
+		padding-bottom: var(--lrn-sp-16); /* clearance for peek bar */
+	}
+}
+
+/* ==========================================================================
+   Responsive: tablet adjustments
+   ========================================================================== */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+	.lrn-rb__grid {
+		grid-template-columns: 220px 1fr;
+	}
+
+	.lrn-rb__list-item-title {
+		display: none;
+	}
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media ( prefers-reduced-motion: reduce ) {
+	.lrn-rb__bottom-sheet {
+		transition: none;
+	}
+}
+
+/* Small phones — plan-02 phase D */
+@media (max-width: 640px) {
+	.lrn-rb__question,
+	.lrn-rb__card {
+		padding: var(--lrn-sp-3);
+	}
+
+	.lrn-rb__timer {
+		font-size: var(--lrn-text-sm);
+	}
+
+	.lrn-rb__nav,
+	.lrn-rb__actions {
+		flex-direction: column;
+		gap: var(--lrn-sp-2);
+	}
+
+	.lrn-rb__nav .lrn-btn,
+	.lrn-rb__actions .lrn-btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+/* ── Category-grouped navigator (BC #9993397735) ────────────────────────── */
+.lrn-rb__cat-group {
+	border-bottom: 1px solid var(--lrn-divider);
+}
+
+.lrn-rb__cat-header {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	width: 100%;
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	background: var(--lrn-bg-muted);
+	border: 0;
+	font: inherit;
+	font-weight: 600;
+	color: var(--lrn-text);
+	cursor: pointer;
+	text-align: start;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+}
+
+.lrn-rb__cat-header:hover {
+	background: var(--lrn-accent-bg);
+}
+
+.lrn-rb__cat-chevron {
+	flex: none;
+	width: 1em;
+	height: 1em;
+	transition: transform var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-rb__cat-group.is-collapsed .lrn-rb__cat-chevron {
+	transform: rotate(-90deg);
+}
+
+.lrn-rb__cat-name {
+	flex: 1 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-rb__cat-count {
+	flex: none;
+	color: var(--lrn-text-secondary);
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+.lrn-rb__cat-items[hidden] {
+	display: none;
+}
