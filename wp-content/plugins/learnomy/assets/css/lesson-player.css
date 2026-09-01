@@ -1,0 +1,1611 @@
+/**
+ * Learnomy — Lesson player stylesheet.
+ *
+ * Page-specific styles for /courses/{slug}/lesson/{lesson-slug}/
+ * (templates/single-lesson.php). Loaded only on that route via
+ * Template_Loader::enqueue_assets() so other pages don't pay for the
+ * sidebar + Plyr overrides + comments thread + completion strip CSS.
+ *
+ * Shared primitives consumed but not owned here:
+ *   .lrn-btn*, .lrn-badge*, .lrn-skeleton*, .lrn-container, .lrn-toast*,
+ *   .lrn-progress-bar* — live in learnomy.css because lesson, course,
+ *   dashboard, and block routes all render them.
+ *
+ * Out-of-scope siblings:
+ *   .lrn-lesson-locked*   → assets/css/lesson-locked.css (drip lock UI)
+ *   .lrn-lesson-editor*   → assets/css/admin/lesson-editor.css (admin)
+ *   .lrn-quiz*            → assets/css/quiz/ (separate slice)
+ *
+ * Responsive contract: two breakpoint values — 1024px (the tablet ↔ desktop
+ * split: `min-width:1024px` drives the desktop 3-column; `max-width:1023.98px`
+ * drives the tablet reflow that unlocks the page scroll and drops the
+ * discussion to a full-width row under a narrower curriculum rail) and 640px
+ * (mobile drawer). No other breakpoint values.
+ * `prefers-reduced-motion` blocks are not viewport breakpoints.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Lesson player — collapsible sidebar layout
+   ========================================================================== */
+
+.lrn-lesson-player {
+	display:    flex;
+	min-height: 100vh;
+	min-height: 100dvh;
+	padding:    0;
+	position:   relative;
+}
+
+/* ── Sidebar ── */
+
+.lrn-player-sidebar {
+	width:          320px;
+	min-width: 320px;
+	background:     var(--lrn-bg-secondary);
+	border-inline-end:   1px solid var(--lrn-border);
+	display:        flex;
+	flex-direction: column;
+	position:       sticky;
+	top:            0;
+	height:         100vh;
+	height:         100dvh;
+	overflow-y:     auto;
+	transition:     width var(--lrn-dur) var(--lrn-ease),
+	                min-width var(--lrn-dur) var(--lrn-ease),
+	                opacity var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-player-sidebar--collapsed {
+	width:      0;
+	min-width:  0;
+	overflow:   hidden;
+	opacity:    0;
+	border-inline-end-width: 0;
+}
+
+.lrn-player-sidebar__header {
+	display:       flex;
+	align-items:   center;
+	justify-content: space-between;
+	gap:           var(--lrn-sp-2);
+	padding:       var(--lrn-sp-4);
+	border-bottom: 1px solid var(--lrn-border);
+	flex-shrink:   0;
+}
+
+.lrn-player-sidebar__title {
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-semibold);
+	color:           var(--lrn-text);
+	text-decoration: none;
+	white-space:     nowrap;
+	overflow:        hidden;
+	text-overflow:   ellipsis;
+	flex:            1;
+}
+
+.lrn-player-sidebar__title:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-player-sidebar__toggle {
+	display:     flex;
+	align-items: center;
+	justify-content: center;
+	/* Minimum 40px tap target — was 32px (check 4: tap_targets_40px) */
+	min-width: 40px;
+	min-height:  40px;
+	border:      none;
+	background:  transparent;
+	color:       var(--lrn-text-secondary);
+	cursor:      pointer;
+	border-radius: var(--lrn-radius-md);
+	flex-shrink: 0;
+}
+
+.lrn-player-sidebar__toggle:hover {
+	background: var(--lrn-bg-hover);
+	color:      var(--lrn-text);
+}
+
+/* check 6: a11y_keyboard — focus ring for sidebar collapse/expand toggle */
+.lrn-player-sidebar__toggle:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+/* ── Sidebar navigation ── */
+
+.lrn-player-sidebar__nav {
+	flex:       1;
+	overflow-y: auto;
+	padding:    var(--lrn-sp-2) 0;
+}
+
+/* ── Section accordion ── */
+
+.lrn-player-section {
+	border-bottom: 1px solid var(--lrn-divider);
+}
+
+.lrn-player-section__header {
+	display:     flex;
+	align-items: center;
+	justify-content: space-between;
+	width:       100%;
+	/* 40px minimum tap target — padding yields ~40px height (check 4) */
+	min-height:  40px;
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	border:      none;
+	background:  transparent;
+	cursor:      pointer;
+	text-align:  start;
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+/* Pin the text colour on hover/focus. The header is a transparent <button>;
+   without an explicit colour the active theme's own button:hover / button:focus
+   rule (Reign paints button text white for its accent buttons) bleeds in and
+   the section name turns white on the light hover background — unreadable. The
+   two-class specificity outranks the theme's bare button:hover/:focus. */
+.lrn-player-section__header:hover,
+.lrn-player-section__header:focus {
+	background: var(--lrn-bg-hover);
+	color:      var(--lrn-text);
+}
+
+/* check 6: a11y_keyboard — keyboard focus ring for section accordion */
+.lrn-player-section__header:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: -2px;
+}
+
+.lrn-player-section__name {
+	flex: 1;
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	white-space:   nowrap;
+}
+
+.lrn-player-section__progress {
+	font-size:           var(--lrn-text-xs);
+	font-weight:         var(--lrn-weight-normal);
+	color:               var(--lrn-text-tertiary);
+	flex-shrink:         0;
+	/* Logical property — RTL-aware (was margin-left). */
+	margin-inline-start: var(--lrn-sp-2);
+}
+
+/* ── Lesson items ── */
+
+.lrn-player-section__items {
+	list-style: none;
+	margin:     0;
+	padding:    0 0 var(--lrn-sp-2);
+}
+
+.lrn-player-section__items--flat {
+	padding-top: var(--lrn-sp-2);
+}
+
+.lrn-player-section__items[hidden] {
+	display: none;
+}
+
+.lrn-player-item {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	padding:     var(--lrn-sp-2) var(--lrn-sp-4) var(--lrn-sp-2) var(--lrn-sp-6);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-player-item__icon {
+	flex-shrink: 0;
+	color:       var(--lrn-text-tertiary);
+}
+
+.lrn-player-item__label {
+	flex:            1;
+	text-decoration: none;
+	color:           inherit;
+	overflow:        hidden;
+	text-overflow:   ellipsis;
+	white-space:     nowrap;
+}
+
+/* Curriculum rows are navigation, not inline prose links. The global
+   `.lrn-app a` rule (specificity 0,1,1) otherwise beats the label's own
+   `color: inherit` (0,1,0) and paints every row the anchor accent, and
+   `.lrn-app a:hover` adds an underline that reads as an "unwanted border"
+   on a full-width row. Boost specificity (0,2,1) so the intended neutral
+   text + accent-on-hover (no underline) wins regardless of source order. */
+.lrn-player-item a.lrn-player-item__label {
+	color:           inherit;
+	text-decoration: none;
+}
+
+.lrn-player-item a.lrn-player-item__label:hover {
+	color:           var(--lrn-accent);
+	text-decoration: none;
+}
+
+.lrn-player-item__duration {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+	flex-shrink: 0;
+}
+
+/* Current lesson highlight */
+.lrn-player-item--current {
+	background:  var(--lrn-accent-bg);
+	color:       var(--lrn-accent);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-player-item--current .lrn-player-item__icon {
+	color: var(--lrn-accent);
+}
+
+/* Completed lesson. A row can be completed AND current at once (the lesson you
+   just marked complete), and both selectors have the same specificity — so this
+   rule must stay BELOW the --current one above, or the check icon renders in
+   the accent colour and reads as "in progress". */
+.lrn-player-item--completed .lrn-player-item__icon {
+	color: var(--lrn-success);
+}
+
+/* Sub-lesson (topic) items — indented one extra step */
+.lrn-player-item--sub {
+	/* Logical property — RTL-aware (was padding-left). */
+	padding-inline-start: var(--lrn-sp-8) !important;
+	font-size:            var(--lrn-text-xs);
+}
+
+.lrn-player-item--sub .lrn-player-item__icon { width: 14px; height: 14px; }
+
+/* Quiz rows in the nav. The accent icon and the badge are what separate a quiz
+   from the lesson rows around it at a glance — a quiz nested under its lesson
+   otherwise reads as just another topic. */
+.lrn-player-item--quiz .lrn-player-item__icon {
+	color: var(--lrn-accent);
+}
+
+/* Touch: the ROW is the target, not the text inside it.
+   The row measures 38px but the anchor inside it was only 22px tall and stopped
+   short of the row's width, so a member aiming at a lesson on a phone had ~16px
+   of vertical dead space to miss into — on the course outline, which is the most
+   tapped surface in the product. Growing the row would cost desktop density, so
+   instead the label stretches to fill the row it already sits in. Same
+   coarse-pointer treatment the quiz review pills use.
+   Current and locked rows render a <span> rather than an <a> and are
+   deliberately untouched: there is nothing to tap. */
+@media (pointer: coarse), (max-width: 640px) {
+	.lrn-player-item {
+		padding-block: 0;
+	}
+
+	.lrn-player-item__label {
+		display:       flex;
+		align-items:   center;
+		min-height:    44px;
+		padding-block: var(--lrn-sp-2);
+	}
+}
+
+.lrn-player-item__badge {
+	margin-inline-start: auto;
+	padding:             0 var(--lrn-sp-2);
+	border-radius:       var(--lrn-radius-sm);
+	background:          var(--lrn-accent-bg);
+	color:               var(--lrn-accent);
+	font-size:           var(--lrn-text-2xs);
+	font-weight:         var(--lrn-weight-medium);
+	flex-shrink:         0;
+}
+
+/* ── Sidebar footer / progress bar ── */
+
+.lrn-player-sidebar__footer {
+	padding:       var(--lrn-sp-4);
+	border-top:    1px solid var(--lrn-border);
+	flex-shrink:   0;
+}
+
+/* Clear "Course progress  NN%" header above the bar. The percentage is the
+   primary signal, so it reads at the body size + semibold + full text colour
+   (the old micro `--text-xs` / `--text-tertiary` label read as "no percentage").
+   (Basecamp #9972731668.) */
+.lrn-player-sidebar__progress-head {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-2);
+	margin-bottom:   var(--lrn-sp-2);
+}
+
+.lrn-player-sidebar__progress-label {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-player-sidebar__progress-pct {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── Open sidebar button (visible when collapsed) ── */
+
+.lrn-player-sidebar-open {
+	display:     none;
+	position:    fixed;
+	top:         var(--lrn-sp-4);
+	inset-inline-start: var(--lrn-sp-4);
+	z-index:     100;
+	/* 40px minimum tap target — was 36×36 (check 4: tap_targets_40px) */
+	min-width: 40px;
+	min-height:  40px;
+	align-items: center;
+	justify-content: center;
+	border:      1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	background:  var(--lrn-bg);
+	color:       var(--lrn-text-secondary);
+	cursor:      pointer;
+	box-shadow:  var(--lrn-shadow-sm);
+}
+
+.lrn-player-sidebar-open:hover {
+	/* Keep an OPAQUE background on hover. The toggle is position:fixed over the
+	   scrolling lesson, and --lrn-bg-hover is a ~4% translucent tint — swapping
+	   the solid bg for it let the lesson heading scrolling behind show THROUGH
+	   the button on hover (Basecamp #9982032429). Composite the tint over the
+	   solid bg (layered backgrounds) so it tints without going see-through. */
+	background: linear-gradient( var(--lrn-bg-hover), var(--lrn-bg-hover) ), var(--lrn-bg);
+	color:      var(--lrn-text);
+}
+
+/* check 6: a11y_keyboard — focus ring for floating open-sidebar button */
+.lrn-player-sidebar-open:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-player-sidebar-open--visible {
+	display: flex;
+}
+
+/* ── Slim lesson topbar (shown on tablet/mobile only — see media query) ── */
+
+.lrn-player-topbar {
+	display: none;
+}
+
+.lrn-player-topbar__toggle {
+	display:       inline-flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-2);
+	min-height:    40px;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+	font-size:     var(--lrn-text-sm);
+	font-weight:   var(--lrn-weight-medium);
+	cursor:        pointer;
+	flex-shrink:   0;
+	transition:    background var(--lrn-dur) var(--lrn-ease);
+}
+
+/* Defend hover/focus/active together: this is a <button>, and themes paint
+   their own (blue) background + white text on button:hover/:focus/:active.
+   Scope under .lrn-player-topbar so our neutral states win on any theme. */
+.lrn-player-topbar .lrn-player-topbar__toggle:hover,
+.lrn-player-topbar .lrn-player-topbar__toggle:focus,
+.lrn-player-topbar .lrn-player-topbar__toggle:active {
+	background: var(--lrn-bg-hover);
+	color:      var(--lrn-text);
+}
+
+.lrn-player-topbar .lrn-player-topbar__toggle:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-player-topbar__toggle [data-lucide] {
+	width:  18px;
+	height: 18px;
+}
+
+.lrn-player-topbar__title {
+	font-size:     var(--lrn-text-sm);
+	font-weight:   var(--lrn-weight-semibold);
+	color:         var(--lrn-text-secondary);
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	white-space:   nowrap;
+	min-width:     0;
+}
+
+/* ── Main content area ── */
+
+.lrn-player-content {
+	/* The reading column GROWS to fill the row between the curriculum sidebar
+	   and the (now slim, ~380px right-pinned) discussion rail — no empty gutter
+	   in the middle (requested 2026-06-10). It keeps a 780px flex-BASIS as the
+	   preferred width but `flex-grow:1` lets it absorb the leftover width once
+	   the rail is capped. An earlier revision hard-held 780px (flex 0 1 780) so
+	   the rail could grow instead; the rail is capped now, so the body takes the
+	   space. Still left-anchored to the sidebar (margin-inline:0) per
+	   #9925339019. */
+	flex:          1 1 780px;
+	padding:       var(--lrn-sp-8) var(--lrn-sp-6);
+	min-width:     0;
+	/* Anchor the reading column to its flex slot's left edge so it sits
+	   adjacent to the curriculum sidebar instead of centering inside the
+	   leftover space. Earlier the auto-margin pushed the title ~170px to
+	   the right of the sidebar's end, while the Edit Lesson bar (in its
+	   own .lrn-container) stayed centered to viewport — the two anchors
+	   visibly diverged, which is what QA flagged as a sidebar /
+	   "distortion" alignment issue. (Basecamp #9925339019 reopen.) */
+	margin-inline: 0;
+}
+
+/* No discussion column (lesson comments disabled site-wide / per the
+   learnomy_lesson_comments_enabled filter, or the viewer can't see them):
+   there's no right rail to absorb the leftover width, so the reading column
+   would sit hard-left against the sidebar with a wide empty band on the
+   right. Center it in the leftover space instead. The admin-preview / edit
+   bar lives INSIDE this column (see player-content.php, #9925339019), so it
+   centers with the body — nothing external to diverge from. This only
+   applies to the comments-OFF layout; the comments-ON column keeps its
+   left anchor above, so #9925339019 stays fixed. */
+.lrn-lesson-player:not(:has(.lrn-lesson-comments)) .lrn-player-content {
+	margin-inline: auto;
+}
+
+.lrn-player-content__title {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-6);
+}
+
+.lrn-player-content__video,
+.lrn-player-content__audio,
+.lrn-player-content__pdf,
+.lrn-player-content__embed,
+.lrn-player-content__download {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-lesson-audio {
+	width:         100%;
+	border-radius: var(--lrn-radius-lg);
+}
+
+.lrn-lesson-pdf,
+.lrn-lesson-embed {
+	width:         100%;
+	height:        70vh;
+	min-height:    480px;
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	background:    var(--lrn-bg-tertiary);
+}
+
+/* Unified embed component (.lrn-embed) lives in assets/css/shared/embed.css —
+   ONE definition, loaded on both the player and every authoring editor so the
+   author preview matches the learner view (ADR D8, no dups). */
+
+.lrn-lesson-pdf__fallback {
+	margin-top: var(--lrn-sp-2);
+	font-size:  var(--lrn-text-sm);
+	color:      var(--lrn-text-secondary);
+}
+
+.lrn-video-wrapper {
+	position:      relative;
+	padding-bottom: 56.25%;
+	height:        0;
+	overflow:      hidden;
+	border-radius: var(--lrn-radius-lg);
+	background:    var(--lrn-bg-tertiary);
+}
+
+.lrn-video-wrapper iframe,
+.lrn-video-wrapper video {
+	position: absolute;
+	top:      0;
+	inset-inline-start: 0;
+	width:    100%;
+	height:   100%;
+}
+
+/*
+ * check 9: loading_state — video skeleton placeholder.
+ * Sits inside .lrn-video-wrapper (aspect-ratio box) until Plyr renders the
+ * player. Once Plyr fires "ready", JS adds .lrn-video-wrapper--loaded which
+ * hides the skeleton. The skeleton uses existing .lrn-skeleton shimmer CSS.
+ */
+.lrn-video-skeleton {
+	position: absolute;
+	top:      0;
+	inset-inline-start: 0;
+	width:    100%;
+	height:   100%;
+	border-radius: var(--lrn-radius-lg);
+	z-index:  1;
+}
+
+/* Plyr adds a visible player element — skeleton can be hidden via wrapper flag */
+.lrn-video-wrapper--loaded .lrn-video-skeleton {
+	display: none;
+}
+
+/* ── Plyr video player overrides ──
+   The wrapper is normally an aspect-ratio box (padding-bottom: 56.25%).
+   Plyr renders its own responsive shell, so once the player mounts, the
+   wrapper needs to release that padding hack so Plyr's UI doesn't double
+   up on the vertical math. JS adds .lrn-video-wrapper--plyr after init. */
+.lrn-video-wrapper--plyr {
+	padding-bottom: 0;
+	height:         auto;
+}
+
+.lrn-video-wrapper--plyr video {
+	position: static;
+	width:    100%;
+	height:   auto;
+}
+
+/*
+ * MediaShield protected-video slot.
+ *
+ * MediaShield's Renderer enqueues its own player.css while the [mediashield]
+ * shortcode runs mid-body, so that stylesheet can arrive AFTER the player
+ * markup paints — leaving the player at 0 height for a frame and then jumping
+ * to 16:9 (a visible load glitch). We reserve the aspect-ratio box and the
+ * rounded surface here, in a stylesheet that's already in <head>, so the
+ * video section holds its space while MediaShield's CSS and the iframe load.
+ * The radius/overflow also match the Plyr wrapper so both player types look
+ * the same in the lesson.
+ */
+.lrn-player-content__video--mediashield {
+	border-radius: var(--lrn-radius-lg);
+	overflow:      hidden;
+	background:    var(--lrn-bg-tertiary);
+}
+
+.lrn-player-content__video--mediashield .ms-protected-player {
+	aspect-ratio:  16 / 9;
+	border-radius: inherit;
+}
+
+/*
+ * check 11: error_state — media-error empty state inside content type blocks.
+ * Renders when content_type requires a URL but no URL has been set.
+ */
+.lrn-lesson-media-error {
+	padding:       var(--lrn-sp-8) var(--lrn-sp-6);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	background:    var(--lrn-bg-secondary);
+}
+
+/*
+ * check 10: empty_state — text-type lesson with no body content.
+ */
+.lrn-player-content__body--empty {
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-player-content__body {
+	font-size:     var(--lrn-text-md);
+	line-height:   var(--lrn-leading-relaxed);
+	color:         var(--lrn-text);
+	margin-bottom: var(--lrn-sp-8);
+}
+
+/* Editor.js prose lists render as bare <ul>/<ol> (no class). With the default
+   list-style-position:outside and zero inline padding the disc/number markers
+   sat OUTSIDE the content box — stray dots in the left gutter, made obvious
+   when the notes panel narrows the column. Give them inside-the-column markers. */
+.lrn-player-content__body ul,
+.lrn-player-content__body ol {
+	padding-inline-start: 1.5em;
+	margin:               0 0 var(--lrn-sp-4);
+}
+.lrn-player-content__body ul { list-style: disc; }
+.lrn-player-content__body ol { list-style: decimal; }
+.lrn-player-content__body li { margin: 0 0 var(--lrn-sp-1); }
+/* The checklist block has its own marker styling — never show a disc on it. */
+.lrn-player-content__body ul.lrn-checklist { list-style: none; padding-inline-start: 0; }
+
+.lrn-player-content__actions {
+	display:        flex;
+	flex-direction: column;
+	align-items:    stretch;
+	gap:            var(--lrn-sp-3);
+	padding-top:    var(--lrn-sp-4);
+	margin-bottom:  var(--lrn-sp-6);
+}
+
+.lrn-player-content__actions > .lrn-btn,
+.lrn-player-content__actions > .lrn-badge {
+	align-self: flex-start;
+}
+
+/* ==========================================================================
+   Completion strip — student-facing requirement checklist
+   Rendered above Mark Complete when completion_mode !== 'manual'.
+   Each line shows a requirement (time on page, video %, scroll, quiz pass)
+   with an icon, label, and progress bar. Scoped to .lrn-completion-strip
+   so it composes with surrounding actions without leaking styles.
+   ========================================================================== */
+
+.lrn-completion-strip {
+	display:         flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-4);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-lg);
+	background:      var(--lrn-bg-secondary);
+	color:           var(--lrn-text);
+	font-size:       var(--lrn-text-sm, 0.875rem);
+	line-height:     var(--lrn-leading-normal);
+}
+
+.lrn-completion-strip[hidden] { display: none; }
+
+.lrn-completion-strip__header {
+	font-weight:   600;
+	color:         var(--lrn-text);
+	margin-bottom: var(--lrn-sp-1);
+}
+
+.lrn-completion-strip__status {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-completion-strip__status--met {
+	color:       var(--lrn-success);
+	font-weight: 600;
+}
+
+.lrn-completion-strip__list {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-2);
+}
+
+.lrn-completion-strip__line {
+	display:               grid;
+	grid-template-columns: auto 1fr auto;
+	align-items:           center;
+	gap:                   var(--lrn-sp-3);
+	padding:               var(--lrn-sp-2) var(--lrn-sp-3);
+	border-radius:         var(--lrn-radius-md);
+	background:            var(--lrn-bg);
+	border:                1px solid var(--lrn-divider);
+}
+
+.lrn-completion-strip__line--met {
+	border-color: var(--lrn-success);
+	background:   var(--lrn-success-bg);
+}
+
+.lrn-completion-strip__icon {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	width:           1.25rem;
+	height:          1.25rem;
+	color:           var(--lrn-text-secondary);
+}
+
+.lrn-completion-strip__line--met .lrn-completion-strip__icon {
+	color: var(--lrn-success);
+}
+
+.lrn-completion-strip__text {
+	color:       var(--lrn-text);
+	font-weight: 500;
+	line-height: var(--lrn-leading-normal);
+}
+
+.lrn-completion-strip__bar {
+	-webkit-appearance: none;
+	appearance:         none;
+	width:              8rem;
+	height:             0.5rem;
+	border:             none;
+	border-radius:      999px;
+	background:         var(--lrn-bg-tertiary);
+	overflow:           hidden;
+}
+
+.lrn-completion-strip__bar::-webkit-progress-bar {
+	background:    var(--lrn-bg-tertiary);
+	border-radius: 999px;
+}
+
+.lrn-completion-strip__bar::-webkit-progress-value {
+	background:    var(--lrn-accent);
+	border-radius: 999px;
+	transition:    width var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-completion-strip__bar::-moz-progress-bar {
+	background:    var(--lrn-accent);
+	border-radius: 999px;
+}
+
+.lrn-completion-strip__line--met .lrn-completion-strip__bar::-webkit-progress-value {
+	background: var(--lrn-success);
+}
+
+.lrn-completion-strip__line--met .lrn-completion-strip__bar::-moz-progress-bar {
+	background: var(--lrn-success);
+}
+
+/* ==========================================================================
+   Lesson-attached quiz CTA — sits above prev/next nav when the lesson
+   has a quiz wired via lrn_quizzes.lesson_id. Reads from the view-data
+   `attached_quiz` key (null when no quiz attached → CTA not rendered).
+   ========================================================================== */
+
+.lrn-lesson-quiz-cta {
+	display:           flex;
+	align-items:       center;
+	justify-content:   space-between;
+	gap:               var(--lrn-sp-4);
+	padding:           var(--lrn-sp-4) var(--lrn-sp-5);
+	margin-top:        var(--lrn-sp-6);
+	background:        color-mix( in srgb, var(--lrn-accent) 6%, var(--lrn-bg) );
+	border:            1px solid color-mix( in srgb, var(--lrn-accent) 18%, transparent );
+	border-radius:     var(--lrn-radius-md);
+}
+
+.lrn-lesson-quiz-cta__body {
+	display:           flex;
+	flex-direction:    column;
+	gap:               var(--lrn-sp-1);
+	min-width:         0;
+}
+
+.lrn-lesson-quiz-cta__label {
+	margin:            0;
+	font-size:         var(--lrn-text-xs);
+	font-weight:       600;
+	text-transform:    uppercase;
+	letter-spacing:    0.05em;
+	color:             var(--lrn-text-secondary);
+}
+
+.lrn-lesson-quiz-cta__title {
+	margin:            0;
+	font-size:         var(--lrn-text-base);
+	font-weight:       600;
+	color:             var(--lrn-text);
+	overflow:          hidden;
+	text-overflow:     ellipsis;
+}
+
+.lrn-lesson-quiz-cta__cta {
+	flex-shrink:       0;
+}
+
+@media ( max-width: 480px ) {
+	.lrn-lesson-quiz-cta {
+		flex-direction: column;
+		align-items:    stretch;
+		gap:            var(--lrn-sp-3);
+	}
+
+	.lrn-lesson-quiz-cta__cta {
+		width:          100%;
+		justify-content: center;
+	}
+}
+
+/* ==========================================================================
+   Prev / next lesson navigation — footer of the lesson body
+   ========================================================================== */
+
+.lrn-lesson-nav {
+	display:       flex;
+	justify-content: space-between;
+	gap:           var(--lrn-sp-4);
+	padding-top:   var(--lrn-sp-6);
+	border-top:    1px solid var(--lrn-divider);
+}
+
+.lrn-lesson-nav__prev,
+.lrn-lesson-nav__next {
+	display:         flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-lg);
+	text-decoration: none;
+	color:           var(--lrn-text);
+	background:      var(--lrn-bg);
+	transition:      border-color var(--lrn-dur) var(--lrn-ease),
+	                 box-shadow var(--lrn-dur) var(--lrn-ease);
+	max-width:       45%;
+	min-width:       0; /* allow inner text-overflow to take effect inside flex */
+}
+
+/*
+ * Long lesson titles inside the prev/next buttons used to wrap to multiple
+ * lines and visually collide with the icon + Prev/Next label, looking like
+ * the title was overlapping the navigation control (bug card #6). Cap each
+ * title to one line with ellipsis; the full title is still readable on hover
+ * via the native title attribute when the template provides it.
+ */
+.lrn-lesson-nav__prev span,
+.lrn-lesson-nav__next span {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.lrn-lesson-nav__prev strong,
+.lrn-lesson-nav__next strong,
+.lrn-lesson-nav__prev span > :not(small),
+.lrn-lesson-nav__next span > :not(small) {
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	white-space:   nowrap;
+}
+
+.lrn-lesson-nav__prev:hover,
+.lrn-lesson-nav__next:hover {
+	border-color: var(--lrn-accent);
+	box-shadow:   var(--lrn-shadow-sm);
+}
+
+.lrn-lesson-nav__prev span,
+.lrn-lesson-nav__next span {
+	display:       flex;
+	flex-direction: column;
+	overflow:      hidden;
+}
+
+.lrn-lesson-nav__prev small,
+.lrn-lesson-nav__next small {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+.lrn-lesson-nav__next {
+	/* Logical property — RTL-aware (was margin-inline-start: auto). */
+	margin-inline-start: auto;
+	text-align:          end;
+}
+
+.lrn-lesson-nav__next span {
+	align-items: flex-end;
+}
+
+.lrn-lesson-nav__spacer {
+	flex: 1;
+}
+
+/* prefers-reduced-motion: remove sidebar slide animation
+   Not a viewport breakpoint — does not count toward the 2-breakpoint budget. */
+@media (prefers-reduced-motion: reduce) {
+	.lrn-player-sidebar {
+		transition: none;
+	}
+}
+
+/* ==========================================================================
+   Distraction-free chrome — lesson player fills the entire viewport
+   (route also disables the theme header/footer in template-loader.php).
+
+   The body.lrn-distraction-free base rule (margin/padding/overflow) lives in
+   learnomy.css because standalone-quiz uses it too. Only the player-scoped
+   variants are owned here.
+   ========================================================================== */
+
+body.lrn-distraction-free .lrn-lesson-player {
+	/* 100%, not 100vw: the viewport unit INCLUDES the scrollbar, so on a phone
+	   the player rendered 390px inside a 375px content box and the whole lesson
+	   scrolled sideways — on the one screen a reader is scrolling vertically
+	   through. 100% resolves against body, which is already margin/padding-free
+	   here, so it fills the same space without counting the gutter twice. */
+	width:     100%;
+	height:    100vh;
+	height:    100dvh;
+	max-width: none;
+	padding:   0;
+	margin:    0;
+}
+
+body.lrn-distraction-free .lrn-player-sidebar {
+	height: 100vh;
+	height: 100dvh;
+}
+
+body.lrn-distraction-free .lrn-player-content {
+	/* The reading column GROWS (flex-grow:1) to absorb the leftover row width,
+	   so on wide screens it fills the space up to the slim 380px discussion rail
+	   instead of leaving an empty gutter between body and comments (requested
+	   2026-06-10). 780px is the flex-BASIS (preferred width), not a cap. This is
+	   the distraction-free override of the base .lrn-player-content flex — the
+	   one that actually applies on the lesson page, so the fix lives here. The
+	   discussion rail is now capped (flex 0 0 380), which is what frees this
+	   column to grow without re-opening the old dead band (#9971772644). */
+	flex:       1 1 780px;
+	overflow-y: auto;
+	height:     100vh;
+	height:     100dvh;
+	padding:    var(--lrn-sp-6) var(--lrn-sp-10);
+}
+
+/* The discussion rail is the third locked column in this full-height row. Like
+   the reading column above, it must scroll INDEPENDENTLY: the page itself is
+   pinned (body overflow hidden on desktop), so without its own overflow a long
+   thread overflows past the viewport and is silently clipped — comments beyond
+   the fold become unreachable with no scrollbar (Basecamp #9981728896). Match
+   the reading column: lock to the viewport height and scroll inside. (Below
+   1024px the media-query block unlocks page scroll and resets this to flow.) */
+body.lrn-distraction-free .lrn-lesson-comments {
+	height:     100vh;
+	height:     100dvh;
+	overflow-y: auto;
+}
+
+/* Access gate header — minimal nav for unenrolled visitors landing on a
+   lesson URL. Renders in place of the player when the user lacks access. */
+
+.lrn-access-gate-header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	padding:         var(--lrn-sp-3) var(--lrn-sp-6);
+	background:      var(--lrn-bg);
+	border-bottom:   1px solid var(--lrn-border);
+}
+
+.lrn-access-gate-header__brand {
+	font-size:       var(--lrn-text-lg);
+	font-weight:     700;
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-access-gate-header__nav {
+	display:   flex;
+	gap:       var(--lrn-sp-4);
+	font-size: var(--lrn-text-base);
+}
+
+.lrn-access-gate-header__nav a {
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+}
+
+.lrn-access-gate-header__nav a:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-access-gate {
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	min-height:      calc(100vh - 50px);
+	min-height:      calc(100dvh - 50px);
+}
+
+/* ==========================================================================
+   Lesson Comments — thread under the lesson body
+   ========================================================================== */
+
+.lrn-lesson-comments {
+	/* The discussion renders as the player's third flex column (sibling of
+	   the sidebar + content), so it needs a column treatment, not the
+	   under-body thread styling it used to carry: a start-edge divider
+	   instead of a top border, no dead `auto` side margins, and real
+	   horizontal gutters so the form and empty-state text don't butt against
+	   the content column and the viewport edge.
+
+	   A discussion rail reads as a utility panel, not a co-equal half of the
+	   screen — so cap it at a comfortable ~380px instead of letting it grow.
+	   An earlier revision capped it at 320px but left it adjacent to the
+	   reading column, which pushed a ~500px dead band to the RIGHT of the
+	   comments on a 1919px viewport (#9971772644). Then it was switched to
+	   `flex: 1 1 0` (no cap), which over-corrected — the rail ballooned to fill
+	   the whole leftover half of the screen (reported again 2026-06-10).
+	   Resolution: cap the rail at 380px (no grow) and let the READING COLUMN
+	   grow to absorb the leftover width instead (.lrn-player-content is now
+	   flex-grow:1) — so the rail stays slim AND there's no empty gutter between
+	   the body and the discussion (requested 2026-06-10). Do NOT add an auto
+	   margin here to "pin" the rail right: an auto margin consumes all free
+	   space before the body's flex-grow can, which re-opens the dead gutter.
+	   Below 1024px the rule below stacks the rail full-width under the lesson. */
+	flex:                0 0 380px;
+	max-width:           380px;
+	min-width:           0;
+	margin:              0;
+	padding:             var(--lrn-sp-8) var(--lrn-sp-6);
+	border-inline-start: 1px solid var(--lrn-border);
+}
+
+/* Admin / instructor view: the floating "Edit Lesson" button sits at the
+   player's top-right (absolute, see .lrn-admin-edit-bar in learnomy.css —
+   floated there per #9925339019 so the lesson title aligns with the sidebar),
+   which is now directly over the slim discussion column's heading. Drop the
+   discussion content below the button so they don't overlap. Scoped to the
+   edit-bar's presence (it precedes the player as a sibling and only renders
+   for users who can edit) so students — who never see the button — get no
+   extra top gap. */
+body.lrn-distraction-free .lrn-admin-edit-bar ~ .lrn-lesson-player .lrn-lesson-comments {
+	padding-block-start: var(--lrn-sp-16);
+}
+
+.lrn-lesson-comments__heading {
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	margin:      0 0 var(--lrn-sp-6);
+}
+
+/* Comment form */
+
+.lrn-comment-form {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-comment-form__row {
+	display:     flex;
+	gap:         var(--lrn-sp-3);
+	align-items: flex-start;
+}
+
+.lrn-comment-form__avatar {
+	border-radius: 50%;
+	flex-shrink:   0;
+	width:         36px;
+	height:        36px;
+}
+
+.lrn-comment-form__textarea {
+	flex:          1;
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg-secondary);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	padding:       var(--lrn-sp-3);
+	resize:        vertical;
+	min-height:    60px;
+	transition:    border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-comment-form__textarea:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+/* Keyboard focus already handled by the :focus-visible rule above; this
+   strips the default outline for mouse-only focus and substitutes a border
+   colour change so the field still reads as active. */
+.lrn-comment-form__textarea:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+}
+
+.lrn-comment-form__textarea::placeholder {
+	color: var(--lrn-text-placeholder);
+}
+
+.lrn-comment-form__actions {
+	display:         flex;
+	justify-content: flex-end;
+	gap:             var(--lrn-sp-2);
+	margin-top:      var(--lrn-sp-2);
+}
+
+.lrn-comment-form--reply {
+	margin-top: var(--lrn-sp-3);
+}
+
+/* Comments list */
+
+.lrn-comments-list__empty {
+	color:      var(--lrn-text-tertiary);
+	font-size:  var(--lrn-text-sm);
+	font-style: italic;
+	padding:    var(--lrn-sp-4) 0;
+}
+
+/* Single comment */
+
+.lrn-comment {
+	display:       flex;
+	gap:           var(--lrn-sp-3);
+	padding:       var(--lrn-sp-4) 0;
+	border-bottom: 1px solid var(--lrn-divider);
+	align-items:   flex-start;
+}
+
+.lrn-comment:last-child {
+	border-bottom: none;
+}
+
+.lrn-comment__avatar {
+	border-radius: 50%;
+	flex-shrink:   0;
+}
+
+.lrn-comment__body {
+	flex:      1;
+	min-width: 0;
+}
+
+.lrn-comment__header {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-2);
+	flex-wrap:     wrap;
+	margin-bottom: var(--lrn-sp-1);
+}
+
+.lrn-comment__author {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-comment__badge {
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	color:         var(--lrn-accent);
+	background:    var(--lrn-accent-bg);
+	padding:       1px var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+	line-height:   var(--lrn-leading-tight);
+}
+
+.lrn-comment__date {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+.lrn-comment__text {
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text);
+	margin:      0 0 var(--lrn-sp-2);
+	line-height: var(--lrn-leading-relaxed);
+	white-space: pre-wrap;
+	word-break:  break-word;
+}
+
+.lrn-comment__actions {
+	display: flex;
+	gap:     var(--lrn-sp-3);
+}
+
+.lrn-comment__reply-btn,
+.lrn-comment__delete-btn {
+	background:  none;
+	border:      none;
+	padding:     0;
+	font-family: var(--lrn-font);
+	font-size:   var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	cursor:      pointer;
+	transition:  color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-comment__reply-btn {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-comment__reply-btn:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-comment__delete-btn {
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-comment__delete-btn:hover {
+	color: var(--lrn-danger);
+}
+
+/* Reply indentation */
+
+.lrn-comment__replies {
+	margin-top:           var(--lrn-sp-2);
+	/* Logical property — RTL-aware (was padding-left). */
+	padding-inline-start: var(--lrn-sp-6);
+	border-inline-start:  2px solid var(--lrn-divider);
+}
+
+.lrn-comment--reply {
+	padding: var(--lrn-sp-3) 0;
+}
+
+.lrn-comment--reply .lrn-comment__avatar {
+	width:  28px;
+	height: 28px;
+}
+
+/* ==========================================================================
+   Live lesson player — scheduled / live / ended states for Zoom-style
+   sessions. Three card variants share the wrapper:
+     .lrn-lesson-live__card--pre  — session scheduled but not started
+     .lrn-lesson-live__card--live — session is live right now
+     .lrn-lesson-live__card--post — session has ended
+
+   Selector contract (asserted by journey 33-lesson-live.md):
+     .lrn-lesson-live           — outer wrapper; present for all three states
+     .lrn-lesson-live__cta      — the primary CTA button (enabled or disabled)
+     .lrn-lesson-live__badge    — "Live now" badge visible only in live state
+   ========================================================================== */
+
+.lrn-lesson-live {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-lesson-live__card {
+	display:        flex;
+	flex-direction: column;
+	align-items:    flex-start;
+	gap:            var(--lrn-sp-4);
+	padding:        var(--lrn-sp-6) var(--lrn-sp-6);
+	border:         1px solid var(--lrn-border);
+	border-radius:  var(--lrn-radius-lg);
+	background:     var(--lrn-bg-secondary);
+}
+
+/* Pre-state: muted border, clock icon */
+.lrn-lesson-live__card--pre {
+	border-color: var(--lrn-border-heavy);
+}
+
+/* Live state: accent left stripe to signal urgency without being garish */
+.lrn-lesson-live__card--live {
+	border-inline-start: 4px solid var(--lrn-danger);
+}
+
+/* Post state: greyed accent */
+.lrn-lesson-live__card--post {
+	opacity: 0.85;
+}
+
+.lrn-lesson-live__icon svg {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-lesson-live__header {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-lesson-live__badge {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+}
+
+/* Pulsing dot inside the "Live now" badge */
+.lrn-lesson-live__pulse {
+	display:       inline-block;
+	width:         8px;
+	height:        8px;
+	border-radius: 50%;
+	background:    currentColor;
+	animation:     lrn-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes lrn-pulse {
+	0%, 100% { opacity: 1;   transform: scale(1); }
+	50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* prefers-reduced-motion: halt the live-badge pulse so the page doesn't
+   stress motion-sensitive readers. Not a viewport breakpoint. */
+@media (prefers-reduced-motion: reduce) {
+	.lrn-lesson-live__pulse {
+		animation: none;
+	}
+}
+
+.lrn-lesson-live__heading {
+	margin:      0;
+	font-size:   var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-lesson-live__meta,
+.lrn-lesson-live__time {
+	margin:    0;
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-lesson-live__time {
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-lesson-live__note {
+	margin:    0;
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-tertiary);
+}
+
+/* Disabled CTA — greyed, not interactive */
+.lrn-lesson-live__cta[disabled],
+.lrn-lesson-live__cta[aria-disabled="true"] {
+	opacity:        0.45;
+	cursor:         not-allowed;
+	pointer-events: none;
+}
+
+/* ==========================================================================
+   Responsive — exactly two viewport breakpoints
+
+   Per ux-foundation responsive rules: 1024px (tablet ↔ desktop) and
+   640px (mobile). prefers-reduced-motion blocks above are media queries
+   but not viewport breakpoints, so they don't count toward this budget.
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+	/* Desktop: lesson body gets more breathing room. The 780px max-width
+	   stays so reading line length doesn't blow out; only the padding
+	   grows so the content isn't pinned to the sidebar edge. */
+	.lrn-player-content {
+		padding: var(--lrn-sp-10) var(--lrn-sp-8);
+	}
+}
+
+@media (max-width: 1023.98px) {
+	/* Tablet + mobile. The desktop layout packs three full-height columns —
+	   curriculum rail, lesson body, discussion — into a locked viewport (`body`
+	   overflow hidden, only the body column scrolls). Below 1024px there isn't
+	   room: the discussion as a third column squeezed the lesson body to a few
+	   characters wide, and on phones it overlapped the content. Switch to one
+	   reading column: unlock the page scroll, give the lesson body the FULL
+	   width, drop the discussion to a full-width block UNDER it (in flow, never
+	   overlapping), and turn the curriculum into a collapsible off-canvas
+	   drawer so it never steals reading width. The 640px block only fine-tunes
+	   spacing on top of this. */
+	body.lrn-distraction-free {
+		overflow: auto;
+	}
+
+	body.lrn-distraction-free .lrn-lesson-player {
+		flex-direction: column;
+		height:         auto;
+		min-height:     100vh;
+		min-height:     100dvh;
+	}
+
+	/* Curriculum = off-canvas drawer, CLOSED BY DEFAULT below desktop.
+	 *
+	 * The comment here used to say "collapsed by default below desktop" while
+	 * nothing implemented it: closing was carried only by `--collapsed`, a class
+	 * that ONLY client-side Interactivity hydration can add. The server ships the
+	 * aside with no such class, so the fail-safe default of the markup was OPEN,
+	 * and every load under 1024px painted an opaque 85vw panel across the lesson
+	 * until the module hydrated — measured at 332px of a 390px viewport, z-index
+	 * 1000, opacity 1, over the lesson title and the admin-preview banner
+	 * (Basecamp 10167960085).
+	 *
+	 * So the polarity is inverted here, to match what `curriculum-drawer.php` on
+	 * the course page has always done: CSS closes it, and a class opens it. A
+	 * closed default cannot flash, because there is no window in which the
+	 * correct state is unknown. Do not "fix" this with a loading guard class —
+	 * that is the same bug with an extra step, since it still needs JS to clear.
+	 *
+	 * Desktop is unchanged: open by default, `--collapsed` closes it.
+	 */
+	body.lrn-distraction-free .lrn-player-sidebar {
+		position:           fixed;
+		inset-block-start:  0;
+		inset-inline-start: 0;
+		width:              0;
+		min-width:          0;
+		opacity:            0;
+		pointer-events:     none;
+		height:             100vh;
+		height:             100dvh;
+		max-height:         none;
+		z-index:            1000;
+		box-shadow:         none;
+	}
+
+	/* Open drawer. Same specificity as the closed rule above so it wins on
+	   source order, and it is the only thing that reveals the panel. */
+	body.lrn-distraction-free .lrn-player-sidebar--open {
+		/* One source for the drawer width: the panel is sized by it and the
+		   scrim below is offset by it, so the two cannot drift apart. */
+		--lrn-drawer-width: min(20rem, 85vw);
+
+		width:          var(--lrn-drawer-width);
+		opacity:        1;
+		pointer-events: auto;
+		box-shadow:     var(--lrn-shadow-overlay);
+	}
+
+	/* Scrim. The drawer covers 85% of a phone, and without a dimmed backdrop
+	   the remaining strip of lesson reads as page still in use rather than as
+	   content behind a panel — the drawer looks like a layout fault instead of
+	   something you opened (Basecamp 10202671007).
+	   
+	   A pseudo-element on the drawer itself, so no markup and no second element
+	   to keep in sync with the open state. `inset-inline-start: 100%` puts it
+	   in the gap beside the panel and `100vw` carries it across the rest of the
+	   viewport. It is deliberately NOT interactive: dismissal is Escape and the
+	   toggle, both of which already work, and a tap-to-close surface that only
+	   exists on the visible sliver would be a target too small to aim at. */
+	body.lrn-distraction-free .lrn-player-sidebar--open::after {
+		content:        '';
+		position:       fixed;
+		inset-block:    0;
+		/* Offset by the drawer's own width, NOT `100%`: on a fixed-position
+		   element a percentage inset resolves against the VIEWPORT, so `100%`
+		   put the scrim one full screen to the right — present in the DOM,
+		   invisible to everyone. Caught on a phone-width screenshot, which is
+		   the only place it could be caught. */
+		inset-inline-start: var(--lrn-drawer-width);
+		inset-inline-end:   0;
+		background:     var(--lrn-overlay-scrim, rgb(0 0 0 / 45%));
+		pointer-events: none;
+		z-index:        -1;
+	}
+
+	/* `--collapsed` stays a no-op closed state below desktop: it is what the
+	   store sets, and it must not re-open anything. Kept explicit so a future
+	   reader does not assume the class is dead here. */
+	body.lrn-distraction-free .lrn-player-sidebar--collapsed {
+		width:          0;
+		min-width:      0;
+		opacity:        0;
+		pointer-events: none;
+		box-shadow:     none;
+	}
+
+	body.lrn-distraction-free .lrn-player-content {
+		flex:       1 1 auto;
+		width:      100%;
+		max-width:  100%;
+		min-width:  0;
+		height:     auto;
+		min-height: 0;
+		overflow-y: visible;
+		padding:    var(--lrn-sp-6);
+	}
+
+	/* Scoped with `body.lrn-distraction-free` so it overrides the desktop
+	   full-height-scroll rule above (same specificity), the same way the
+	   .lrn-player-content mobile override is scoped. */
+	body.lrn-distraction-free .lrn-lesson-comments {
+		/* Reset the desktop column flex: stacked below the body it sizes to its
+		   own content (not a grow share), and the 360px desktop floor must not
+		   force horizontal overflow on a <360px phone. Drop the locked viewport
+		   height + inner scroll too — below 1024px the page itself scrolls, so the
+		   thread must flow in normal page flow (no nested scroll container). */
+		flex:                0 0 auto;
+		width:               100%;
+		max-width:           none;
+		min-width:           0;
+		height:              auto;
+		overflow-y:          visible;
+		margin:              0;
+		border-inline-start: 0;
+		border-top:          1px solid var(--lrn-border);
+	}
+
+	/* One clean curriculum control: a slim sticky bar at the top of the
+	   reading column. It replaces the floating buttons (which otherwise sat on
+	   top of the lesson title) on small screens. */
+	.lrn-player-topbar {
+		display:       flex;
+		align-items:   center;
+		gap:           var(--lrn-sp-3);
+		position:      sticky;
+		inset-block-start: 0;
+		z-index:       50;
+		width:         100%;
+		padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+		background:    var(--lrn-bg);
+		border-block-end: 1px solid var(--lrn-border);
+	}
+
+	.lrn-player-sidebar-open {
+		display: none !important;
+	}
+}
+
+@media (max-width: 640px) {
+	/* Completion strip: progress bar wraps under the icon/label row so the
+	   3-column grid doesn't crush long labels at this width. */
+	.lrn-completion-strip__line {
+		grid-template-columns: auto 1fr;
+		grid-template-rows:    auto auto;
+	}
+	.lrn-completion-strip__bar {
+		grid-column: 1 / -1;
+		width:       100%;
+	}
+
+	/* Reply indentation shrinks on mobile so the nested thread doesn't
+	   push content off-screen. (Logical property — RTL-aware.) */
+	.lrn-comment__replies {
+		padding-inline-start: var(--lrn-sp-4);
+	}
+
+	/* Tighter reading padding on phones (overrides the tablet sp-6 above). */
+	body.lrn-distraction-free .lrn-player-content {
+		padding: var(--lrn-sp-4);
+	}
+
+	.lrn-lesson-nav {
+		flex-direction: column;
+	}
+
+	.lrn-lesson-nav {
+		flex-direction: column;
+	}
+
+	/* Stacked nav buttons take the full content width with a DEFINITE basis.
+	   max-width:100% alone let each flex item size to its nowrap title's
+	   content width (~700px), so the ellipsis never engaged and the page
+	   scrolled sideways. width:100% + min-width:0 gives a definite box the
+	   inner title can truncate within. */
+	.lrn-lesson-nav__prev,
+	.lrn-lesson-nav__next {
+		width:      100%;
+		max-width:  100%;
+		box-sizing: border-box;
+	}
+
+	/* Once stacked, the two cards must read from the SAME edge.
+	   Side by side, mirroring Next to the end is correct pagination - it points
+	   outward, away from Previous. In a column that logic disappears and the
+	   mirror just looks like a mistake: Previous started at the left while
+	   Next's label and title sat shoved right, with the two chevrons at
+	   unrelated positions (Basecamp 10186291753).
+	   Text starts at the same place in both; the chevrons keep their direction
+	   and sit at opposite outer edges, which is what says "back" and "forward"
+	   in a stack. The span takes the free space so the Next chevron is pushed
+	   out rather than trailing its title. */
+	.lrn-lesson-nav__next {
+		text-align: start;
+	}
+
+	.lrn-lesson-nav__prev span,
+	.lrn-lesson-nav__next span {
+		flex: 1 1 auto;
+	}
+
+	.lrn-lesson-nav__next span {
+		align-items: flex-start;
+		/* Previous's chevron sits BEFORE its text and indents it; Next's sits
+		   after. Left as-is the two labels started at different x (measured 57
+		   vs 33), which is the ragged edge the card is actually pointing at.
+		   Matching that indent lines the text up while each chevron stays at
+		   its own outer edge. */
+		padding-inline-start: calc(16px + var(--lrn-sp-2));
+	}
+}

@@ -1,0 +1,20 @@
+<svg width="860" height="220" viewBox="0 0 860 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Learnomy">
+  <defs>
+    <linearGradient id="lrnTileD" x1="24" y1="30" x2="184" y2="190" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a8af0"/>
+      <stop offset="1" stop-color="#1b6ec2"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(24 30) scale(0.625)">
+    <rect width="256" height="256" rx="58" fill="url(#lrnTileD)"/>
+    <g fill="#ffffff">
+      <rect x="62"  y="146" width="30" height="42"  rx="11"/>
+      <rect x="106" y="120" width="30" height="68"  rx="11"/>
+      <rect x="150" y="92"  width="30" height="96"  rx="11"/>
+    </g>
+    <circle cx="165" cy="70" r="15" fill="#ffffff"/>
+  </g>
+  <text x="214" y="142"
+    font-family="'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif"
+    font-size="116" font-weight="700" letter-spacing="-3" fill="#ffffff">Learn<tspan fill="#6fb1f5">omy</tspan></text>
+</svg>

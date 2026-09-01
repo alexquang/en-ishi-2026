@@ -1,0 +1,41 @@
+/**
+ * Learnomy — Reports moderation queue styles.
+ *
+ * Page-specific overrides scoped under `.learnomy-admin`; the shared
+ * `.lrn-admin-table` / `.lrn-status-badge` / `.lrn-row-actions` rules from
+ * admin.css carry the rest of the layout. Tokens only — no hardcoded
+ * hex / px / colors.
+ *
+ * @package Learnomy
+ */
+
+.learnomy-admin .lrn-report-excerpt {
+	margin: var(--lrn-sp-1) 0 0;
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+	line-height: 1.5;
+}
+
+.learnomy-admin .lrn-report-type {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+}
+
+.learnomy-admin .lrn-report-type svg {
+	width: 16px;
+	height: 16px;
+}
+
+.learnomy-admin .column-reason {
+	max-width: 22em;
+	color: var(--lrn-text);
+	line-height: 1.5;
+}
+
+.learnomy-admin .column-reason .lrn-muted {
+	color: var(--lrn-text-secondary);
+	font-style: italic;
+}

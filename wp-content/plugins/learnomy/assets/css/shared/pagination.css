@@ -1,0 +1,198 @@
+/**
+ * Learnomy premium pagination component.
+ *
+ * Single source of truth for every paginated list — admin and frontend.
+ * Matches the skeleton loader's radius, borders, and motion so flipping
+ * from loading state to rendered page feels continuous rather than jumpy.
+ *
+ * @package Learnomy
+ */
+
+.lrn-pagination {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-4, 16px);
+	/* No divider above the pager — the spacing alone separates it from the
+	   list, keeping the layout clean (owner UI direction). */
+	margin-top:      var(--lrn-sp-6, 24px);
+	flex-wrap:       wrap;
+}
+
+.lrn-pagination__status {
+	color:       var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:   var(--lrn-text-sm, 13px);
+	line-height: 1.4;
+}
+
+.lrn-pagination__list {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1, 4px);
+	list-style:  none;
+	padding:     0;
+	/* Logical margin so the page numbers sit opposite the status line in
+	   both directions. A physical auto inline-start margin kept the list
+	   pinned to the right under RTL instead of flipping to the left. */
+	margin:      0;
+	margin-inline-start: auto;
+}
+
+.lrn-pagination__list li {
+	margin: 0;
+}
+
+/* ==========================================================================
+   Page buttons
+   ========================================================================== */
+
+.lrn-pagination__btn {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	gap:             var(--lrn-sp-1, 4px);
+	min-width:       36px;
+	height:          36px;
+	padding:         0 var(--lrn-sp-2, 8px);
+	/* Borderless number pills — lighter, modern catalogue look. The active page
+	   and Prev/Next carry their own treatment below. */
+	border:          1px solid transparent;
+	border-radius:   var(--lrn-radius-md, 6px);
+	background:      transparent;
+	color:           var(--lrn-text-secondary, #6b6b6b);
+	font-size:       var(--lrn-text-sm, 13px);
+	font-weight:     500;
+	line-height:     1;
+	text-decoration: none;
+	transition:      background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+	cursor:          pointer;
+	user-select:     none;
+}
+
+.lrn-pagination__btn:hover,
+.lrn-pagination__btn:focus-visible {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+	color:      var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-pagination__btn:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+	box-shadow:     0 0 0 2px var(--lrn-accent-bg, rgba(35, 131, 226, 0.08));
+}
+
+.lrn-pagination__btn:focus:not(:focus-visible) {
+	outline: none;
+}
+
+/* Current page — filled accent pill. */
+.lrn-pagination__btn--current {
+	background:   var(--lrn-accent, var(--lrn-accent));
+	border-color: var(--lrn-accent, var(--lrn-accent));
+	color:        var(--lrn-white, var(--lrn-white));
+	cursor:       default;
+	box-shadow:   var(--lrn-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.lrn-pagination__btn--current:hover,
+.lrn-pagination__btn--current:focus-visible {
+	background:   var(--lrn-accent-hover, var(--lrn-accent-hover));
+	border-color: var(--lrn-accent-hover, var(--lrn-accent-hover));
+	color:        var(--lrn-white, var(--lrn-white));
+}
+
+/* Prev / Next — icon + label ghost buttons, bordered so the primary navigation
+   reads distinctly from the borderless number pills. */
+.lrn-pagination__btn--nav {
+	padding:      0 var(--lrn-sp-3, 12px);
+	border-color: var(--lrn-border, rgba(55, 53, 47, 0.09));
+	color:        var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-pagination__btn--nav:hover,
+.lrn-pagination__btn--nav:focus-visible {
+	background:   var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+	border-color: var(--lrn-border-heavy, rgba(55, 53, 47, 0.16));
+}
+
+.lrn-pagination__chevron {
+	display:     block;
+	flex-shrink: 0;
+}
+
+/* Prev/Next chevrons are directional glyphs — mirror them under RTL so
+   "Previous" still points back and "Next" still points forward. */
+[dir="rtl"] .lrn-pagination__chevron {
+	transform: scaleX(-1);
+}
+
+/* Disabled Prev/Next — neutral, no hover. */
+.lrn-pagination__btn--disabled {
+	color:        var(--lrn-text-placeholder, var(--lrn-text-placeholder));
+	background:   transparent;
+	border-color: var(--lrn-border, rgba(55, 53, 47, 0.09));
+	cursor:       not-allowed;
+	box-shadow:   none;
+}
+
+.lrn-pagination__btn--disabled:hover,
+.lrn-pagination__btn--disabled:focus-visible {
+	background:   transparent;
+	border-color: var(--lrn-border, rgba(55, 53, 47, 0.09));
+	color:        var(--lrn-text-placeholder, var(--lrn-text-placeholder));
+	box-shadow:   none;
+}
+
+/* Ellipsis — purely visual spacer between page ranges. */
+.lrn-pagination__ellipsis {
+	display:     inline-flex;
+	align-items: center;
+	min-width: 20px;
+	height:      32px;
+	color:       var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+	font-size:   var(--lrn-text-sm, 13px);
+	user-select: none;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 640px) {
+	.lrn-pagination {
+		flex-direction: column;
+		align-items:    stretch;
+		gap:            var(--lrn-sp-3, 12px);
+	}
+
+	.lrn-pagination__status {
+		text-align: center;
+	}
+
+	.lrn-pagination__list {
+		margin:          0 auto;
+		justify-content: center;
+		flex-wrap:       wrap;
+	}
+
+	/* Comfortable touch targets on phones (WCAG 2.5.5). */
+	.lrn-pagination__btn {
+		min-width: 40px;
+		height:    40px;
+	}
+}
+
+/* ==========================================================================
+   Dark mode — tokens are already reassigned by .lrn-dark; nothing to do.
+   Only the current-page white text stays fixed so contrast works in both.
+   ========================================================================== */
+
+/* ==========================================================================
+   Motion-safe override — matches skeleton's reduced-motion handling.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-pagination__btn {
+		transition: none;
+	}
+}

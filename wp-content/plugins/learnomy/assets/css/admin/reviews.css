@@ -1,0 +1,76 @@
+/**
+ * Learnomy — Reviews moderation page styles.
+ *
+ * Keeps page-specific overrides scoped under `.learnomy-admin` so the shared
+ * `.lrn-admin-table` / `.lrn-status-badge` rules from admin.css carry the
+ * rest of the layout. Tokens only; no hardcoded hex / px / colors anywhere.
+ *
+ * @package Learnomy
+ */
+
+.learnomy-admin .lrn-review-title {
+	display: block;
+	margin-bottom: var(--lrn-sp-1);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+}
+
+.learnomy-admin .lrn-review-excerpt {
+	margin: 0;
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+	line-height: 1.5;
+}
+
+.learnomy-admin .lrn-review-rating {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+}
+
+.learnomy-admin .lrn-review-star {
+	width: 16px;
+	height: 16px;
+	color: var(--lrn-bg-tertiary);
+}
+
+.learnomy-admin .lrn-review-star--filled {
+	color: var(--lrn-warn);
+	fill: currentColor;
+}
+
+/* Compact column widths so the review excerpt gets the space it needs and
+   the meta columns stay readable at typical admin viewport widths. */
+
+.learnomy-admin #lrn-reviews-table .column-author,
+.learnomy-admin #lrn-reviews-table .column-rating,
+.learnomy-admin #lrn-reviews-table .column-status,
+.learnomy-admin #lrn-reviews-table .column-date {
+	white-space: nowrap;
+}
+
+.learnomy-admin #lrn-reviews-table .column-review {
+	max-width: 420px;
+}
+
+.learnomy-admin #lrn-reviews-table .column-date {
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+/* Row-actions strip — same affordance as wp-admin's posts list. The link
+   colour comes from the global .lrn-link-danger / wp default. */
+.learnomy-admin #lrn-reviews-table .row-actions {
+	margin-top: var(--lrn-sp-2);
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-tertiary);
+}
+
+/* Stack the rating + status badges on narrow viewports so the table doesn't
+   blow past the page width — the shared .lrn-admin-table-wrap already
+   scrolls horizontally, but stacking reads better on tablets. */
+@media (max-width: 782px) {
+	.learnomy-admin #lrn-reviews-table .column-review {
+		max-width: none;
+	}
+}

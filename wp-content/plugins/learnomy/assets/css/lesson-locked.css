@@ -1,0 +1,95 @@
+/**
+ * Lesson drip-schedule locked state.
+ *
+ * Renders the centered countdown card inside the lesson player when the
+ * current viewer cannot yet access a drip-scheduled lesson, and styles the
+ * countdown chip used in the course outline curriculum.
+ *
+ * Token-only stylesheet — every value references a --lrn-* custom property
+ * declared in learnomy.css. No hardcoded colours, sizes, or fonts.
+ */
+
+.lrn-lesson-locked {
+	display:         flex;
+	flex-direction:  column;
+	align-items:     center;
+	gap:             var(--lrn-sp-3);
+	max-width: 560px;
+	margin:          var(--lrn-sp-6) auto;
+	padding:         var(--lrn-sp-6);
+	background:      var(--lrn-bg);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-lg);
+	text-align:      center;
+}
+
+.lrn-lesson-locked__icon {
+	width:           48px;
+	height:          48px;
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	border-radius:   9999px;
+	background:      var(--lrn-bg-secondary);
+	color:           var(--lrn-text-secondary);
+}
+
+.lrn-lesson-locked__title {
+	margin:      0;
+	font-size:   var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-lesson-locked__when {
+	margin:    0;
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-base);
+}
+
+.lrn-lesson-locked__back {
+	margin-top: var(--lrn-sp-3);
+}
+
+/* Countdown chip — used both inline in the curriculum and inside the
+   lesson-locked card. Keep it visually distinct from the lock icon so
+   students can see the time-to-unlock at a glance. */
+.lrn-countdown-chip {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-1);
+	padding:         var(--lrn-sp-1) var(--lrn-sp-3);
+	background:      var(--lrn-accent-bg);
+	color:           var(--lrn-accent);
+	border-radius:   9999px;
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-medium);
+	white-space:     nowrap;
+}
+
+/* Curriculum lock styles — locked rows are non-clickable and visually
+   muted. The lock icon and title both adopt the tertiary text colour.
+
+   The quiz variant was missing here, so a locked quiz drew a padlock beside a
+   title still painted the same colour as an open one — the row read as
+   clickable and did nothing. It went unnoticed while quizzes could only lock
+   behind their lesson; course-level access locking puts one in front of every
+   visitor who has not enrolled. */
+.lrn-curriculum__lesson--locked .lrn-curriculum__title--locked,
+.lrn-curriculum__topic--locked .lrn-curriculum__title--locked,
+.lrn-curriculum__quiz--locked .lrn-curriculum__title--locked {
+	color:           var(--lrn-text-tertiary);
+	text-decoration: none;
+	cursor:          default;
+	pointer-events:  none;
+}
+
+.lrn-curriculum__lock {
+	color: var(--lrn-text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-countdown-chip {
+		transition: none;
+	}
+}

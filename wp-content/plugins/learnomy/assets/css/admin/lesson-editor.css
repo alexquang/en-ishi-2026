@@ -1,0 +1,253 @@
+/**
+ * Lesson Editor — styles for the Editor.js lesson editing page.
+ *
+ * Scoped to .lrn-lesson-editor__* selectors. All values reference --lrn-*
+ * tokens defined in admin.css. No hardcoded colors, sizes, or fonts.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+
+.lrn-lesson-editor__header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	flex-wrap:       wrap;
+	gap:             var(--lrn-sp-3);
+}
+
+.lrn-lesson-editor__header h1 {
+	margin: 0;
+}
+
+.lrn-lesson-editor__header-actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+/* ==========================================================================
+   Title input
+   ========================================================================== */
+
+/* The lesson title now uses the shared labeled identity input
+   (.lrn-input--lg in admin.css) for consistency with the course editor —
+   the bespoke borderless heading input that used to live here was removed. */
+
+/* ==========================================================================
+   Editor.js container
+   ========================================================================== */
+
+/* The writing surface lives inside the bordered "Content" card, so it carries
+   no border or panel fill of its own — that would double up against the card.
+   Just a comfortable min-height and spacing below the card title. */
+.lrn-lesson-editor__editorjs {
+	/* Compact empty state. 400px read as a large blank void above the fold
+	   with the add-block (+) control floating in it; the editor grows as the
+	   author types. Matches the course-description editor's compact host. */
+	min-height:       180px;
+	margin-block-start: var(--lrn-sp-3);
+}
+
+/* Editor.js block-editor styling (full-width content, token type + tools) is
+   shared with the course Description host — see the "Editor.js host" block in
+   admin.css so both editors read identically. Only the lesson-specific
+   redactor bottom-padding lives here. */
+.lrn-lesson-editor__editorjs .codex-editor__redactor {
+	padding-bottom: var(--lrn-sp-10) !important;
+}
+
+/* ==========================================================================
+   Toast messages
+   ========================================================================== */
+
+.lrn-lesson-editor__toast {
+	display:       none;
+	margin-top:    var(--lrn-sp-3);
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-size:     var(--lrn-text-sm);
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-lesson-editor__toast--success {
+	background: var(--lrn-success-bg);
+	color:      var(--lrn-success);
+}
+
+.lrn-lesson-editor__toast--error {
+	background: var(--lrn-danger-bg);
+	color:      var(--lrn-danger);
+}
+
+/* ==========================================================================
+   Help text and linked values
+   ========================================================================== */
+
+.lrn-lesson-editor__help-text {
+	margin:    var(--lrn-sp-1) 0 0;
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+}
+
+/* Help text that is telling the author something is NOT in effect, rather than
+   explaining a field. Carries normal body contrast instead of the tertiary grey
+   the surrounding hints use: it changes what the control below it does, so it
+   has to out-rank the hints rather than sit among them. */
+.lrn-lesson-editor__help-text.lrn-lesson-editor__notice {
+	display:       flex;
+	gap:           var(--lrn-sp-2);
+	align-items:   flex-start;
+	margin-block:  var(--lrn-sp-2);
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	border-inline-start: 3px solid var(--lrn-accent);
+	border-radius: var(--lrn-radius-sm);
+	background:    var(--lrn-bg-subtle);
+	color:         var(--lrn-text-secondary);
+	font-size:     var(--lrn-text-xs);
+}
+
+/* The icon is a fixed marker, not content: without this the flex line squeezes
+   it to a 3px slice to make room for the text. */
+.lrn-lesson-editor__help-text.lrn-lesson-editor__notice > svg {
+	flex: 0 0 auto;
+	margin-block-start: 1px;
+}
+
+.lrn-lesson-editor__linked-value {
+	display:    block;
+	font-size:  var(--lrn-text-base);
+	color:      var(--lrn-accent);
+	text-decoration: none;
+}
+
+a.lrn-lesson-editor__linked-value:hover {
+	text-decoration: underline;
+}
+
+span.lrn-lesson-editor__linked-value {
+	color: var(--lrn-text);
+}
+
+/* ==========================================================================
+   Checkbox field override
+   ========================================================================== */
+
+.lrn-form-field--checkbox label {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	font-weight: var(--lrn-weight-normal);
+	cursor:      pointer;
+}
+
+.lrn-form-field--checkbox input[type="checkbox"] {
+	width:  auto;
+	margin: 0;
+}
+
+/* Inline checkbox control inside a standard labeled field. Lets a toggle
+   (e.g. Preview) sit in a 2-column grid with the same label-on-top / control-
+   below rhythm as a sibling select, so the row reads as two aligned fields
+   instead of a bare checkbox next to a labeled dropdown. */
+.lrn-form-field__checkbox-row {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	font-weight: var(--lrn-weight-normal);
+	color:       var(--lrn-text);
+	cursor:      pointer;
+}
+
+.lrn-form-field__checkbox-row input[type="checkbox"] {
+	width:  auto;
+	margin: 0;
+	flex:   0 0 auto;
+}
+
+/* ==========================================================================
+   Form alignment — keep every field grid in the editor on a clean baseline
+   ========================================================================== */
+
+/* Top-align grid cells so labels share a baseline even when one cell's control
+   (a select) is taller than its neighbour (a checkbox row). */
+#lrn-lesson-editor-wrap .lrn-form-grid {
+	align-items: start;
+}
+
+/* The full-width content block (Video URL / Protected video / Media file) sits
+   between two field grids; match the grid's bottom spacing so the section
+   keeps an even vertical rhythm instead of cramping against the next grid. */
+#lrn-lesson-editor-wrap .lrn-lesson-editor__content-block.lrn-form-field--wide {
+	margin-block-end: var(--lrn-sp-5);
+}
+
+/* Media-file picker — plug-and-play UI for audio / pdf / download lessons.
+   Big primary "Choose file" button; selected filename appears below as a
+   chip with a Remove link. Embed lessons swap to a URL input instead. */
+.lrn-lesson-editor__media-picker {
+	display: flex;
+	flex-direction: column;
+	gap:     var(--lrn-sp-2);
+	align-items: flex-start;
+}
+
+/* Explicit [hidden] resets — the picker / selected / embed-box rules above
+ * set `display: flex` / `inline-flex` which beats the user-agent default
+ * `[hidden] { display: none }`. Without these the JS-toggled visibility on
+ * content-type change was a no-op and Choose-PDF + Remove buttons stayed
+ * on-screen after switching to Embed. See Basecamp #9925181268. */
+.lrn-lesson-editor__media-picker[hidden],
+.lrn-lesson-editor__media-picker-selected[hidden],
+.lrn-lesson-editor__media-embed[hidden] {
+	display: none;
+}
+
+.lrn-lesson-editor__media-picker-btn {
+	min-width: 200px;
+}
+
+.lrn-lesson-editor__media-picker-selected {
+	display: inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	padding:     var(--lrn-sp-2) var(--lrn-sp-3);
+	background:  var(--lrn-bg-tertiary);
+	border-radius: var(--lrn-radius-md);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text);
+}
+
+.lrn-lesson-editor__media-picker-filename {
+	font-weight: var(--lrn-weight-medium);
+	max-width: 400px;
+	overflow:    hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-lesson-editor__media-embed input[type="url"] {
+	width: 100%;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+	.lrn-lesson-editor__header {
+		flex-direction: column;
+		align-items:    flex-start;
+	}
+}
+
+/* Editor.js tool notifications (e.g. a LinkTool "couldn't fetch" error) render
+   in a fixed .cdx-notifies stack whose default z-index sits BELOW the wp-admin
+   sidebar (#adminmenuwrap is 9990) and admin bar (100000), so the customer
+   could not read or dismiss them (Zoho #40688). Lift the stack above both. */
+.cdx-notifies,
+.cdx-notify {
+	z-index: 100001 !important;
+}

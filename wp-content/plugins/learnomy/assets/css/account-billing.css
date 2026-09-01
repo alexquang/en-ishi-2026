@@ -1,0 +1,185 @@
+/**
+ * Account billing dashboard (/account/billing/).
+ *
+ * This surface previously shipped with NO frontend stylesheet — it rendered as
+ * an unstyled table + divs (worst app-WebView gap on the commerce surfaces).
+ * Layout only here; the cross-surface .lrn-status-badge system lives in
+ * learnomy.css. Token-driven, mobile-first, RTL-safe (logical properties).
+ */
+
+.lrn-billing-section {
+	margin-block-start: var(--lrn-sp-8);
+}
+
+.lrn-billing-section__title {
+	margin-block-end: var(--lrn-sp-4);
+	font-size:        var(--lrn-text-lg);
+	font-weight:      var(--lrn-weight-semibold);
+	color:            var(--lrn-text);
+}
+
+/* Card grids (subscriptions + time-limited access). */
+.lrn-billing-grid {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap:                   var(--lrn-sp-4);
+}
+
+.lrn-billing-sub-card,
+.lrn-billing-tl-card {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-3);
+	padding:        var(--lrn-sp-5);
+}
+
+.lrn-billing-sub-card__head,
+.lrn-billing-tl-card__head {
+	display:         flex;
+	justify-content: space-between;
+	align-items:     flex-start;
+	gap:             var(--lrn-sp-3);
+}
+
+.lrn-billing-sub-card__title,
+.lrn-billing-tl-card__title {
+	margin:      0;
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-billing-sub-card__kind {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-billing-sub-card__meta {
+	display:               grid;
+	grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+	gap:                   var(--lrn-sp-3);
+	margin:                0;
+}
+
+.lrn-billing-sub-card__meta dt {
+	font-size:          var(--lrn-text-xs);
+	color:              var(--lrn-text-secondary);
+	margin-block-end:   2px;
+}
+
+.lrn-billing-sub-card__meta dd {
+	margin:      0;
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+}
+
+.lrn-billing-sub-card__note {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-2);
+	margin:        0;
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text-secondary);
+}
+
+.lrn-billing-sub-card__note i,
+.lrn-billing-sub-card__note svg {
+	flex: none;
+}
+
+.lrn-billing-sub-card__actions,
+.lrn-billing-tl-card__actions {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2);
+	margin-block-start: auto;
+}
+
+.lrn-billing-tl-card__meta {
+	margin:    0;
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-billing-tl-card--expired {
+	opacity: 0.72;
+}
+
+/* Order-history table. Wrapped card scrolls horizontally on narrow viewports
+   so the 5-column table never overflows the app WebView. */
+.lrn-account-billing .lrn-card--padded {
+	padding:    var(--lrn-sp-4);
+	overflow-x: auto;
+}
+
+.lrn-billing-orders {
+	width:           100%;
+	min-width:       520px;
+	border-collapse: collapse;
+}
+
+.lrn-billing-orders th,
+.lrn-billing-orders td {
+	padding:            var(--lrn-sp-3);
+	text-align:         start;
+	border-block-end:   1px solid var(--lrn-border);
+	vertical-align:     top;
+}
+
+.lrn-billing-orders th {
+	font-size:      var(--lrn-text-xs);
+	font-weight:    var(--lrn-weight-semibold);
+	color:          var(--lrn-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	/* No header underline (card C: drop the first top border) — the uppercase
+	   muted header reads as a header without it; inner row dividers remain. */
+	border-block-end: 0;
+}
+
+/* No trailing line under the last row (card C: drop the last bottom border). */
+.lrn-billing-orders tbody tr:last-child td {
+	border-block-end: 0;
+}
+
+.lrn-billing-orders__row--refunded {
+	opacity: 0.7;
+}
+
+/* Page-scoped utilities used by the billing template. */
+.lrn-account-billing .lrn-align-right { text-align: end; }
+.lrn-account-billing .lrn-muted       { color: var(--lrn-text-secondary); font-size: var(--lrn-text-sm); }
+.lrn-account-billing .lrn-strike      { text-decoration: line-through; }
+.lrn-account-billing .lrn-block       { display: block; }
+
+.lrn-account-billing .lrn-empty {
+	display:        flex;
+	flex-direction: column;
+	align-items:    center;
+	text-align:     center;
+	gap:            var(--lrn-sp-3);
+	padding:        var(--lrn-sp-8) var(--lrn-sp-4);
+}
+
+.lrn-account-billing .lrn-empty__icon {
+	width:  var(--lrn-sp-8);
+	height: var(--lrn-sp-8);
+	color:  var(--lrn-text-tertiary);
+}
+
+.lrn-account-billing .lrn-empty__text {
+	margin: 0;
+	color:  var(--lrn-text-secondary);
+}
+
+@media (max-width: 640px) {
+	.lrn-billing-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-billing-sub-card__actions,
+	.lrn-billing-tl-card__actions {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+}

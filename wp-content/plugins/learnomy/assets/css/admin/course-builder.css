@@ -1,0 +1,617 @@
+/**
+ * Course Builder — tree manager for curriculum editing.
+ *
+ * Scoped to .lrn-builder so nothing bleeds into other admin pages.
+ * All values reference --lrn-* tokens defined in admin.css.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+.lrn-builder {
+	max-width: 1024px;
+}
+
+.lrn-builder__header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	flex-wrap:       wrap;
+	gap:             var(--lrn-sp-3);
+	margin-bottom:   var(--lrn-sp-6);
+}
+
+.lrn-builder__header-actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+/* ==========================================================================
+   Section
+   ========================================================================== */
+
+.lrn-builder__section {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	box-shadow:    var(--lrn-shadow-sm);
+	margin-bottom: var(--lrn-sp-4);
+	overflow:      hidden;
+}
+
+.lrn-builder__section-header {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	padding:     var(--lrn-sp-4);
+	background:  var(--lrn-bg-secondary);
+	border-bottom: 1px solid var(--lrn-border);
+	cursor:      pointer;
+	user-select: none;
+}
+
+.lrn-builder__section-header:hover {
+	background: var(--lrn-bg-tertiary);
+}
+
+.lrn-builder__toggle {
+	flex-shrink: 0;
+	width:       20px;
+	height:      20px;
+	display:     flex;
+	align-items: center;
+	justify-content: center;
+	color:       var(--lrn-text-secondary);
+	transition:  transform var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-builder__section.is-collapsed .lrn-builder__toggle {
+	transform: rotate(-90deg);
+}
+
+.lrn-builder__section-title {
+	flex:        1;
+	min-width:   0;
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	overflow:    hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-builder__section-actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	flex-shrink: 0;
+}
+
+.lrn-builder__section-body {
+	padding: 0;
+}
+
+.lrn-builder__section.is-collapsed .lrn-builder__section-body {
+	display: none;
+}
+
+/* ==========================================================================
+   Item row (lesson, topic, quiz)
+   ========================================================================== */
+
+.lrn-builder__items {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-builder__item {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	border-bottom: 1px solid var(--lrn-divider);
+	transition:    background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-builder__item:last-child {
+	border-bottom: none;
+}
+
+.lrn-builder__item:hover {
+	background: var(--lrn-bg-hover);
+}
+
+/* Indent levels */
+.lrn-builder__item--lesson {
+	padding-inline-start: var(--lrn-sp-8);
+}
+
+.lrn-builder__item--topic {
+	padding-inline-start: calc(var(--lrn-sp-8) + var(--lrn-sp-6));
+}
+
+.lrn-builder__item--quiz {
+	padding-inline-start: var(--lrn-sp-8);
+}
+
+/* Type icon */
+.lrn-builder__item-icon {
+	flex-shrink: 0;
+	width:       20px;
+	height:      20px;
+	display:     flex;
+	align-items: center;
+	justify-content: center;
+	color:       var(--lrn-text-tertiary);
+	font-size:   var(--lrn-text-md);
+}
+
+.lrn-builder__item-icon--lesson {
+	color: var(--lrn-accent);
+}
+
+.lrn-builder__item-icon--topic {
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-builder__item-icon--quiz {
+	color: var(--lrn-warn);
+}
+
+/* Title link */
+.lrn-builder__item-title {
+	flex:            1;
+	min-width:       0;
+	font-size:       var(--lrn-text-base);
+	font-weight:     var(--lrn-weight-medium);
+	color:           var(--lrn-text);
+	overflow:        hidden;
+	text-overflow:   ellipsis;
+	white-space:     nowrap;
+	text-decoration: none;
+}
+
+.lrn-builder__item-title:hover {
+	color:           var(--lrn-accent);
+	text-decoration: none;
+}
+
+/* Status tag */
+.lrn-builder__item-status {
+	flex-shrink: 0;
+	font-size:   var(--lrn-text-xs);
+	padding:     2px var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-builder__item-status--draft {
+	background: var(--lrn-bg-tertiary);
+	color:      var(--lrn-text-secondary);
+}
+
+.lrn-builder__item-status--publish {
+	background: var(--lrn-success-bg);
+	color:      var(--lrn-success);
+}
+
+/*
+ * Where a quiz renders for students ("Under: <lesson>" / "End of section").
+ * Quieter than the status tag beside it on purpose: status is an exception
+ * worth noticing, placement is standing information on every quiz row.
+ */
+.lrn-builder__item-placement {
+	flex-shrink:   0;
+	font-size:     var(--lrn-text-xs);
+	padding:       2px var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+	background:    var(--lrn-bg-tertiary);
+	color:         var(--lrn-text-secondary);
+	white-space:   nowrap;
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	max-inline-size: 16rem;
+}
+
+/* Action buttons */
+.lrn-builder__item-actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Icon buttons (reorder, edit, delete)
+   ========================================================================== */
+
+.lrn-builder__icon-btn {
+	display:     inline-flex;
+	align-items: center;
+	justify-content: center;
+	width:       28px;
+	height:      28px;
+	padding:     0;
+	border:      none;
+	background:  transparent;
+	/* Was --lrn-text-tertiary (~2.7:1 on the card) — the Move/Rename/Delete
+	   icons read as "barely there" and were hard to identify. Secondary text
+	   clears the 3:1 UI-icon contrast floor while staying calm; hover below
+	   promotes to full --lrn-text. */
+	color:       var(--lrn-text-secondary);
+	border-radius: var(--lrn-radius-sm);
+	cursor:      pointer;
+	transition:  background var(--lrn-dur) var(--lrn-ease),
+	             color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-builder__icon-btn:hover {
+	background: var(--lrn-bg-active);
+	color:      var(--lrn-text);
+}
+
+.lrn-builder__icon-btn--danger:hover {
+	background: var(--lrn-danger-bg);
+	color:      var(--lrn-danger);
+}
+
+.lrn-builder__icon-btn:disabled {
+	opacity: 0.3;
+	cursor:  not-allowed;
+}
+
+/* `.lrn-builder__icon-btn .dashicons` lived here until 1.8.1 and matched
+   nothing: the builder moved to Lucide SVGs and neither course-builder.php nor
+   course-builder.js emits a dashicon (Basecamp 10144266079). Removed rather
+   than left as a comment-free orphan — dead selectors read as "this markup
+   might come back" to the next person sizing an icon. */
+
+/* ==========================================================================
+   Section footer — add lesson / quiz / attach
+   ========================================================================== */
+
+.lrn-builder__section-footer {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	padding-inline-start: var(--lrn-sp-8);
+	border-top:  1px solid var(--lrn-divider);
+}
+
+.lrn-builder__add-btn {
+	display:       inline-flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-1);
+	padding:       var(--lrn-sp-1) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-sm);
+	font-weight:   var(--lrn-weight-medium);
+	color:         var(--lrn-accent);
+	background:    transparent;
+	border:        1px dashed var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	cursor:        pointer;
+	transition:    background var(--lrn-dur) var(--lrn-ease),
+	               border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-builder__add-btn:hover {
+	background:   var(--lrn-accent-bg);
+	border-color: var(--lrn-accent);
+}
+
+/* ==========================================================================
+   Top-level "Add Section" button
+   ========================================================================== */
+
+.lrn-builder__add-section {
+	margin-bottom: var(--lrn-sp-4);
+}
+
+/* ==========================================================================
+   Empty state (no sections)
+   ========================================================================== */
+
+.lrn-builder__empty {
+	display:        flex;
+	flex-direction: column;
+	align-items:    center;
+	justify-content: center;
+	padding:        var(--lrn-sp-12) var(--lrn-sp-6);
+	text-align:     center;
+	background:     var(--lrn-bg-secondary);
+	border:         1px dashed var(--lrn-border-heavy);
+	border-radius:  var(--lrn-radius-lg);
+}
+
+.lrn-builder__empty-icon {
+	font-size:     var(--lrn-text-3xl);
+	width:         36px;
+	height:        36px;
+	color:         var(--lrn-text-tertiary);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-builder__empty-title {
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-2);
+	color:       var(--lrn-text);
+}
+
+.lrn-builder__empty-desc {
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text-secondary);
+	margin:        0 0 var(--lrn-sp-5);
+	max-width: 360px;
+}
+
+/* ==========================================================================
+   Attach / search modal
+   ========================================================================== */
+
+.lrn-builder-modal {
+	display:          none;
+	position:         fixed;
+	inset:            0;
+	z-index:          100100;
+	background:       rgba(0, 0, 0, 0.45);
+	align-items:      center;
+	justify-content:  center;
+}
+
+.lrn-builder-modal.is-open {
+	display: flex;
+}
+
+.lrn-builder-modal__dialog {
+	background:    var(--lrn-bg);
+	border-radius: var(--lrn-radius-xl);
+	box-shadow:    var(--lrn-shadow-md);
+	width:         520px;
+	max-width:     90vw;
+	max-height:    80vh;
+	max-height:    80dvh;
+	display:       flex;
+	flex-direction: column;
+	overflow:      hidden;
+}
+
+.lrn-builder-modal__header {
+	display:       flex;
+	align-items:   center;
+	justify-content: space-between;
+	padding:       var(--lrn-sp-4) var(--lrn-sp-5);
+	border-bottom: 1px solid var(--lrn-border);
+}
+
+.lrn-builder-modal__title {
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0;
+}
+
+.lrn-builder-modal__close {
+	display:     inline-flex;
+	align-items: center;
+	justify-content: center;
+	width:       28px;
+	height:      28px;
+	border:      none;
+	background:  transparent;
+	color:       var(--lrn-text-secondary);
+	cursor:      pointer;
+	border-radius: var(--lrn-radius-sm);
+}
+
+.lrn-builder-modal__close:hover {
+	background: var(--lrn-bg-active);
+	color:      var(--lrn-text);
+}
+
+.lrn-builder-modal__body {
+	padding:    var(--lrn-sp-4) var(--lrn-sp-5);
+	overflow-y: auto;
+	flex:       1;
+}
+
+.lrn-builder-modal__search {
+	width:         100%;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	margin-bottom: var(--lrn-sp-4);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+}
+
+.lrn-builder-modal__search:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-builder-modal__search:focus:not(:focus-visible) {
+	outline:    none;
+	border-color: var(--lrn-accent);
+	box-shadow: 0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-builder-modal__results {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+}
+
+.lrn-builder-modal__result {
+	display:       flex;
+	align-items:   center;
+	justify-content: space-between;
+	gap:           var(--lrn-sp-3);
+	padding:       var(--lrn-sp-3);
+	border-radius: var(--lrn-radius-md);
+	cursor:        pointer;
+	transition:    background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-builder-modal__result:hover {
+	background: var(--lrn-bg-hover);
+}
+
+.lrn-builder-modal__result-title {
+	flex:        1;
+	min-width:   0;
+	font-size:   var(--lrn-text-base);
+	color:       var(--lrn-text);
+	overflow:    hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-builder-modal__result-type {
+	flex-shrink: 0;
+	font-size:   var(--lrn-text-xs);
+	color:       var(--lrn-text-tertiary);
+	text-transform: uppercase;
+}
+
+/* "in another course" flag on a search result — the admin sees the
+   move-vs-copy decision coming BEFORE they click (Basecamp 10153330214). */
+.lrn-builder-modal__result-note {
+	flex-shrink:   0;
+	font-size:     var(--lrn-text-xs);
+	color:         var(--lrn-warning, var(--lrn-text-tertiary));
+	background:    var(--lrn-bg-subtle);
+	border-radius: var(--lrn-radius-sm);
+	padding:       0 var(--lrn-sp-2);
+}
+
+/* Move-or-copy decision panel, swapped into the results list. */
+.lrn-builder-modal__choice {
+	padding: var(--lrn-sp-4);
+}
+
+.lrn-builder-modal__choice-title {
+	margin:      0 0 var(--lrn-sp-2);
+	font-size:   var(--lrn-text-base);
+	font-weight: 600;
+	color:       var(--lrn-text);
+	overflow-wrap: anywhere;
+}
+
+.lrn-builder-modal__choice-help {
+	margin:    0 0 var(--lrn-sp-4);
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-builder-modal__choice-actions {
+	display:   flex;
+	gap:       var(--lrn-sp-2);
+	flex-wrap: wrap;
+}
+
+.lrn-builder-modal__empty {
+	text-align: center;
+	padding:    var(--lrn-sp-6);
+	color:      var(--lrn-text-tertiary);
+	font-size:  var(--lrn-text-sm);
+}
+
+.lrn-builder-modal__loading {
+	text-align: center;
+	padding:    var(--lrn-sp-6);
+	color:      var(--lrn-text-tertiary);
+	font-size:  var(--lrn-text-sm);
+}
+
+/* ==========================================================================
+   Inline rename input
+   ========================================================================== */
+
+.lrn-builder__rename-input {
+	flex:          1;
+	min-width:     0;
+	padding:       var(--lrn-sp-1) var(--lrn-sp-2);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	font-weight:   var(--lrn-weight-medium);
+	border:        1px solid var(--lrn-accent);
+	border-radius: var(--lrn-radius-sm);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+	box-shadow:    0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-builder__rename-input:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-builder__rename-input:focus:not(:focus-visible) {
+	outline: none;
+}
+
+/* ==========================================================================
+   Loading spinner for REST calls
+   ========================================================================== */
+
+.lrn-builder__spinner {
+	display:     inline-block;
+	width:       14px;
+	height:      14px;
+	border:      2px solid var(--lrn-border-heavy);
+	border-top:  2px solid var(--lrn-accent);
+	border-radius: 50%;
+	animation:   lrn-spin 0.6s linear infinite;
+}
+
+@keyframes lrn-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Full-width button helper
+   ========================================================================== */
+
+.lrn-admin-btn--full {
+	width:           100%;
+	justify-content: center;
+}
+
+/* ==========================================================================
+   Toast notification
+   ========================================================================== */
+
+.lrn-builder-toast {
+	position:      fixed;
+	bottom:        var(--lrn-sp-6);
+	inset-inline-end: var(--lrn-sp-6);
+	z-index:       100200;
+	padding:       var(--lrn-sp-3) var(--lrn-sp-5);
+	border-radius: var(--lrn-radius-md);
+	font-size:     var(--lrn-text-sm);
+	font-weight:   var(--lrn-weight-medium);
+	color:         var(--lrn-white);
+	background:    var(--lrn-text);
+	box-shadow:    var(--lrn-shadow-md);
+	opacity:       0;
+	transform:     translateY(10px);
+	transition:    opacity 0.2s ease, transform 0.2s ease;
+	pointer-events: none;
+}
+
+.lrn-builder-toast.is-visible {
+	opacity:        1;
+	transform:      translateY(0);
+	pointer-events: auto;
+}
+
+.lrn-builder-toast--error {
+	background: var(--lrn-danger);
+}

@@ -1,0 +1,211 @@
+/**
+ * Learnomy — Modules admin page.
+ *
+ * Card grid where the site owner toggles every Free/Pro module. Loaded only
+ * on toplevel_page_learnomy_page_learnomy-modules. Token-driven, no
+ * hardcoded hex/px (per docs/UX-GUIDELINES.md §1.1).
+ */
+
+.lrn-modules-page .lrn-modules-pro-notice {
+	margin-top: var(--lrn-sp-4);
+}
+
+.lrn-modules-category {
+	margin-top:     var(--lrn-sp-8);
+	padding-bottom: var(--lrn-sp-2);
+	border-bottom:  1px solid var(--lrn-border);
+	font-size:      var(--lrn-text-md, 16px);
+	font-weight:    var(--lrn-weight-semibold, 600);
+}
+
+.lrn-modules-grid {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap:                   var(--lrn-sp-4);
+	margin-top:            var(--lrn-sp-4);
+}
+
+.lrn-module-card {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2);
+	padding:        var(--lrn-sp-4);
+	background:     var(--lrn-bg);
+	border:         1px solid var(--lrn-border);
+	border-radius:  var(--lrn-radius-md);
+	transition:     border-color 120ms ease;
+}
+
+.lrn-module-card--enabled {
+	border-color: var(--lrn-accent);
+}
+
+.lrn-module-card__head {
+	display:         flex;
+	justify-content: space-between;
+	align-items:     flex-start;
+	gap:             var(--lrn-sp-3);
+}
+
+.lrn-module-card__body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.lrn-module-card__title {
+	margin:      0 0 var(--lrn-sp-1);
+	font-size:   var(--lrn-text-base, 14px);
+	font-weight: var(--lrn-weight-semibold, 600);
+	line-height: var(--lrn-leading-tight, 1.2);
+}
+
+.lrn-module-card__pill {
+	display:         inline-block;
+	margin-inline-start:     var(--lrn-sp-1);
+	padding:         2px var(--lrn-sp-2);
+	border-radius:   var(--lrn-radius-sm);
+	font-size:       var(--lrn-text-xs, 10px);
+	font-weight:     var(--lrn-weight-semibold, 600);
+	vertical-align:  middle;
+	text-decoration: none;
+}
+
+.lrn-module-card__pill--pro {
+	background: var(--lrn-gold);
+	color:      var(--lrn-text);
+}
+
+.lrn-module-card__pill--pro:hover,
+.lrn-module-card__pill--pro:focus {
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-module-card__pill--beta {
+	background: var(--lrn-danger);
+	color:      var(--lrn-bg);
+}
+
+.lrn-module-card__toggle {
+	display:     inline-flex;
+	align-items: center;
+	cursor:      pointer;
+	flex-shrink: 0;
+}
+
+.lrn-module-card--required .lrn-module-card__toggle,
+.lrn-module-card--pro-locked .lrn-module-card__toggle {
+	cursor: not-allowed;
+}
+
+/* A Pro module with Pro inactive: dim the whole card so the locked toggle
+   reads as "unavailable here" rather than "off by choice". */
+.lrn-module-card--pro-locked {
+	opacity: 0.85;
+}
+
+.lrn-module-card__desc {
+	margin:      0;
+	color:       var(--lrn-text-secondary);
+	font-size:   var(--lrn-text-sm, 13px);
+	line-height: var(--lrn-leading-normal, 1.5);
+}
+
+.lrn-module-card__required-note {
+	margin:      0;
+	color:       var(--lrn-text-tertiary);
+	font-size:   var(--lrn-text-xs, 11px);
+	font-style:  italic;
+}
+
+/* Surface map — what enabling / disabling the module turns on or off. Renders
+   under the description so the owner is never toggling blind. */
+.lrn-module-card__surfaces {
+	margin-top:    var(--lrn-sp-1);
+	padding-top:   var(--lrn-sp-2);
+	border-top:    1px solid var(--lrn-border);
+}
+
+.lrn-module-card__surfaces-label {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	margin:      0 0 var(--lrn-sp-1);
+	color:       var(--lrn-text-tertiary);
+	font-size:   var(--lrn-text-xs, 11px);
+	font-weight: var(--lrn-weight-semibold, 600);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.lrn-module-card__surfaces-icon {
+	width:  14px;
+	height: 14px;
+	flex-shrink: 0;
+}
+
+.lrn-module-card__surfaces-list {
+	margin:            0;
+	padding-inline-start: var(--lrn-sp-4);
+	list-style:        disc;
+	color:             var(--lrn-text-secondary);
+	font-size:         var(--lrn-text-sm, 13px);
+	line-height:       var(--lrn-leading-normal, 1.5);
+}
+
+.lrn-module-card__surfaces-list li {
+	margin: 0 0 var(--lrn-sp-1);
+}
+
+.lrn-module-card__surfaces-list li:last-child {
+	margin-bottom: 0;
+}
+
+/* Live commitments — what a module that is already OFF still owes people
+   (members still being billed, payouts still due, certificates already
+   awarded). Deliberately warning-coloured and sitting above the toggle's own
+   notes: an owner scanning this page must be able to see, months later, that
+   a switched-off module is still charging somebody. */
+.lrn-module-card__commitments {
+	margin-top:       var(--lrn-sp-2);
+	padding:          var(--lrn-sp-2) var(--lrn-sp-3);
+	border-inline-start: 3px solid var(--lrn-warn);
+	border-radius:    var(--lrn-radius-sm);
+	background:       color-mix(in srgb, var(--lrn-warn) 8%, transparent);
+}
+
+.lrn-module-card__commitments-label {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	margin:      0 0 var(--lrn-sp-1);
+	color:       var(--lrn-warn);
+	font-size:   var(--lrn-text-xs, 11px);
+	font-weight: var(--lrn-weight-semibold, 600);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.lrn-module-card__commitments-icon {
+	width:  14px;
+	height: 14px;
+	flex-shrink: 0;
+}
+
+.lrn-module-card__commitments-list {
+	margin:               0;
+	padding-inline-start: var(--lrn-sp-4);
+	list-style:           disc;
+	color:                var(--lrn-text-secondary);
+	font-size:            var(--lrn-text-sm, 13px);
+	line-height:          var(--lrn-leading-normal, 1.5);
+}
+
+.lrn-module-card__commitments-list li {
+	margin: 0 0 var(--lrn-sp-1);
+}
+
+.lrn-module-card__commitments-list li:last-child {
+	margin-bottom: 0;
+}
+

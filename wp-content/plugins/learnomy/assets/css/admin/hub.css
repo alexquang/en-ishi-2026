@@ -1,0 +1,131 @@
+/**
+ * Learnomy admin — Hub template.
+ *
+ * Canonical pattern for any admin "hub" page: a grid of nav cards, each card
+ * being icon + title + one-line description + chevron, linking to a
+ * sub-page. Replaces the byte-identical commerce-overview.css and
+ * pro-tools-hub.css drift (each defined the same recipe under a different
+ * class name) and any future hub page (Pro Tools, Commerce, Setup, etc.)
+ * must use these classes — see plan/2026-05-23-admin-ux-audit/REPORT.md
+ * §2.3 + §4.3.
+ *
+ * Markup contract (per REPORT.md §4.3):
+ *
+ *   <div class="lrn-admin-hub-grid">
+ *     <a class="lrn-admin-hub-card" href="...">
+ *       <span class="lrn-admin-hub-card__icon"><i data-lucide="..."></i></span>
+ *       <span class="lrn-admin-hub-card__body">
+ *         <span class="lrn-admin-hub-card__title">...</span>
+ *         <span class="lrn-admin-hub-card__desc">...</span>
+ *       </span>
+ *       <span class="lrn-admin-hub-card__chevron"><i data-lucide="chevron-right"></i></span>
+ *     </a>
+ *   </div>
+ *
+ * @package Learnomy\Admin
+ */
+
+.lrn-admin-hub-grid {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap:                   var(--lrn-sp-4);
+	margin-block-start:    var(--lrn-sp-4);
+}
+
+/*
+ * Section heading above each group of cards. Eleven cards in one flat grid
+ * made an owner read every title to find one tool; three headings answer
+ * "which part of my job is this" first.
+ *
+ * Logical properties so the spacing mirrors under RTL, and tokens rather
+ * than the admin default so it tracks dark mode with the cards below it.
+ */
+.lrn-admin-hub-group__title {
+	margin-block:  var(--lrn-sp-6) 0;
+	color:         var(--lrn-text-muted);
+	font-size:     var(--lrn-text-sm);
+	font-weight:   600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+/* First heading sits directly under the page header — no double gap. */
+.lrn-admin-hub-group__title:first-of-type {
+	margin-block-start: var(--lrn-sp-4);
+}
+
+.lrn-admin-hub-card {
+	display:         flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-4);
+	background:      var(--lrn-bg);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	color:           var(--lrn-text);
+	text-decoration: none;
+	transition:      border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lrn-admin-hub-card:hover,
+.lrn-admin-hub-card:focus {
+	border-color:    var(--lrn-accent);
+	box-shadow:      0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
+	color:           var(--lrn-text);
+	text-decoration: none;
+	transform:       translateY(-1px);
+}
+
+.lrn-admin-hub-card__icon {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	flex-shrink:     0;
+	width:           40px;
+	height:          40px;
+	background:      var(--lrn-accent-bg);
+	color:           var(--lrn-accent);
+	border-radius:   var(--lrn-radius-sm);
+}
+
+.lrn-admin-hub-card__icon svg {
+	width:  20px;
+	height: 20px;
+}
+
+.lrn-admin-hub-card__body {
+	display:        flex;
+	flex:           1 1 auto;
+	flex-direction: column;
+	min-width:      0;
+	gap:            var(--lrn-sp-1);
+}
+
+.lrn-admin-hub-card__title {
+	font-weight: 600;
+	font-size:   var(--lrn-text-md);
+}
+
+.lrn-admin-hub-card__desc {
+	color:       var(--lrn-text-secondary);
+	font-size:   var(--lrn-text-sm);
+	line-height: 1.4;
+}
+
+.lrn-admin-hub-card__chevron {
+	display:     inline-flex;
+	flex-shrink: 0;
+	color:       var(--lrn-text-tertiary);
+	transition:  color 0.15s ease, transform 0.15s ease;
+}
+
+.lrn-admin-hub-card:hover .lrn-admin-hub-card__chevron,
+.lrn-admin-hub-card:focus .lrn-admin-hub-card__chevron {
+	color:     var(--lrn-accent);
+	transform: translateX(2px);
+}
+
+.lrn-admin-hub-card__chevron svg {
+	width:  18px;
+	height: 18px;
+}

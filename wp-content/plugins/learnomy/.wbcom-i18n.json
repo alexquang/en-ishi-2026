@@ -1,0 +1,85 @@
+{
+  "domain": "learnomy",
+  "potFile": "languages/learnomy.pot",
+  "languagesDir": "languages",
+  "engine": "claude",
+  "model": "haiku",
+  "batch": 200,
+  "makeJson": true,
+  "protect": [
+    "Learnomy",
+    "Pro",
+    "WordPress",
+    "WooCommerce",
+    "Stripe",
+    "PayPal",
+    "REST",
+    "API",
+    "URL",
+    "CSV",
+    "AI",
+    "oEmbed",
+    "YouTube",
+    "Vimeo",
+    "Editor.js",
+    "HTML",
+    "PDF",
+    "JWT",
+    "Ed25519"
+  ],
+  "glossary": {
+    "course": "",
+    "lesson": "",
+    "quiz": "",
+    "enrollment": "",
+    "certificate": "",
+    "instructor": ""
+  },
+  "locales": [
+    {
+      "locale": "de_DE",
+      "name": "German",
+      "register": "informal (du)"
+    },
+    {
+      "locale": "fr_FR",
+      "name": "French",
+      "register": "informal (tu)"
+    },
+    {
+      "locale": "es_ES",
+      "name": "Spanish",
+      "register": "informal (t\u00fa)"
+    },
+    {
+      "locale": "it_IT",
+      "name": "Italian",
+      "register": "informal (tu)"
+    },
+    {
+      "locale": "pt_BR",
+      "name": "Portuguese (Brazil)",
+      "register": "informal (voc\u00ea)"
+    },
+    {
+      "locale": "nl_NL",
+      "name": "Dutch",
+      "register": "informal (je)"
+    },
+    {
+      "locale": "pl_PL",
+      "name": "Polish",
+      "register": "informal"
+    },
+    {
+      "locale": "sv_SE",
+      "name": "Swedish",
+      "register": "informal"
+    },
+    {
+      "locale": "ru_RU",
+      "name": "Russian",
+      "register": "polite (\u0432\u044b)"
+    }
+  ]
+}

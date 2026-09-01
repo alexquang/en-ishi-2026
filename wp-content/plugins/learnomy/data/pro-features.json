@@ -1,0 +1,300 @@
+{
+    "generated_at": "2026-08-03T15:48:23+00:00",
+    "source": "learnomy-pro/includes/extensions/*/manifest.json",
+    "count": 23,
+    "features": [
+        {
+            "slug": "advanced-quizzes",
+            "name": "Advanced Quizzes",
+            "description": "Five Pro question types (matching, ordering, numeric, math, calculated), timed questions, random pools, rubric grading, and KaTeX math rendering in the quiz player.",
+            "category": "content",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Instructor builds a quiz from a pool of 50 questions, picks 10 at random per attempt",
+                "Instructor sets a 60-second timer per question (server-enforced on every layout; client auto-advance-on-timeout on the focused quiz layout)",
+                "Instructor grades essay questions against a 5-criterion rubric (admin Rubric Grading subpage)",
+                "Instructor authors matching + ordering question types — types only appear in the question-author dropdown when this extension is active (Free's QuestionTypes::all() default omits them; the learnomy_question_types filter re-adds them on top of whatever Free returns)",
+                "Instructor authors a numeric question with an answer and a tolerance (absolute or percent) so near-miss values still grade correct",
+                "Instructor authors a math-expression question; the student's algebraically-equivalent answer (e.g. 2(x+1) vs 2x+2) grades correct via sampling-based symbolic equivalence, evaluated in a sandbox with no eval()",
+                "Instructor authors a calculated question with variable ranges; each attempt seeds deterministic per-attempt values, substitutes them into the stem, and grades against the freshly computed answer",
+                "Student sees LaTeX math in a quiz stem/option/explanation rendered as typeset math via vendored KaTeX, with dynamically injected math re-rendered on the fly"
+            ]
+        },
+        {
+            "slug": "ai-authoring",
+            "name": "AI Authoring",
+            "description": "AI-assisted course, lesson, and question authoring on top of WordPress core AI Connectors. Admin + Instructor, draft-first.",
+            "category": "operations",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": []
+        },
+        {
+            "slug": "analytics",
+            "name": "Advanced Analytics",
+            "description": "Revenue trends, course performance, student engagement, quiz statistics, and CSV/PDF exports.",
+            "category": "operations",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Admin opens Analytics → Overview, sees revenue summary + active student count + average progress + average time-on-lesson, all from real data",
+                "Admin filters by date period (7d / 30d / 90d / 365d) — all queries refetch with the new range",
+                "Admin clicks any course → drilldown shows enrollments + revenue + completion rate for that course",
+                "Admin exports any report to CSV or PDF for offline review"
+            ]
+        },
+        {
+            "slug": "assignments",
+            "name": "Assignments",
+            "description": "Lesson-attached assignments with text submission and inline instructor grading.",
+            "category": "content",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Admin opens Learnomy → Assignments, clicks Add New, picks a lesson + sets max score + due date, saves",
+                "Enrolled student opens that lesson, sees the assignment widget below the lesson content, types text + submits — sees Submitted state immediately",
+                "Admin clicks Grade for the assignment, sees all submissions with student name + content, types score + optional feedback, clicks Grade",
+                "Student returns to lesson, sees their score (X / max) + feedback in the widget"
+            ]
+        },
+        {
+            "slug": "certificates-pro",
+            "name": "Certificates Pro",
+            "description": "Open Badges 3.0, Credly integration, a tamper-evident certificate hash registry, and employer verification.",
+            "category": "student",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Student earns a certificate, the issuer auto-pushes it to their Credly account",
+                "Employer scans QR code on cert, lands on verification page showing OB3 badge.json + signature status",
+                "Site owner anchors a SHA-256 hash of each cert to local registry (placeholder; future OpenTimestamps)"
+            ]
+        },
+        {
+            "slug": "cohorts",
+            "name": "Cohorts",
+            "description": "Group learning with scheduled start/end dates and cohort-scoped enrollment.",
+            "category": "community",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Site owner clicks Add New Cohort, enters name + selects course + sets dates + capacity, saves — cohort persists with status",
+                "Admin edits an existing cohort's status from draft → open to start accepting members",
+                "Admin adds a student to the cohort by email; student is auto-enrolled in the cohort's course with cohort_id stored on the enrollment row",
+                "Student visits /cohorts/{id}/ and sees the cohort name, course, dates, capacity. If they're a member, sees a Continue Learning button to the course."
+            ]
+        },
+        {
+            "slug": "content-drip",
+            "name": "Content Drip",
+            "description": "Schedule when lessons unlock — by days, date, or prerequisite completion.",
+            "category": "content",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Instructor sets Lesson 5 to unlock 7 days after enrollment",
+                "Instructor sets Lesson 10 to unlock only after Quiz 3 passes",
+                "Instructor sets all Module 2 lessons to unlock on a fixed calendar date"
+            ]
+        },
+        {
+            "slug": "frontend-builder",
+            "name": "Frontend Course Builder",
+            "description": "Instructors create and manage courses entirely from the frontend — no wp-admin access required. Multi-step wizard for create, full editor for ongoing management.",
+            "category": "course-management",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Instructor visits /instructor/create-course/ and walks the 4-step wizard (Course Info → Curriculum → Settings → Review & Publish)",
+                "On Publish, the course is created via POST /learnomy/v1/courses and the browser navigates to /instructor/edit-course/{id}/ so the persistent editor template loads; the query flag is read off the save response's status, so ?published=1 only ever appears over a published row, ?submitted=1 over pending_review, and no flag at all when the server declined the transition",
+                "From the editor, the instructor can add sections, lessons, quizzes, drip rules, certificate templates, prerequisites, tags, and co-instructors — every action persists via REST",
+                "Inline category creation hits POST /learnomy/v1/categories (gated to course creators by Permission_Engine — Free@bdd93fb)",
+                "Inline tag creation hits POST /learnomy/v1/tags (same gate)",
+                "Students who follow a stale /instructor/create-course/ link are redirected to the catalog with ?access=instructors_only — themed page, not a raw wp_die()"
+            ]
+        },
+        {
+            "slug": "gradebook",
+            "name": "Gradebook",
+            "description": "Weighted per-course grade computed from the existing quiz, assignment, and SCORM scores, with manual instructor overrides and CSV export.",
+            "category": "reporting",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "As an instructor I set how much quizzes, assignments and standards packages each count toward the course grade, and a pass threshold.",
+                "As an instructor I see every enrolled student's weighted grade in one paginated grid and can override a grade with a reason.",
+                "As a student I see my own weighted grade per course at /account/grades/.",
+                "As a site owner I export a course's grades to CSV."
+            ]
+        },
+        {
+            "slug": "h5p",
+            "name": "H5P",
+            "description": "Attach existing H5P interactive content as a lesson (bridge to the official H5P plugin). Completion flows into the one progress pipeline; the score stays in H5P's own store.",
+            "category": "integration",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": []
+        },
+        {
+            "slug": "learning-paths",
+            "name": "Learning Paths",
+            "description": "Curated, ordered course sequences with sequential gating and a path-level certificate on completion.",
+            "category": "content",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Admin creates a learning path with title, description, sequential flag, and certificate template",
+                "Admin adds course/quiz steps via the REST API or admin AJAX (save/delete/add-step/remove-step)",
+                "Student visits /paths/ to browse the catalog of published paths",
+                "Student visits /paths/{slug}/ to view curriculum and click 'Enroll' — auto-enrolls in every course step",
+                "On a sequential path, can_access_step() refuses access to a step until all earlier required steps are complete",
+                "When the student finishes the last required step, on_course_completed() fires, the path is marked complete, and the path-level certificate is issued (course_id column repurposed to store path_id)"
+            ]
+        },
+        {
+            "slug": "lti",
+            "name": "LTI 1.3",
+            "description": "Let an LMS (Canvas, Moodle, Blackboard) launch Learnomy courses as an LTI 1.3 tool, with AGS grade passback.",
+            "category": "integration",
+            "status": "beta",
+            "version": "1.0.0",
+            "user_stories": []
+        },
+        {
+            "slug": "membership-pro",
+            "name": "Memberships Pro",
+            "description": "Plan changes with fair credit, pause/resume, payment retries, refunds, gifts, and revenue analytics.",
+            "category": "commerce",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Site owner upgrades a subscriber's plan with fair credit calculated from remaining period",
+                "Site owner pauses a subscription and resumes later with time-aware extension",
+                "Failed payment triggers configurable dunning retry sequence (conservative/standard/aggressive)",
+                "Buyer purchases a gift; Gift_Code::issue() creates a row in lrn_pro_gift_codes (PR #136); buyer shares code with recipient; recipient redeems via /memberships/gifts/redeem and Gift_Code::claim_atomically() prevents double-redeem via row-level INSERT-on-claim guard"
+            ]
+        },
+        {
+            "slug": "notes-bookmarks",
+            "name": "Notes & Bookmarks",
+            "description": "Searchable, tag-organized lesson notes and bookmarks for students, backed by dedicated indexed tables. Multiple notes per lesson, FULLTEXT search, per-student tags, and a paginated account hub.",
+            "category": "student",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Enrolled student opens any lesson, sees every note they wrote on it, edits each inline (title + body) with autosave, adds per-note tags from their own tag vocabulary, adds more notes, and toggles a bookmark",
+                "Student visits My Account > Notes & Bookmarks: a full-text search bar, a course filter, tag chips, a Notes/Bookmarks switch, and a paginated newest-first list (20/page) with prev/next + an accurate total",
+                "Student searches a word, narrows by course and tag, paginates, edits a note's tags from the lesson, deletes a note, and clicks straight back to the lesson",
+                "Student dashboard shows a Recent Notes widget with live counts that links into the account hub"
+            ]
+        },
+        {
+            "slug": "qti",
+            "name": "QTI",
+            "description": "Import IMS QTI 2.x / 3.0 assessments as native questions and quizzes, played and graded by the built-in quiz engine.",
+            "category": "integration",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": []
+        },
+        {
+            "slug": "scorm",
+            "name": "SCORM",
+            "description": "Upload SCORM 1.2 / 2004 packages as a lesson type; learners play them and completion + score flow into progress.",
+            "category": "integration",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": []
+        },
+        {
+            "slug": "spaces",
+            "name": "Spaces",
+            "description": "Distributor mini-schools — branded student portals with own course catalogs and member rosters.",
+            "category": "community",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Distributor admin clicks Add New Space, names it Acme Training, sets a logo, saves",
+                "Admin opens the space's Manage page, assigns 3 courses (only published unassigned courses appear in picker)",
+                "Admin types 5 student emails one at a time → users are added with the chosen role and auto-enrolled in all assigned courses",
+                "Admin copies the 7-day invite link and shares with a batch of new students; clicking the link auto-joins the space (after sign-in if needed) and redirects to /spaces/acme-training/?joined=1",
+                "Member visits /spaces/acme-training/ and sees a logo + member count + clickable course cards leading directly to each course page"
+            ]
+        },
+        {
+            "slug": "stripe-connect",
+            "name": "Stripe Connect Payouts",
+            "description": "Instructor payouts via Stripe Connect with KYC pre-flight and webhook-driven status sync. Instructors self-onboard from the front-end Earnings page and dashboard widget; admin-managed payouts on top.",
+            "category": "commerce",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Admin processes a payout; create_transfer() does a KYC pre-flight check (charges_enabled + payouts_enabled + requirements.currently_due) and refuses with a clear error if the account isn't ready",
+                "Stripe sends transfer.paid webhook → on_stripe_webhook() updates lrn_pro_payouts.status='paid' + paid_at",
+                "Stripe sends transfer.reversed webhook → status='reversed' + error_message; admin payouts page shows the reversal",
+                "Customer refunded after instructor was paid: Refund_Handler attempts transfer reversal; if the instructor balance is insufficient, the unpaid amount is booked in lrn_pro_payout_debts and netted against the next payout — admin sees the debt in the Outstanding Debts section on the Payouts page"
+            ]
+        },
+        {
+            "slug": "user-journey",
+            "name": "User Journey",
+            "description": "Skill scores, learning timeline, achievements, and personalized recommendations.",
+            "category": "operations",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Admin opens User Journeys → sees a list of all students with skill counts + courses completed + quizzes passed + last activity",
+                "Admin clicks a student → drilldown shows skills as progress bars + achievement list + chronological activity timeline",
+                "Student visits My Courses → My Journey tab shows their own skill scores, achievements earned, recent activity"
+            ]
+        },
+        {
+            "slug": "webhooks-pro",
+            "name": "Webhooks Pro",
+            "description": "Unlimited webhooks with automatic retry and delivery logs.",
+            "category": "integrations",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Site owner creates 10 webhooks (Free limit is 3), each subscribes to specific event types out of the 33-event registry",
+                "Site owner extends the event registry via learnomy_pro_webhooks_event_slugs filter to add custom event slugs without forking",
+                "Webhook delivery to a flaky endpoint retries with exponential backoff (0s, 5m, 30m)",
+                "Site owner clicks Retry on a failed delivery from the Deliveries admin page (new /webhook-deliveries/{id}/retry endpoint)",
+                "Site owner views delivery log to debug why a webhook didn't fire"
+            ]
+        },
+        {
+            "slug": "white-label",
+            "name": "White Label",
+            "description": "Rebrand the LMS with your own name, logo, and colors.",
+            "category": "operations",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": [
+                "Agency replaces 'Learnomy' admin menu label with their brand name",
+                "Site owner uploads custom admin logo and accent color",
+                "Site owner removes 'Powered by Learnomy' from frontend templates"
+            ]
+        },
+        {
+            "slug": "wp-fusion",
+            "name": "WP Fusion",
+            "description": "Grant course access, auto-enroll, and apply CRM tags through WP Fusion.",
+            "category": "integration",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": []
+        },
+        {
+            "slug": "xapi",
+            "name": "xAPI",
+            "description": "Emit xAPI statements to your Learning Record Store (LRS) as learners enrol, complete lessons, and answer quizzes.",
+            "category": "integration",
+            "status": "stable",
+            "version": "1.0.0",
+            "user_stories": []
+        }
+    ]
+}

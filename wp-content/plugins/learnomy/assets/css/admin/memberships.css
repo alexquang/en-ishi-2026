@@ -1,0 +1,372 @@
+/**
+ * Learnomy — Memberships admin styles.
+ *
+ * Reuses base classes from settings.css / list-page.css (.lrn-admin-card,
+ * .lrn-admin-btn, .lrn-form-field, .lrn-status-badge, .lrn-page-header,
+ * .lrn-admin-filters, .lrn-admin-table, .lrn-bulk-bar).
+ *
+ * Only adds classes unique to memberships — two-column editor layout,
+ * features repeater, pricing-mode toggle, course picker, extend modal.
+ * Tokens only (--lrn-*). Hex fallback first, color-mix() second.
+ *
+ * @package Learnomy
+ */
+
+/* Plans list row extras */
+.lrn-plan-thumb { border-radius: var(--lrn-radius-sm, 6px); margin-inline-end: var(--lrn-sp-2, 8px); object-fit: cover; vertical-align: middle; }
+.lrn-status-badge--featured { background: var(--lrn-accent-bg, rgba(35, 131, 226, 0.08)); color: var(--lrn-accent, var(--lrn-accent)); margin-inline-start: var(--lrn-sp-2, 8px); }
+.lrn-toggle-status { background: transparent; border: 0; cursor: pointer; font: inherit; padding: 0; }
+
+/* Plan editor — two-column layout */
+.lrn-plan-form__layout {
+	display: grid;
+	gap: var(--lrn-sp-6, 24px);
+	grid-template-columns: minmax(0, 1fr) 320px;
+	margin-top: var(--lrn-sp-4, 16px);
+}
+@media (max-width: 1024px) { .lrn-plan-form__layout { grid-template-columns: 1fr; } }
+.lrn-plan-form__main > .lrn-admin-card,
+.lrn-plan-form__sidebar > .lrn-admin-card { margin-bottom: var(--lrn-sp-4, 16px); }
+
+/* Features repeater */
+.lrn-features-list { display: flex; flex-direction: column; gap: var(--lrn-sp-2, 8px); margin-bottom: var(--lrn-sp-3, 12px); }
+.lrn-features-row { align-items: center; display: flex; gap: var(--lrn-sp-2, 8px); }
+.lrn-features-row input[type="text"] { flex: 1 1 auto; }
+.lrn-features-remove { flex: 0 0 auto; }
+
+/* Thumbnail media row */
+.lrn-media-row { align-items: center; display: flex; gap: var(--lrn-sp-2, 8px); }
+.lrn-media-row input[type="url"] { flex: 1 1 auto; }
+
+/* Courses picker */
+.lrn-courses-picker {
+	border: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-sm, 6px);
+	max-height: 320px;
+	overflow-y: auto;
+	padding: var(--lrn-sp-2, 8px);
+}
+.lrn-courses-picker__row {
+	align-items: center;
+	border-radius: var(--lrn-radius-sm, 6px);
+	cursor: pointer;
+	display: flex;
+	gap: var(--lrn-sp-2, 8px);
+	padding: var(--lrn-sp-2, 8px);
+	transition: background 120ms ease;
+}
+.lrn-courses-picker__row:hover { background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04)); }
+.lrn-courses-picker__title { flex: 1 1 auto; }
+.lrn-courses-picker__status { flex: 0 0 auto; }
+
+/* Pricing-mode radio group */
+.lrn-radio-label { align-items: center; display: flex; gap: var(--lrn-sp-2, 8px); margin-top: var(--lrn-sp-2, 8px); }
+.lrn-form-field__label { display: block; font-size: var(--lrn-text-sm, 13px); font-weight: 600; margin-bottom: var(--lrn-sp-1, 4px); }
+
+/*
+ * Subscriptions "extend" modal — uses a `.lrn-modal-backdrop > .lrn-modal`
+ * pattern that's local to the subscriptions admin view. We scope the inner
+ * dialog rules to descendants of the backdrop so they DO NOT bleed into
+ * the global confirm dialog (assets/js/shared/confirm-modal.js), which
+ * mounts a `.lrn-modal.lrn-confirm-modal` directly on <body> with no
+ * `.lrn-modal-backdrop` ancestor. Previously these unscoped rules forced
+ * a 420px-wide white box on the confirm modal — which `confirm-modal.css`
+ * was already trying to override via `max-width: none` — and added 24px
+ * of padding around its full-viewport positioning container, breaking
+ * the delete-membership confirmation popup layout on screen.
+ */
+.lrn-modal-backdrop {
+	align-items: center;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	inset: 0;
+	justify-content: center;
+	position: fixed;
+	z-index: 100050;
+}
+.lrn-modal-backdrop--hidden { display: none; }
+
+.lrn-modal-backdrop > .lrn-modal {
+	/* Reset position: the global unscoped `.lrn-modal` (admin.css) is
+	   `position: fixed`, which pulls this dialog OUT of the backdrop's flex
+	   flow — so the centering was ignored and the modal pinned to the top-left
+	   as a full-height panel (Basecamp #9972791067). `static` puts it back in
+	   flow so the backdrop's `align/justify: center` actually centres it. */
+	position: static;
+	background: var(--lrn-bg, var(--lrn-white));
+	border-radius: var(--lrn-radius-md, 10px);
+	box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+	max-width: 420px;
+	width: 100%;
+	max-height: calc(100vh - var(--lrn-sp-8, 32px));
+	overflow-y: auto;
+	padding: var(--lrn-sp-6, 24px);
+}
+.lrn-modal-backdrop > .lrn-modal h3 { margin-bottom: var(--lrn-sp-2, 8px); margin-top: 0; }
+.lrn-modal-backdrop > .lrn-modal .lrn-modal__desc { color: var(--lrn-text-secondary, var(--lrn-text-secondary)); margin-bottom: var(--lrn-sp-4, 16px); }
+
+/* Subscription-specific status badges */
+.lrn-status-badge--trialing {
+	background: rgba(35, 131, 226, 0.08);
+	background: color-mix(in srgb, var(--lrn-accent, var(--lrn-accent)) 15%, transparent);
+	color: var(--lrn-accent, var(--lrn-accent));
+}
+.lrn-status-badge--past_due { background: var(--lrn-amber-bg, rgba(217, 119, 6, 0.12)); color: var(--lrn-amber-text, var(--lrn-cat-amber-dark)); }
+.lrn-status-badge--cancel_pending { background: rgba(217, 119, 6, 0.10); color: var(--lrn-amber-text, var(--lrn-cat-amber-dark)); }
+.lrn-status-badge--cancelled,
+.lrn-status-badge--expired { background: var(--lrn-bg-tertiary, var(--lrn-bg-tertiary)); color: var(--lrn-text-tertiary, var(--lrn-text-tertiary)); }
+.lrn-status-badge--inactive { background: var(--lrn-bg-tertiary, var(--lrn-bg-tertiary)); color: var(--lrn-text-secondary, var(--lrn-text-secondary)); }
+.lrn-status-badge--active {
+	background: var(--lrn-green-bg, rgba(22, 163, 74, 0.12));
+	background: color-mix(in srgb, var(--lrn-success, #16a34a) 15%, transparent);
+	color: var(--lrn-green-text, var(--lrn-success-mid));
+}
+
+/* User cell on subscriptions page */
+.lrn-user-cell { align-items: center; display: flex; gap: var(--lrn-sp-2, 8px); }
+.lrn-user-cell__name { display: flex; flex-direction: column; }
+.lrn-user-cell__name a { color: var(--lrn-text-secondary, var(--lrn-text-secondary)); font-size: var(--lrn-text-xs, 12px); }
+
+/* ==========================================================================
+   Plan editor — progressive-disclosure accordions (A+.2)
+   ========================================================================== */
+
+.lrn-accordion {
+	background: var(--lrn-bg, var(--lrn-white));
+	border: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-md, 10px);
+	margin-bottom: var(--lrn-sp-4, 16px);
+	overflow: hidden;
+	transition: box-shadow var(--lrn-dur, 160ms) var(--lrn-ease, ease-out);
+}
+
+.lrn-accordion[open] {
+	box-shadow: var(--lrn-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.lrn-accordion__summary {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	font-weight: 600;
+	gap: var(--lrn-sp-3, 12px);
+	list-style: none;
+	padding: var(--lrn-sp-4, 16px) var(--lrn-sp-5, 20px);
+	user-select: none;
+}
+
+.lrn-accordion__summary::-webkit-details-marker { display: none; }
+
+.lrn-accordion__summary:hover {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.02));
+}
+
+.lrn-accordion__title {
+	color: var(--lrn-text, var(--lrn-text));
+	flex: 0 0 auto;
+	font-size: var(--lrn-text-md, 14px);
+}
+
+.lrn-accordion__hint {
+	color: var(--lrn-text-secondary, var(--lrn-text-secondary));
+	flex: 1 1 auto;
+	font-size: var(--lrn-text-sm, 13px);
+	font-weight: 400;
+}
+
+.lrn-accordion__chevron {
+	flex: 0 0 auto;
+	transition: transform var(--lrn-dur, 200ms) var(--lrn-ease, ease-out);
+}
+
+.lrn-accordion[open] .lrn-accordion__chevron {
+	transform: rotate(180deg);
+}
+
+.lrn-accordion__body {
+	border-top: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.06));
+	padding: var(--lrn-sp-4, 16px) var(--lrn-sp-5, 20px) var(--lrn-sp-5, 20px);
+	animation: lrn-accordion-reveal 200ms ease-out;
+}
+
+@keyframes lrn-accordion-reveal {
+	from { opacity: 0; transform: translateY(-4px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-accordion__chevron,
+	.lrn-accordion { transition: none; }
+	.lrn-accordion__body { animation: none; }
+}
+
+/* Row layout for tight clusters of related fields (price/interval/trial). */
+.lrn-form-field-row {
+	display: grid;
+	gap: var(--lrn-sp-4, 16px);
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	margin-bottom: var(--lrn-sp-3, 12px);
+}
+@media (max-width: 782px) {
+	.lrn-form-field-row { grid-template-columns: 1fr; }
+}
+
+/* Publish card stays pinned on desktop so Save is always reachable. */
+.lrn-plan-form__publish {
+	position: sticky;
+	top: var(--lrn-sp-6, 24px);
+}
+
+/* ==========================================================================
+   Empty state — template picker (A+.3)
+   ========================================================================== */
+
+.lrn-plan-picker {
+	background: var(--lrn-bg, var(--lrn-white));
+	border: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-lg, 12px);
+	margin-top: var(--lrn-sp-4, 16px);
+	padding: var(--lrn-sp-6, 24px);
+}
+
+.lrn-plan-picker__header { margin-bottom: var(--lrn-sp-5, 20px); }
+
+.lrn-plan-picker__title {
+	color: var(--lrn-text, var(--lrn-text));
+	font-size: var(--lrn-text-lg, 18px);
+	font-weight: 700;
+	margin: 0 0 var(--lrn-sp-2, 8px);
+}
+
+.lrn-plan-picker__desc {
+	color: var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size: var(--lrn-text-sm, 13px);
+	margin: 0;
+}
+
+.lrn-plan-picker__grid {
+	display: grid;
+	gap: var(--lrn-sp-4, 16px);
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.lrn-plan-picker__card {
+	background: var(--lrn-bg, var(--lrn-white));
+	border: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-md, 10px);
+	color: var(--lrn-text, var(--lrn-text));
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2, 8px);
+	padding: var(--lrn-sp-5, 20px);
+	position: relative;
+	text-decoration: none;
+	transition: border-color var(--lrn-dur, 160ms) var(--lrn-ease, ease-out),
+				box-shadow var(--lrn-dur, 160ms) var(--lrn-ease, ease-out),
+				transform var(--lrn-dur, 160ms) var(--lrn-ease, ease-out);
+}
+
+.lrn-plan-picker__card:hover {
+	border-color: var(--lrn-accent, var(--lrn-accent));
+	box-shadow: var(--lrn-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+	transform: translateY(-2px);
+}
+
+.lrn-plan-picker__icon {
+	align-items: center;
+	border-radius: var(--lrn-radius-sm, 6px);
+	display: inline-flex;
+	height: 40px;
+	justify-content: center;
+	margin-bottom: var(--lrn-sp-2, 8px);
+	width: 40px;
+}
+
+.lrn-plan-picker__card--blue .lrn-plan-picker__icon {
+	background: rgba(35, 131, 226, 0.1);
+	background: color-mix(in srgb, var(--lrn-accent, var(--lrn-accent)) 12%, transparent);
+	color: var(--lrn-accent, var(--lrn-accent));
+}
+.lrn-plan-picker__card--amber .lrn-plan-picker__icon {
+	background: var(--lrn-amber-bg, rgba(217, 119, 6, 0.12));
+	color: var(--lrn-amber-text, var(--lrn-cat-amber-dark));
+}
+.lrn-plan-picker__card--green .lrn-plan-picker__icon {
+	background: var(--lrn-green-bg, rgba(22, 163, 74, 0.12));
+	color: var(--lrn-green-text, var(--lrn-success-mid));
+}
+.lrn-plan-picker__card--neutral .lrn-plan-picker__icon {
+	background: var(--lrn-bg-tertiary, var(--lrn-bg-tertiary));
+	color: var(--lrn-text-secondary, var(--lrn-text-secondary));
+}
+
+.lrn-plan-picker__name {
+	font-size: var(--lrn-text-md, 15px);
+	font-weight: 600;
+}
+
+.lrn-plan-picker__summary {
+	color: var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size: var(--lrn-text-sm, 13px);
+}
+
+.lrn-plan-picker__body {
+	color: var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size: var(--lrn-text-sm, 13px);
+	margin-bottom: var(--lrn-sp-2, 8px);
+}
+
+.lrn-plan-picker__cta {
+	align-items: center;
+	color: var(--lrn-accent, var(--lrn-accent));
+	display: inline-flex;
+	font-size: var(--lrn-text-sm, 13px);
+	font-weight: 600;
+	gap: var(--lrn-sp-1, 4px);
+	margin-top: auto;
+}
+
+/* Export button visual rhythm with the search form. */
+.lrn-csv-export { align-items: center; display: inline-flex; gap: var(--lrn-sp-1, 4px); margin-inline-start: var(--lrn-sp-2, 8px); }
+
+/* ==========================================================================
+   Mobile — plan editor collapses to single column under 768px (A+.5)
+   ========================================================================== */
+
+@media (max-width: 782px) {
+	.lrn-plan-form__layout {
+		grid-template-columns: 1fr;
+		gap: var(--lrn-sp-4, 16px);
+	}
+	.lrn-plan-form__sidebar { order: 2; }
+	.lrn-plan-form__publish { position: static; }
+
+	/* All inputs full-width so tap targets stay comfortable. */
+	.lrn-plan-form input[type="text"],
+	.lrn-plan-form input[type="url"],
+	.lrn-plan-form input[type="number"],
+	.lrn-plan-form input[type="search"],
+	.lrn-plan-form select,
+	.lrn-plan-form textarea { width: 100%; }
+
+	.lrn-form-actions { flex-direction: column; }
+	.lrn-form-actions .lrn-admin-btn { width: 100%; }
+
+	/* 44px tap target minimum for critical buttons. */
+	.lrn-plan-form .lrn-admin-btn,
+	.lrn-plan-form__publish .lrn-admin-btn { min-height: 44px; }
+
+	/* Features repeater — keep remove button next to input but full-width overall. */
+	.lrn-features-row { flex-wrap: nowrap; }
+
+	.lrn-accordion__summary { padding: var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px); }
+	.lrn-accordion__body    { padding: var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px) var(--lrn-sp-4, 16px); }
+	.lrn-accordion__hint    { display: none; }
+
+	.lrn-plan-picker { padding: var(--lrn-sp-4, 16px); }
+	.lrn-plan-picker__grid { grid-template-columns: 1fr; }
+
+	/* Admin page chrome — stack header actions, expose filters without overflow. */
+	.lrn-page-header { flex-direction: column; align-items: flex-start; }
+	.lrn-admin-filters { flex-wrap: wrap; gap: var(--lrn-sp-2, 8px); }
+}

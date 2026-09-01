@@ -202,13 +202,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         function (results, status) {
           if (status !== "OK" || !results || !results.length) {
-            console.log("Không xác định được quốc gia");
-
             // ==========================
             // FALLBACK VIỆT NAM
             // ==========================
 
-            initMapByCountry(14.0583, 108.2772, "VN");
+            initMapByCountry(35.6762, 139.6503, "JP");
 
             return;
           }
@@ -222,9 +220,7 @@ document.addEventListener("DOMContentLoaded", function () {
           });
 
           if (!countryResult) {
-            console.log("Không tìm thấy country");
-
-            initMapByCountry(14.0583, 108.2772, "VN");
+            initMapByCountry(35.6762, 139.6503, "JP");
 
             return;
           }
@@ -255,12 +251,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
           const countryLng = location.lng();
 
-          console.log("Country:", countryName);
-
-          console.log("Country Code:", countryCode);
-
-          console.log("Country Center:", countryLat, countryLng);
-
           // =================================
           // INIT MAP
           // =================================
@@ -287,7 +277,7 @@ document.addEventListener("DOMContentLoaded", function () {
       // FALLBACK VIỆT NAM
       // =================================
 
-      initMapByCountry(14.0583, 108.2772, "VN");
+      initMapByCountry(35.6762, 139.6503, "JP");
     },
 
     // =====================================
@@ -300,10 +290,8 @@ document.addEventListener("DOMContentLoaded", function () {
       timeout: 10000,
 
       maximumAge: 300000,
-    },);
-
-            // Không có GPS vẫn tìm theo map center
-        loadNearbyPlaces1();
+    },
+  );
 });
 
 async function initMapByCountry(countryLat, countryLng, countryCode) {
@@ -364,93 +352,93 @@ async function initMapByCountry(countryLat, countryLng, countryCode) {
   }
 }
 
-async function initMapByCountry(countryLat, countryLng, countryCode) {
-  // =========================
-  // MẶC ĐỊNH
-  // =========================
+// async function initMapByCountry(countryLat, countryLng, countryCode) {
+//   // =========================
+//   // MẶC ĐỊNH
+//   // =========================
 
-  let center = {
-    lat: Number(countryLat),
-    lng: Number(countryLng),
-  };
+//   let center = {
+//     lat: Number(countryLat),
+//     lng: Number(countryLng),
+//   };
 
-  let zoom = 6;
+//   let zoom = 6;
 
-  // =========================
-  // TÌM THÀNH PHỐ MẶC ĐỊNH
-  // =========================
+//   // =========================
+//   // TÌM THÀNH PHỐ MẶC ĐỊNH
+//   // =========================
 
-  const city = majorCities[countryCode];
+//   const city = majorCities[countryCode];
 
-  if (city) {
-    center = {
-      lat: city.lat,
-      lng: city.lng,
-    };
+//   if (city) {
+//     center = {
+//       lat: city.lat,
+//       lng: city.lng,
+//     };
 
-    zoom = city.zoom;
+//     zoom = city.zoom;
 
-    console.log("Default city:", city.name);
-  } else {
-    console.log("Không có thành phố mặc định cho:", countryCode);
-  }
+//     console.log("Default city:", city.name);
+//   } else {
+//     console.log("Không có thành phố mặc định cho:", countryCode);
+//   }
 
-  // =========================
-  // CREATE MAP
-  // =========================
+//   // =========================
+//   // CREATE MAP
+//   // =========================
 
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: center,
+//   map = new google.maps.Map(document.getElementById("map"), {
+//     center: center,
 
-    zoom: zoom,
+//     zoom: zoom,
 
-    mapTypeControl: false,
+//     mapTypeControl: false,
 
-    gestureHandling: "greedy",
+//     gestureHandling: "greedy",
 
-    scrollwheel: true,
+//     scrollwheel: true,
 
-    draggable: true,
+//     draggable: true,
 
-    streetViewControl: false,
+//     streetViewControl: false,
 
-    fullscreenControl: false,
-  });
+//     fullscreenControl: false,
+//   });
 
-  // =========================
-  // PLACES SERVICE
-  // =========================
+//   // =========================
+//   // PLACES SERVICE
+//   // =========================
 
-  service = new google.maps.places.PlacesService(map);
+//   service = new google.maps.places.PlacesService(map);
 
-  // =========================
-  // KHÔNG TẠO GPS MARKER
-  // =========================
+//   // =========================
+//   // KHÔNG TẠO GPS MARKER
+//   // =========================
 
-  marker = null;
+//   marker = null;
 
-  // =========================
-  // LAYERS
-  // =========================
+//   // =========================
+//   // LAYERS
+//   // =========================
 
-  trafficLayer = new google.maps.TrafficLayer();
+//   trafficLayer = new google.maps.TrafficLayer();
 
-  transitLayer = new google.maps.TransitLayer();
+//   transitLayer = new google.maps.TransitLayer();
 
-  bikeLayer = new google.maps.BicyclingLayer();
+//   bikeLayer = new google.maps.BicyclingLayer();
 
-  // =========================
-  // LAYER CONTROL
-  // =========================
+//   // =========================
+//   // LAYER CONTROL
+//   // =========================
 
-  if (!layerControlsInitialized) {
-    initLayerControls();
+//   if (!layerControlsInitialized) {
+//     initLayerControls();
 
-    layerControlsInitialized = true;
-  }
+//     layerControlsInitialized = true;
+//   }
 
-  console.log("Map initialized:", countryCode, center, zoom);
-}
+//   console.log("Map initialized:", countryCode, center, zoom);
+// }
 
 async function initMap(userLat, userLng) {
   const center = {
@@ -547,9 +535,6 @@ async function initMap(userLat, userLng) {
     initLayerControls();
     layerControlsInitialized = true;
   }
-
-    // places của bạn
-  loadNearbyPlaces1();
 }
 
 window.initMap = initMap;
@@ -1228,7 +1213,15 @@ function loadPlaceDetails(placeId, marker) {
                             class="gm-popup-tab active"
                             data-popup-tab="overview">
 
-                            Overview
+                            Messege
+
+                        </button>
+
+                        <button
+                            class="gm-popup-tab"
+                            data-popup-tab="live">
+
+                            Live
 
                         </button>
 
@@ -1248,13 +1241,7 @@ function loadPlaceDetails(placeId, marker) {
 
                         </button>
 
-                        <button
-                            class="gm-popup-tab"
-                            data-popup-tab="live">
 
-                            Live
-
-                        </button>
 
                     </div>
 
@@ -1620,7 +1607,6 @@ document.querySelectorAll('input[name="maptype"]').forEach((radio) => {
 
 /* insert Videos */
 document.addEventListener("click", function (e) {
-
   const uploadBtn = e.target.closest("#gmUploadVideoBtn");
 
   if (!uploadBtn) {
@@ -1640,7 +1626,6 @@ document.addEventListener("click", function (e) {
 });
 
 document.addEventListener("change", function (e) {
-
   console.log("gmUploadVideoFile");
   if (e.target.id !== "gmUploadVideoFile") {
     return;

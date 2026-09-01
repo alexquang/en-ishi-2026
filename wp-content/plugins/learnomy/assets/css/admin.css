@@ -1,0 +1,3367 @@
+/**
+ * Learnomy — admin stylesheet
+ *
+ * Scoped entirely to .learnomy-admin so nothing bleeds into core WP styles.
+ *
+ * Tokens: 72 design tokens that were previously redeclared here are now
+ * inherited from learnomy.css (the canonical frontend stylesheet). admin.css
+ * is enqueued with `learnomy` as a hard dependency on every Learnomy admin
+ * page, so the `:root, .lrn-app` declarations in learnomy.css resolve via
+ * normal CSS inheritance for any descendant of `<html>` — which includes
+ * the `.learnomy-admin` wrapper.
+ *
+ * What remains in this block is intentionally admin-only:
+ *   1. Tokens whose admin value differs from the frontend value on purpose
+ *      (admin pins literal hex; frontend chains BuddyNext / theme.json).
+ *   2. Tokens consumed only by admin UI (Pro Features cards, membership
+ *      status chips, neutral surface tints).
+ */
+
+/* ==========================================================================
+   Tokens (admin scope — overrides + admin-only)
+   ========================================================================== */
+
+.learnomy-admin {
+	/* --- Intentional cascade overrides ---
+	 * Admin doesn't sit in BuddyNext / theme.json territory the way the
+	 * frontend does, so we pin literal hex rather than chain through
+	 * theme tokens that may not exist on a /wp-admin/ page.
+	 */
+	--lrn-bg:            #ffffff;
+	--lrn-text:          #37352f;
+	--lrn-accent:        #2383e2;
+
+	/* The FRONTEND type scale went rem-based so it tracks the theme's root
+	 * (learnomy.css). Admin deliberately keeps the compact absolute scale:
+	 * dense list tables and editors are set against wp-admin's own 13px
+	 * chrome, not a theme body, and a rem scale here would grow every admin
+	 * surface against unchanged core admin type. Separate decision, own
+	 * review if it ever changes.
+	 */
+	--lrn-text-2xs:  10px;
+	--lrn-text-xs:   12px;
+	--lrn-text-sm:   13px;
+	--lrn-text-base: 14px;
+	--lrn-text-md:   16px;
+	--lrn-text-lg:   18px;
+	--lrn-text-xl:   24px;
+	--lrn-text-2xl:  30px;
+	--lrn-text-3xl:  36px;
+	--lrn-text-4xl:  48px;
+
+	/* Intentional hex divergence — admin uses the slightly darker hover
+	 * tone (#c53030) that reads better against admin chrome; frontend
+	 * uses #c73434. Keep these separate values; do not unify without a
+	 * design review.
+	 */
+	--lrn-danger-hover:  #c53030;
+
+	/* --- Admin-only tokens (no frontend consumers) --- */
+
+	/* Pro tier (gold) — paid add-on accent on Pro Features grid. */
+	--lrn-pro-gold:            #f0c33c;
+
+	/* Status accents used by membership / billing admin pages. */
+	--lrn-amber-text:          #b45309;
+	--lrn-amber-bg:            rgba(217, 119, 6, 0.12);
+	--lrn-green-text:          #15803d;
+	--lrn-green-bg:            rgba(22, 163, 74, 0.12);
+
+	/* Surface tint used by neutral category pills + on-active counts. */
+	--lrn-tint-neutral-strong: rgba(55, 53, 47, 0.08);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+.learnomy-admin {
+	font-family: var(--lrn-font);
+	font-size:   var(--lrn-text-base);
+	color:       var(--lrn-text);
+}
+
+.learnomy-admin *,
+.learnomy-admin *::before,
+.learnomy-admin *::after {
+	box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Dashboard stat cards
+   ========================================================================== */
+
+.lrn-admin-section-title {
+	align-items: center;
+	color: var(--lrn-text);
+	display: flex;
+	font-size: var(--lrn-text-md, 15px);
+	font-weight: 600;
+	gap: var(--lrn-sp-2);
+	margin: var(--lrn-sp-6) 0 var(--lrn-sp-3);
+}
+
+.lrn-admin-section-title:first-child { margin-top: var(--lrn-sp-4); }
+
+.lrn-admin-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: var(--lrn-sp-4);
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-admin-stats--mrr { margin-bottom: var(--lrn-sp-5); }
+
+.lrn-admin-stat-card {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	padding:       var(--lrn-sp-5);
+	display:       flex;
+	align-items:   flex-start;
+	gap:           var(--lrn-sp-4);
+	box-shadow:    var(--lrn-shadow-sm);
+}
+
+.lrn-admin-stat-card__icon {
+	width:         40px;
+	height:        40px;
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-accent-bg);
+	display:       flex;
+	align-items:   center;
+	justify-content: center;
+	flex-shrink:   0;
+	color:         var(--lrn-accent);
+}
+
+.lrn-admin-stat-card__body {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+	min-width:      0;
+}
+
+.lrn-admin-stat-card__number {
+	font-size:   var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: 1;
+	color:       var(--lrn-text);
+}
+
+.lrn-admin-stat-card__label {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Data table
+   ========================================================================== */
+
+/* Chrome-free counterpart to .lrn-admin-table-wrap, for a table that already
+   sits inside a card. Same scroll behaviour, none of the background / border /
+   radius / shadow — wrapping the dashboard's Top Courses table in the full
+   .lrn-admin-table-wrap would have drawn a second border inside .lrn-chart-card.
+   Use this whenever a table has a card around it already; use the full wrap when
+   the table IS the card (Basecamp 10148372885). */
+.lrn-admin-table-scroll {
+	overflow-x: auto;
+	/* Momentum scrolling on touch, and stop a sideways swipe at the end of the
+	   table from triggering the browser's back gesture. */
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-inline: contain;
+}
+
+.lrn-admin-table-wrap {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	/* Scroll horizontally on narrow screens instead of clipping the right-most
+	   columns (the old `overflow: hidden` cut off Status / Last Triggered on
+	   mobile). The radius still clips the corners visually. */
+	overflow-x:    auto;
+	/*
+	 * A scroll container only scrolls if something stops it growing. Without
+	 * this the wrap simply stretched to whatever width its table wanted and
+	 * pushed the page sideways, so the horizontal scroll above never engaged.
+	 */
+	max-width:     100%;
+	/*
+	 * `overflow-x: auto` makes this a block formatting context, and a BFC
+	 * refuses to overlap a float — it shrinks to the gap beside it instead. The
+	 * status filter above our tables is wp-admin's `ul.subsubsub`, which floats
+	 * left; on a phone it took 282 of 326px and left the Withdrawal Requests
+	 * table a 44px slot to live in. Nothing here is ever meant to sit beside a
+	 * float, so clear it.
+	 */
+	clear:         both;
+	box-shadow:    var(--lrn-shadow-sm);
+}
+
+.lrn-admin-table {
+	width:           100%;
+	/*
+	 * The wrap above scrolls horizontally, but `width: 100%` alone guaranteed
+	 * the table always FIT it, so the scroll never engaged and the browser
+	 * crushed the columns instead — the Pages tab gave its URL column 25px and
+	 * shredded every route into a vertical stack of 2-character lines.
+	 *
+	 * min-content is the width at which no cell has to break a word. Used width
+	 * is max(100%, min-content): wide screens are unchanged, and a table that
+	 * genuinely cannot fit a phone overflows and scrolls instead of shredding.
+	 * Deliberately not a px floor — that would force a scrollbar onto narrow
+	 * two-column tables that fit perfectly well.
+	 */
+	min-width:       min-content;
+	border-collapse: collapse;
+	font-size:       var(--lrn-text-base);
+}
+
+.lrn-admin-table thead {
+	background: var(--lrn-bg-secondary);
+}
+
+.lrn-admin-table th {
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	text-align:    start;
+	font-size:     var(--lrn-text-sm);
+	font-weight:   var(--lrn-weight-semibold);
+	color:         var(--lrn-text-secondary);
+	border-bottom: 1px solid var(--lrn-border);
+	white-space:   nowrap;
+}
+
+.lrn-admin-table td {
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	color:         var(--lrn-text);
+	border-bottom: 1px solid var(--lrn-divider);
+	vertical-align: middle;
+}
+
+.lrn-admin-table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.lrn-admin-table tbody tr:hover td {
+	background: var(--lrn-bg-hover);
+}
+
+/* ==========================================================================
+   Transactions list — column widths + amount alignment.
+   Used by /wp-admin/admin.php?page=learnomy-transactions.
+   ========================================================================== */
+
+/* Auto layout — the view dropped wp-list-table's `fixed`, which squished short
+   cells like "#675" into a 2-line wrap. Columns now size to content; the widths
+   below act as gentle minimums and the atomic columns stay on one line so IDs,
+   amounts and dates never wrap on desktop / iPad. */
+.lrn-txn-table { table-layout: auto; }
+.lrn-txn-table .lrn-txn-col-id       { width: var(--lrn-w-12, 60px);  white-space: nowrap; }
+.lrn-txn-table .lrn-txn-col-amount   { width: var(--lrn-w-24, 120px); text-align: end; white-space: nowrap; }
+.lrn-txn-table .lrn-txn-col-type     { width: var(--lrn-w-22, 110px); white-space: nowrap; }
+.lrn-txn-table .lrn-txn-col-provider { width: var(--lrn-w-20, 100px); white-space: nowrap; }
+.lrn-txn-table .lrn-txn-col-status   { width: var(--lrn-w-22, 110px); white-space: nowrap; }
+.lrn-txn-table .lrn-txn-col-date     { width: var(--lrn-w-30, 150px); white-space: nowrap; }
+.lrn-txn-table .lrn-txn-col-actions  { width: var(--lrn-w-26, 130px); white-space: nowrap; }
+
+.lrn-row-refund td { color: var(--lrn-text-secondary); }
+
+/* An enrollment whose access was removed (cancelled / expired). The row stays
+   listed because the record matters for refunds and reporting, so it has to
+   read as past-tense at a glance instead of looking identical to a live one.
+   Same treatment as a refunded transaction; the status badge and the row
+   actions keep their own colour, so nothing loses contrast. */
+.lrn-admin-table tbody tr.lrn-row--revoked td { color: var(--lrn-text-secondary); }
+
+/* NOTE: `.lrn-admin-filters` is defined ONCE, under "Filters bar" further down
+   this file. A second, near-identical block used to sit here; the two disagreed
+   on gap, margin and justify-content, and whichever came last silently won. If
+   you are about to add filter-row styling, edit the canonical block — do not
+   reintroduce a competing definition. */
+
+/* ==========================================================================
+   Status badges (canonical system — use .lrn-status-badge everywhere)
+   ========================================================================== */
+
+.lrn-status-badge,
+.lrn-admin-status /* deprecated alias */ {
+	display:       inline-flex;
+	align-items:   center;
+	padding:       2px var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	border-radius: var(--lrn-radius-sm);
+	line-height:   1.5;
+	white-space:   nowrap;
+}
+
+.lrn-status-badge--success,
+.lrn-admin-status--published,
+.lrn-admin-status--active,
+.lrn-admin-status--approved,
+.lrn-admin-status--sent       { background: var(--lrn-success-bg); color: var(--lrn-success); }
+
+.lrn-status-badge--default,
+.lrn-admin-status--draft,
+.lrn-admin-status--disabled   { background: var(--lrn-bg-tertiary); color: var(--lrn-text-secondary); }
+
+.lrn-status-badge--warn,
+.lrn-admin-status--pending,
+.lrn-admin-status--pending_review,
+.lrn-admin-status--expired    { background: var(--lrn-warn-bg);    color: var(--lrn-warn); }
+
+.lrn-status-badge--danger,
+.lrn-admin-status--rejected,
+.lrn-admin-status--revoked,
+.lrn-admin-status--archived   { background: var(--lrn-danger-bg);  color: var(--lrn-danger); }
+
+.lrn-status-badge--info,
+.lrn-admin-status--graded     { background: var(--lrn-accent-bg);  color: var(--lrn-accent); }
+
+.lrn-status-badge--muted,
+.lrn-admin-status--practice   { background: var(--lrn-bg-secondary); color: var(--lrn-text-tertiary); }
+
+.lrn-admin-status--survey     { background: var(--lrn-warn-bg);    color: var(--lrn-warn); }
+
+/* Pro badge */
+.lrn-pro-badge {
+	display:       inline-flex;
+	align-items:   center;
+	padding:       2px var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-semibold);
+	color:         var(--lrn-white);
+	background:    linear-gradient(135deg, var(--lrn-purple), #a855f7);
+}
+
+/* ==========================================================================
+   Page layout
+   ========================================================================== */
+
+.learnomy-admin h1 {
+	font-size:     var(--lrn-text-xl);
+	font-weight:   var(--lrn-weight-semibold);
+	color:         var(--lrn-text);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+/* ==========================================================================
+   Filters bar (tabs + search on same row)
+   ========================================================================== */
+
+.lrn-admin-filters {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	flex-wrap:       wrap;
+	gap:             var(--lrn-sp-3);
+	margin-bottom:   var(--lrn-sp-5);
+}
+
+.lrn-admin-filters .subsubsub {
+	display:    flex;
+	flex-wrap:  wrap;
+	gap:        var(--lrn-sp-1);
+	margin:     0;
+	padding:    0;
+	list-style: none;
+	float:      none;
+}
+
+.lrn-admin-filters .subsubsub li {
+	margin: 0;
+}
+
+.lrn-admin-filters .subsubsub a {
+	padding:         var(--lrn-sp-1) var(--lrn-sp-3);
+	font-size:       var(--lrn-text-sm);
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+	border-radius:   var(--lrn-radius-sm);
+	transition:      background var(--lrn-dur) var(--lrn-ease),
+	                 color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-admin-filters .subsubsub a:hover {
+	background: var(--lrn-bg-hover);
+	color:      var(--lrn-text);
+}
+
+.lrn-admin-filters .subsubsub a.current {
+	background:  var(--lrn-accent-bg);
+	color:       var(--lrn-accent);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-admin-filters--row select {
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+}
+
+.lrn-admin-filters--row .button {
+	padding:       var(--lrn-sp-2) var(--lrn-sp-4);
+	font-size:     var(--lrn-text-base);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	cursor:        pointer;
+	transition:    background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-admin-filters--row .button:hover {
+	background: var(--lrn-bg-hover);
+}
+
+.lrn-search-form {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	/* Wrap instead of running off the page. This form is shared by NINE admin
+	   list screens (courses, lessons, students, instructors, quizzes, reviews,
+	   certificates, memberships, subscriptions), so a single nowrap row broke all
+	   of them at once (Basecamp 10148395424). */
+	flex-wrap:   wrap;
+	/* Claim the free space the parent's `space-between` would otherwise leave
+	   sitting in the middle of the row. Sized to its content the form was ~494px
+	   wide with ~394px of dead space beside it, and the submit button was pushed
+	   onto a second line while that space went unused. Growing into it keeps the
+	   selects, the search field and the button on ONE aligned row, and the
+	   `flex-wrap: wrap` above still rescues genuinely narrow viewports.
+	   `min-width: 0` is what lets the row shrink at all — a flex item's default
+	   min-width is its content size. */
+	flex:        1 1 auto;
+	min-width:   0;
+	justify-content: flex-end;
+}
+
+.lrn-search-form input[type="search"],
+.lrn-search-form .regular-text {
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-size:     var(--lrn-text-base);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	/* 220px was a hard floor, so at 390px the input's right edge landed at 594px
+	   and the Search button at 683px — off-screen, and the page does not scroll
+	   horizontally, so both were simply unreachable. `flex-basis` keeps the
+	   comfortable 220px whenever there is room and lets the field shrink when
+	   there is not; min-width: 0 is what actually permits that, because a flex
+	   item's default min-width is its content size. */
+	flex:          1 1 13.75rem;
+	min-width:     0;
+	transition:    border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-search-form input[type="search"]:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-search-form input[type="search"]:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+/* Once the bar has stacked, "push the controls to the right edge" stops being
+   right — there is nothing to sit beside them, so it just indents the row.
+   Align them with the tabs above instead. */
+@media (max-width: 782px) {
+	.lrn-search-form {
+		justify-content: flex-start;
+	}
+}
+
+/* The submit control is the one item that must never be what wraps: a search
+   box with its button on the next line reads as two separate controls. Keep it
+   at its natural width and let the text field absorb the shrinking instead. */
+.lrn-search-form .button,
+.lrn-search-form button[type="submit"],
+.lrn-search-form .lrn-admin-btn {
+	flex:        0 0 auto;
+	white-space: nowrap;
+}
+
+.lrn-search-form .button {
+	padding:       var(--lrn-sp-2) var(--lrn-sp-4);
+	font-size:     var(--lrn-text-base);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	cursor:        pointer;
+	transition:    background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-search-form .button:hover {
+	background: var(--lrn-bg-hover);
+}
+
+/* ==========================================================================
+   Pagination
+   ========================================================================== */
+
+.learnomy-admin .tablenav {
+	margin-top: var(--lrn-sp-4);
+}
+
+.learnomy-admin .tablenav-pages .page-numbers {
+	padding:       var(--lrn-sp-1) var(--lrn-sp-3);
+	font-size:     var(--lrn-text-sm);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-sm);
+	text-decoration: none;
+	color:         var(--lrn-text-secondary);
+}
+
+.learnomy-admin .tablenav-pages .page-numbers.current {
+	background:  var(--lrn-accent);
+	border-color: var(--lrn-accent);
+	color:       var(--lrn-white);
+}
+
+/* ==========================================================================
+   Empty state
+   ========================================================================== */
+
+.lrn-admin-empty {
+	text-align: center;
+	padding:    var(--lrn-sp-12) var(--lrn-sp-6);
+	color:      var(--lrn-text-tertiary);
+}
+
+.lrn-admin-empty p {
+	font-size:   var(--lrn-text-md);
+	margin:      0;
+}
+
+/* ==========================================================================
+   Tab navigation (categories/tags, etc.)
+   ========================================================================== */
+
+.lrn-tab-nav {
+	display:       flex;
+	gap:           0;
+	border-bottom: 1px solid var(--lrn-border);
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-tab-nav__item {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-3) var(--lrn-sp-5);
+	font-family:     var(--lrn-font);
+	font-size:       var(--lrn-text-base);
+	font-weight:     var(--lrn-weight-medium);
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+	border-bottom:   2px solid transparent;
+	margin-bottom:   -1px;
+	transition:      color var(--lrn-dur) var(--lrn-ease),
+	                 border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-tab-nav__item:hover {
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-tab-nav__item--active {
+	color:        var(--lrn-accent);
+	border-color: var(--lrn-accent);
+}
+
+.lrn-tab-nav__count {
+	display:       inline-flex;
+	align-items:   center;
+	justify-content: center;
+	min-width: 20px;
+	height:        20px;
+	padding:       0 var(--lrn-sp-1);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-semibold);
+	background:    var(--lrn-bg-tertiary);
+	border-radius: 10px;
+	color:         var(--lrn-text-secondary);
+}
+
+.lrn-tab-nav__item--active .lrn-tab-nav__count {
+	background: var(--lrn-accent-bg);
+	color:      var(--lrn-accent);
+}
+
+.lrn-tab-panel {
+	padding-top: 0;
+}
+
+/* ==========================================================================
+   Empty state
+   ========================================================================== */
+
+.lrn-empty-state {
+	display:        flex;
+	flex-direction: column;
+	align-items:    center;
+	justify-content: center;
+	padding:        var(--lrn-sp-12) var(--lrn-sp-6);
+	text-align:     center;
+	background:     var(--lrn-bg-secondary);
+	border:         1px dashed var(--lrn-border-heavy);
+	border-radius:  var(--lrn-radius-lg);
+}
+
+.lrn-empty-state__icon {
+	font-size: var(--lrn-text-3xl);
+	width:     36px;
+	height:    36px;
+	color:     var(--lrn-text-tertiary);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-empty-state__title {
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-2);
+	color:       var(--lrn-text);
+}
+
+.lrn-empty-state__desc {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+	margin:    0;
+	max-width: 320px;
+}
+
+/* ==========================================================================
+   Action links (table row)
+   ========================================================================== */
+
+.lrn-action-link {
+	color:           var(--lrn-accent);
+	text-decoration: none;
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-medium);
+	cursor:          pointer;
+}
+
+.lrn-action-link:hover {
+	text-decoration: underline;
+	color:           var(--lrn-accent-hover);
+}
+
+.lrn-action-link--danger {
+	color: var(--lrn-danger);
+}
+
+.lrn-action-link--danger:hover {
+	color: var(--lrn-danger-hover);
+}
+
+.lrn-action-sep {
+	color:   var(--lrn-border-heavy);
+	margin:  0 var(--lrn-sp-1);
+}
+
+/* ==========================================================================
+   Row title / excerpt
+   ========================================================================== */
+
+.lrn-row-title {
+	display:    block;
+	font-size:  var(--lrn-text-base);
+	color:      var(--lrn-text);
+}
+
+.lrn-row-excerpt {
+	font-size:  var(--lrn-text-sm);
+	color:      var(--lrn-text-secondary);
+	margin:     2px 0 0;
+	line-height: 1.4;
+}
+
+/* A row-level warning: something about THIS row needs the owner to act, as
+   opposed to .lrn-row-excerpt on its own, which describes the row. Part of the
+   shared admin list-page family, so any list can use it - Pro's Learning Paths
+   flags an undeliverable path with it. */
+.lrn-row-excerpt.lrn-row-warning {
+	display:       flex;
+	gap:           var(--lrn-sp-2);
+	align-items:   flex-start;
+	margin-block-start: var(--lrn-sp-2);
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	border-inline-start: 3px solid var(--lrn-warn);
+	border-radius: var(--lrn-radius-sm);
+	background:    var(--lrn-warn-bg);
+	color:         var(--lrn-text);
+	font-size:     var(--lrn-text-xs);
+	max-inline-size: 46ch;
+}
+
+/* Fixed marker, not content - without this the flex line squeezes the glyph to
+   a sliver to make room for the text. */
+.lrn-row-excerpt.lrn-row-warning > svg {
+	flex: 0 0 auto;
+	margin-block-start: 1px;
+}
+
+/* ==========================================================================
+   Page row (settings → pages tab)
+   ========================================================================== */
+
+.lrn-page-row {
+	display:     flex;
+	align-items: flex-start;
+	gap:         var(--lrn-sp-3);
+}
+
+.lrn-page-row__icon {
+	flex-shrink: 0;
+	color:       var(--lrn-text-tertiary);
+	margin-top:  2px;
+}
+
+/* ==========================================================================
+   Slug code
+   ========================================================================== */
+
+.lrn-slug {
+	font-size:     var(--lrn-text-sm);
+	background:    var(--lrn-bg-tertiary);
+	padding:       2px var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+	color:         var(--lrn-text-secondary);
+	/*
+	 * A slug or route pattern is an identifier — it is read as one token or not
+	 * at all. `break-all` (which wp-admin's own `code` rule also sets) let it
+	 * break every 2-3 characters, so a narrow column turned
+	 * /courses/{course}/lesson/{lesson}/ into a 14-line vertical character
+	 * stack. It also drove the cell's min-content down to a single character,
+	 * which is what allowed the column to be crushed to 25px in the first place.
+	 *
+	 * Keeping it on one line makes the table's min-content honest, and the
+	 * .lrn-admin-table-wrap around it scrolls. Scrolling to read a route beats
+	 * having it spelled downwards.
+	 */
+	word-break:    normal;
+	white-space:   nowrap;
+}
+
+/* ==========================================================================
+   Muted text helper
+   ========================================================================== */
+
+.lrn-text-muted {
+	color:     var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-sm);
+}
+
+/* ==========================================================================
+   Form help text
+   ========================================================================== */
+
+.lrn-form-help {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-tertiary);
+	margin:    2px 0 0;
+}
+
+/*
+ * Help that introduces a GROUP of fields rather than trailing one of them.
+ * Needs the breathing room and the leading that per-field help does not, since
+ * it carries several lines the author is meant to read before choosing.
+ */
+.lrn-form-help--group {
+	margin-block-end: var(--lrn-sp-3);
+	line-height:      1.7;
+}
+
+/* ==========================================================================
+   Card subparts
+   ========================================================================== */
+
+.lrn-admin-card__title {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	/* Heading-to-content gap. Applies before a table, form, or description
+	   inside a card. The head-slot variant below resets this to 0. */
+	margin:      0 0 var(--lrn-sp-3);
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+.lrn-admin-card__title [data-lucide] {
+	color:       var(--lrn-accent);
+	flex-shrink: 0;
+}
+
+.lrn-commission-rate-wrap {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+}
+
+.lrn-commission-rate-wrap .lrn-commission-rate {
+	width: 5rem;
+}
+
+.lrn-commission-rate__unit {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-admin-card__desc {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+	margin:    0 0 var(--lrn-sp-5);
+}
+
+/* ==========================================================================
+   Split layout (categories/tags)
+   ========================================================================== */
+
+.lrn-split-layout {
+	display: flex;
+	gap:     var(--lrn-sp-6);
+	align-items: flex-start;
+}
+
+.lrn-split-layout__form {
+	flex-shrink: 0;
+	width:       360px;
+}
+
+.lrn-split-layout__table {
+	flex: 1;
+	min-width: 0;
+}
+
+/*
+ * The form column is a fixed 360px that refuses to shrink, and there was no
+ * breakpoint at all — so on any screen narrower than about 400px the form took
+ * everything and the table beside it was allocated exactly 0px. Not clipped:
+ * zero. Stack them before that can happen.
+ */
+@media (max-width: 782px) {
+	.lrn-split-layout {
+		flex-direction: column;
+		/*
+		 * The row layout uses flex-start so the form card does not stretch to
+		 * the table's height. Stacked, that same value stops the children
+		 * filling the width and each one sizes to its own content instead —
+		 * which let the table column grow to 707px and take the page sideways.
+		 */
+		align-items: stretch;
+	}
+
+	.lrn-split-layout__form {
+		/* Cross-axis now, so the fixed width has to be released explicitly. */
+		width: 100%;
+	}
+
+	.lrn-split-layout__table {
+		/* Keeps a wide table's overflow inside its own scrolling wrap. */
+		max-width: 100%;
+	}
+}
+
+/* ==========================================================================
+   Card
+   ========================================================================== */
+
+.lrn-admin-card {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	padding:       var(--lrn-sp-5);
+	box-shadow:    var(--lrn-shadow-sm);
+	/* Separation between stacked cards. Without this, sibling cards
+	   touch each other and the page reads as one big slab. 2026-05-23
+	   admin UX audit (PR #8) — Pro Analytics had 5 sections rendering
+	   as a single slab because this rule was missing. */
+	margin-block-end: var(--lrn-sp-4);
+}
+
+/* Optional structured slots for a card with a heading band on top.
+   When a card uses these slots, the outer card's padding goes to zero
+   so the head and body can run edge-to-edge; padding moves inside
+   each slot so the head gets a border-bottom separator. */
+.lrn-admin-card:has( > .lrn-admin-card__head ) {
+	padding: 0;
+}
+
+.lrn-admin-card__head {
+	display:           flex;
+	align-items:       baseline;
+	justify-content:   space-between;
+	gap:               var(--lrn-sp-3);
+	padding:           var(--lrn-sp-4) var(--lrn-sp-5);
+	border-block-end:  1px solid var(--lrn-border);
+}
+
+/* Scoped to the head slot only. As a bare rule this leaked margin:0 to EVERY
+   `.lrn-admin-card__title` (it wins over the canonical rule above by source
+   order), so section headings like "Enrolled students (0)" hugged the table
+   below them. Inside `__head` the slot's own padding handles spacing, so
+   margin:0 is right HERE — but bare titles must keep their bottom margin. */
+.lrn-admin-card__head .lrn-admin-card__title {
+	margin:      0;
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-admin-card__subtitle {
+	margin:    0;
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-admin-card__body {
+	padding: var(--lrn-sp-5);
+}
+
+/* ==========================================================================
+   Settings-style card (form sections)
+   --------------------------------------------------------------------------
+   A distinct chrome from `.lrn-admin-card` — uppercase title in the head
+   band, secondary-tinted head fill, `overflow:hidden` so a contained
+   form-table runs edge-to-edge. Used by Settings AND by every other admin
+   page that hosts a settings-form-style section: question-editor,
+   quiz-editor, the course-builder partials (completion / engagement /
+   target / visibility / progression / pricing), plus Pro's certificates-
+   credly settings card, white-label settings card, bridges settings,
+   advanced-quizzes settings, etc.
+
+   Previously the rules lived in `admin/settings.css` which only loads on
+   the Settings page. Every other consumer rendered naked. 2026-05-23
+   admin UX audit promoted the rules here (admin.css is always loaded on
+   every Learnomy admin page) so the chrome resolves wherever the class
+   appears. settings.css keeps only the truly-settings-only chrome
+   (sidebar nav, hash routing, form-table input overrides, page footer).
+   ========================================================================== */
+
+.lrn-settings-card {
+	background:       var(--lrn-bg);
+	border:           1px solid var(--lrn-border);
+	border-radius:    var(--lrn-radius-lg);
+	box-shadow:       var(--lrn-shadow-sm);
+	margin-block-end: var(--lrn-sp-5);
+	overflow:         hidden;
+}
+
+.lrn-settings-card__head {
+	padding:          var(--lrn-sp-4) var(--lrn-sp-5);
+	border-block-end: 1px solid var(--lrn-border);
+	background:       var(--lrn-bg-secondary);
+}
+
+.lrn-settings-card__title {
+	font-size:      var(--lrn-text-sm);
+	font-weight:    var(--lrn-weight-semibold);
+	color:          var(--lrn-text);
+	margin:         0 0 2px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.lrn-settings-card__desc {
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+	margin:      0;
+	line-height: var(--lrn-sp-5);
+}
+
+/* The body padding slot — same shape as `.lrn-admin-card__body` but kept
+   under the settings-card namespace so the existing markup keeps working.
+   A padded BLOCK: whatever goes in flows top to bottom at full width.
+
+   This used to be declared twice in this file, ~330 lines apart, and the later
+   copy added `display: flex`, so the component silently meant "padded flex
+   ROW". Anything block-shaped put inside it was laid out as a column of
+   shrink-to-fit items instead. Two consumers had already worked around it by
+   inventing their own padded class rather than trusting this one
+   (`.lrn-ai-card-body`, `.lrn-wl-card__body`), and a grid dropped in here came
+   out 183px wide inside a 326px card (Basecamp 10150326890). One definition
+   now, and side-by-side content asks for it explicitly below. */
+.lrn-settings-card__body-pad {
+	padding: var(--lrn-sp-5);
+}
+
+/* Side-by-side body content (e.g. a row of tool buttons). */
+/* An action row keeps each label on one line, and wraps the ROW instead.
+ *
+ * This was a plain non-wrapping flex row, so at a narrow width the two Tools
+ * buttons split the space between them - about 115px each at 320px - and their
+ * labels broke across three lines ("Send / Test / Email"), which also left the
+ * leading icon centred against a three-line block and reading as misaligned.
+ *
+ * Wrapping the row rather than the label is the fix, and it is deliberately not
+ * a breakpoint: a media query set for English would still break on a longer
+ * translation at a width that looked fine here. "Umschreib-Regeln leeren" is
+ * wider than "Flush Rewrite Rules", and the layout should not need to know that.
+ * Width-driven wrapping handles both without anyone maintaining a list.
+ */
+.lrn-settings-card__body-pad--row {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-3);
+}
+
+.lrn-settings-card__body-pad--row .lrn-admin-btn {
+	white-space: nowrap;
+}
+
+/* Form-table hosted directly in a settings-card. GLOBAL (was settings-page
+   only, which is why the card looked unpadded on every other admin screen).
+   Now any admin page — LTI, QTI, Pro extensions — gets the same padded rows,
+   label column, inputs, and focus rings from the one class. */
+.lrn-settings-card .form-table {
+	margin: 0;
+}
+
+.lrn-settings-card .form-table th {
+	padding:        var(--lrn-sp-4) var(--lrn-sp-5);
+	font-size:      var(--lrn-text-sm);
+	font-weight:    var(--lrn-weight-medium);
+	color:          var(--lrn-text);
+	width:          220px;
+	vertical-align: middle;
+}
+
+.lrn-settings-card .form-table td {
+	padding: var(--lrn-sp-4) var(--lrn-sp-5);
+}
+
+.lrn-settings-card .form-table tr {
+	border-bottom: 1px solid var(--lrn-bg-tertiary);
+}
+
+.lrn-settings-card .form-table tr:last-child {
+	border-bottom: none;
+}
+
+.lrn-settings-card .form-table input[type="text"],
+.lrn-settings-card .form-table input[type="number"],
+.lrn-settings-card .form-table input[type="email"],
+.lrn-settings-card .form-table input[type="url"],
+.lrn-settings-card .form-table select,
+.lrn-settings-card .form-table textarea {
+	border:        1.5px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+}
+
+.lrn-settings-card .form-table input:focus-visible,
+.lrn-settings-card .form-table select:focus-visible,
+.lrn-settings-card .form-table textarea:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-settings-card .form-table input:focus:not(:focus-visible),
+.lrn-settings-card .form-table select:focus:not(:focus-visible),
+.lrn-settings-card .form-table textarea:focus:not(:focus-visible) {
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 2px var(--lrn-accent-bg);
+	outline:      none;
+}
+
+/* Save-button footer — used both on the Settings page (under each section)
+   and elsewhere when a form needs a clear primary action zone. */
+.lrn-settings-section__footer {
+	padding:            var(--lrn-sp-4) var(--lrn-sp-5);
+	background:         var(--lrn-bg);
+	border:             1px solid var(--lrn-border);
+	border-radius:      var(--lrn-radius-lg);
+	margin-block-start: var(--lrn-sp-2);
+}
+
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
+
+.lrn-admin-btn {
+	display:        inline-flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-2);
+	/* min-height, not height. A fixed 32px box clipped any label that wrapped —
+	   the "Remove Demo Content" button in the demo banner overlapped its own text
+	   at narrow widths (Basecamp 10148388559). This affects every .lrn-admin-btn,
+	   so the same clip was one long label away on any admin screen, and in German
+	   or Portuguese it is one label away everywhere.
+	   justify-content centres a wrapped label instead of leaving it ragged. */
+	min-height:     32px;
+	justify-content: center;
+	padding:        0 var(--lrn-sp-4);
+	font-family:    var(--lrn-font);
+	font-size:      var(--lrn-text-base);
+	font-weight:    var(--lrn-weight-medium);
+	color:          var(--lrn-text);
+	background:     var(--lrn-bg);
+	border:         1px solid var(--lrn-border-heavy);
+	border-radius:  var(--lrn-radius-md);
+	text-decoration: none;
+	cursor:         pointer;
+	transition:     background var(--lrn-dur) var(--lrn-ease),
+	                border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+/* Belt-and-braces alongside the global `.learnomy-admin [hidden]` reset in
+   learnomy.css: the base display:inline-flex ties with the UA
+   [hidden]{display:none} on specificity and wins on source order, so a
+   JS-toggled `hidden` never hides the button (e.g. "Add answer" staying visible
+   on essay / true_false / fill_blank / numeric questions). Kept because a
+   .lrn-admin-btn can render outside the .learnomy-admin wrapper. */
+.lrn-admin-btn[hidden] {
+	display: none;
+}
+
+.lrn-admin-btn:hover {
+	background: var(--lrn-bg-hover);
+	color:      var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-admin-btn--primary {
+	background:   var(--lrn-accent);
+	border-color: var(--lrn-accent);
+	color:        var(--lrn-white);
+}
+
+.lrn-admin-btn--primary:hover {
+	background:   var(--lrn-accent-hover);
+	border-color: var(--lrn-accent-hover);
+	color:        var(--lrn-white);
+}
+
+/* ==========================================================================
+   Page header
+   ========================================================================== */
+
+.lrn-page-header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	flex-wrap:       wrap;
+	gap:             var(--lrn-sp-3);
+	margin-bottom:   var(--lrn-sp-5);
+	padding-bottom:  var(--lrn-sp-4);
+	border-bottom:   1px solid var(--lrn-divider);
+}
+
+.lrn-page-header__left {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+}
+
+.lrn-page-header__title {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	margin:      0;
+	font-size:   var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	line-height: 1.2;
+}
+
+.lrn-page-header__icon {
+	width:     24px;
+	height:    24px;
+	color:     var(--lrn-accent);
+	flex-shrink: 0;
+}
+
+/* Renamed from `.lrn-page-header__desc` 2026-05-23 — the majority of admin
+   pages were already using `__subtitle` in markup but the CSS lived under
+   the legacy name, so those pages were rendering with default `<p>`
+   styling (no color/size). Single class name now so the canonical markup
+   actually has chrome. See plan/2026-05-23-admin-ux-audit/REPORT.md §2.1.
+   The legacy `__desc` selector is kept here as an alias so a Pro plugin
+   running against a slightly-older Free release (or vice versa) doesn't
+   render unstyled subtitles during the deprecation window. Drop the
+   alias once both Free + Pro have shipped two clean releases with no
+   `__desc` references in any view. */
+.lrn-page-header__subtitle,
+.lrn-page-header__desc {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+	margin:    0;
+}
+
+/*
+ * One-line form row: a couple of controls and the button that acts on them.
+ * The class was in the webhooks view with no CSS behind it at all, so the
+ * "Send a test enrollment" controls fell back to block stacking with a full
+ * gap between each — the class name was the only evidence of the intent.
+ *
+ * Wraps rather than switching to a column at a breakpoint: each control keeps
+ * its own natural width until it genuinely cannot fit, and there is no second
+ * axis for a flex-basis to be misread on.
+ */
+.lrn-form-inline {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-form-inline > .lrn-input {
+	/* Grow to share the row, shrink past their content, wrap when they cannot. */
+	flex:      1 1 12rem;
+	min-width: 0;
+}
+
+.lrn-page-header__actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	/*
+	 * Three buttons is a normal header (Export CSV / Import CSV / Add Question
+	 * on the question bank) and they need 378px. Without wrapping they simply
+	 * ran off the end of a 368px header and the primary action — the one on the
+	 * right — was the one that got clipped. Shared by 40 admin screens, so the
+	 * wrap belongs here rather than on each of them.
+	 */
+	flex-wrap:   wrap;
+}
+
+.lrn-page-header h1 {
+	margin: 0;
+}
+
+/* ── Breadcrumb inside the page header ──────────────────────────────────── */
+
+.lrn-page-header .lrn-breadcrumb {
+	margin-top: var(--lrn-sp-2);
+}
+
+.lrn-breadcrumb {
+	display:     flex;
+	align-items: center;
+	flex-wrap:   wrap;
+	gap:         var(--lrn-sp-2);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-breadcrumb__item {
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+	transition:      color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-breadcrumb__item:hover,
+.lrn-breadcrumb__item:focus-visible {
+	color: var(--lrn-accent);
+}
+
+a.lrn-breadcrumb__item {
+	text-decoration: underline;
+	text-decoration-color: transparent;
+}
+
+a.lrn-breadcrumb__item:hover,
+a.lrn-breadcrumb__item:focus-visible {
+	text-decoration-color: currentColor;
+}
+
+.lrn-breadcrumb__sep {
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-admin-btn--danger {
+	color:        var(--lrn-danger);
+	border-color: var(--lrn-danger);
+	background:   var(--lrn-bg);
+}
+
+.lrn-admin-btn--danger:hover {
+	background: var(--lrn-danger-bg);
+}
+
+.lrn-admin-btn--sm {
+	padding:   var(--lrn-sp-1) var(--lrn-sp-2-5);
+	font-size: var(--lrn-text-xs);
+}
+
+.lrn-admin-btn:disabled {
+	opacity: 0.5;
+	cursor:  not-allowed;
+}
+
+/* ── API Keys table ── */
+
+.lrn-api-keys-table {
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-api-keys-table th {
+	font-size:   var(--lrn-text-sm);
+	font-weight: 600;
+}
+
+.lrn-api-keys-table td code {
+	font-size:   var(--lrn-text-xs);
+	background:  var(--lrn-bg-tertiary);
+	padding:     2px 6px;
+	border-radius: 3px;
+}
+
+.lrn-api-key-created {
+	padding:       var(--lrn-sp-4);
+	background:    var(--lrn-success-bg);
+	border:        1px solid var(--lrn-success);
+	border-radius: var(--lrn-radius-md);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-api-key-created__value {
+	display:    block;
+	padding:    var(--lrn-sp-3);
+	background: var(--lrn-bg);
+	border:     1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	font-size:  var(--lrn-text-sm);
+	word-break: break-all;
+	user-select: all;
+	margin-top: var(--lrn-sp-2);
+}
+
+.lrn-api-keys-actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+/* ==========================================================================
+   Form layout helpers
+   ========================================================================== */
+
+.lrn-admin-field {
+	display:       flex;
+	flex-direction: column;
+	gap:           var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-admin-field:last-child {
+	margin-bottom: 0;
+}
+
+.lrn-admin-label {
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+}
+
+.lrn-admin-label--required::after {
+	content: " *";
+	color:   var(--lrn-danger);
+}
+
+.lrn-admin-desc {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+	margin:    0;
+}
+
+.lrn-admin-input {
+	display:       block;
+	width:         100%;
+	max-width: 400px;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	transition:    border-color var(--lrn-dur) var(--lrn-ease),
+	               box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-admin-input:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-admin-input:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-admin-form-footer {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	padding-top: var(--lrn-sp-5);
+	border-top:  1px solid var(--lrn-divider);
+}
+
+/* ==========================================================================
+   File field — the ONE shared upload control (Free + every Pro extension).
+   Hidden native input + a .lrn-admin-btn "Choose file" trigger (label-for) +
+   the picked filename. Behavior in assets/js/admin/file-field.js.
+   ========================================================================== */
+
+.lrn-file-field {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-3);
+	flex-wrap: wrap;
+}
+
+/* Keep the native input out of view but still operable via its <label for>. */
+.lrn-file-field__input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	border: 0;
+}
+
+.lrn-file-field__name {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.lrn-muted {
+	color: var(--lrn-text-tertiary);
+	font-style: italic;
+}
+
+.lrn-text-sm {
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-no-items {
+	text-align: center;
+	padding: var(--lrn-sp-8) var(--lrn-sp-4);
+	color: var(--lrn-text-tertiary);
+}
+
+/* Enrolled-courses cell on the admin Students list. The cell carries a
+ * small count summary above a compact list of the most-recent course
+ * titles so the admin sees what the student actually bought, not just
+ * a number. See Basecamp #9925101779. */
+.lrn-students-courses-cell .lrn-students-courses-list {
+	margin:  var(--lrn-sp-1) 0 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.lrn-students-courses-cell .lrn-students-courses-list li {
+	margin: 0;
+	font-size: var(--lrn-text-sm);
+	line-height: 1.35;
+}
+
+/* Enrollments panel on the admin course-edit sidebar. Compact list of
+ * the most-recent students enrolled in the course; sits below the
+ * Publish card and ahead of Category. See Basecamp #9925103366. */
+.lrn-enrollments-summary {
+	margin: 0;
+	display: flex;
+	align-items: baseline;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-enrollments-summary strong {
+	font-size: var(--lrn-text-xl, 20px);
+	font-weight: var(--lrn-weight-semibold, 600);
+}
+
+.lrn-enrollments-recent {
+	list-style: none;
+	padding: 0;
+	margin: var(--lrn-sp-3) 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-enrollments-recent li {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	margin: 0;
+}
+
+.lrn-enrollments-recent__name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-avatar--xs {
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+}
+
+/* Grant chips — which grants put a learner on this course. Rendered by
+   includes/admin/views/partials/enrollment-grants.php so every roster surface
+   shows them identically. Paid grants take the success accent so an instructor
+   selling courses can tell a paying student from a comped one at a glance. */
+.lrn-grant-chips {
+	display:   inline-flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-1);
+	min-width: 0;
+}
+
+/* Inside the recent-enrollments list the row is narrow (a course-form
+   sidebar), so the chips take their own line rather than shrinking the
+   learner's name — sharing the row cut "Emma Lindqvist" to "E...". Indented
+   past the avatar so they read as belonging to the name above them. */
+.lrn-enrollments-recent li {
+	flex-wrap: wrap;
+}
+
+.lrn-enrollments-recent .lrn-grant-chips {
+	flex:                 1 0 100%;
+	padding-inline-start: calc(24px + var(--lrn-sp-2));
+}
+
+.lrn-grant-chip {
+	display:       inline-flex;
+	align-items:   center;
+	padding:       0 var(--lrn-sp-1);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	line-height:   1.6;
+	border-radius: var(--lrn-radius-sm);
+	background:    var(--lrn-bg-tertiary);
+	color:         var(--lrn-text-secondary);
+	white-space:   nowrap;
+}
+
+.lrn-grant-chip--paid {
+	background: var(--lrn-success-bg);
+	color:      var(--lrn-success);
+}
+
+
+/* Filter chip — shows when a list page is scoped (e.g. Students filtered
+ * by course_id). Pairs the active filter label with a "clear" link so
+ * admins know why the list is reduced and can return to the full view. */
+.lrn-admin-filter-chip {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-3);
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	margin-bottom: var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-md, 6px);
+	/* Recessed wash, not elevation — the chip sits ON the card, so it takes
+	   the tertiary tint (the old --lrn-bg-elevated reference predates the
+	   token's definition; elevated is now white in light mode, which would
+	   make the chip invisible here). */
+	background: var(--lrn-bg-tertiary, #f0f0ed);
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+	border-inline-start: 3px solid var(--lrn-accent);
+}
+
+.lrn-admin-filter-chip__clear {
+	margin-inline-start: auto;
+	text-decoration: none;
+}
+
+/* When an .lrn-empty-state component lives inside a .lrn-no-items table
+   cell, the empty-state owns the spacing — drop the cell's own padding so
+   the two don't stack up to ~96px on each side. */
+.lrn-no-items:has(.lrn-empty-state) {
+	padding: 0;
+}
+
+.lrn-link-danger {
+	color: var(--lrn-danger);
+}
+
+.lrn-link-danger:hover {
+	color: var(--lrn-danger);
+	text-decoration: underline;
+}
+
+/* ==========================================================================
+   Section headings & dividers
+   ========================================================================== */
+
+.lrn-section-heading {
+	font-size:     var(--lrn-text-lg);
+	font-weight:   var(--lrn-weight-semibold);
+	color:         var(--lrn-text);
+	margin:        var(--lrn-sp-6) 0 var(--lrn-sp-4);
+}
+
+.lrn-section-heading:first-of-type {
+	margin-top: 0;
+}
+
+.lrn-section-divider {
+	border:     none;
+	border-top: 1px solid var(--lrn-divider);
+	margin:     var(--lrn-sp-8) 0;
+}
+
+/* ==========================================================================
+   Filter count label
+   ========================================================================== */
+
+.lrn-admin-filter-count {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   User cell (avatar + name)
+   ========================================================================== */
+
+.lrn-user-cell {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-avatar {
+	border-radius: 50%;
+	flex-shrink:   0;
+}
+
+.lrn-avatar--sm {
+	width:  28px;
+	height: 28px;
+}
+
+/* ==========================================================================
+   Table row actions
+   ========================================================================== */
+
+.lrn-table-actions {
+	display:   flex;
+	gap:       var(--lrn-sp-2);
+	flex-wrap: wrap;
+	align-items: center;
+}
+
+/* Row actions stay on ONE line (no vertical button stacking, which made list
+   rows tall + gappy). Keep inline actions to 1-2 via UX::row_actions(); the
+   rest live in the ⋮ menu. */
+.lrn-row-actions {
+	display:     flex;
+	gap:         var(--lrn-sp-2);
+	flex-wrap:   nowrap;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+/* Most list views add `lrn-row-actions` to the <td> itself (next to
+   `lrn-col-actions`). Flex on a <td> drops the cell out of the table layout's
+   vertical-align model, so the Actions column stops lining up with the other
+   cells in the row — the recurring "Edit not aligned" report. Keep the cell a
+   real, middle-aligned table cell; the inner `.lrn-row-actions` <div> that
+   UX::row_actions() renders (or inline buttons) still lays the actions out
+   horizontally. */
+td.lrn-row-actions {
+	display:        table-cell;
+	vertical-align: middle;
+}
+
+.lrn-table-actions .lrn-admin-btn,
+.lrn-row-actions .lrn-admin-btn {
+	height:    28px;
+	font-size: var(--lrn-text-sm);
+	padding:   0 var(--lrn-sp-3);
+	/* These buttons have a FIXED height, so a label that wraps has nowhere to
+	   go: "Move to draft" broke across 2-3 lines inside a 28px box and spilled
+	   out of it. As flex items they were also shrinking below their label width
+	   whenever the Actions column got tight. Pin them to their natural width and
+	   keep every label on one line — the table wrapper
+	   (.lrn-admin-table-wrap) already scrolls horizontally when a row genuinely
+	   runs out of room, which is the intended behaviour on narrow screens. */
+	flex:        0 0 auto;
+	white-space: nowrap;
+}
+
+/* ==========================================================================
+   Progress label
+   ========================================================================== */
+
+.lrn-progress-label {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+}
+
+/* ==========================================================================
+   Difficulty badges (question bank)
+   ========================================================================== */
+
+.lrn-difficulty {
+	display:       inline-flex;
+	align-items:   center;
+	padding:       2px var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-medium);
+	border-radius: var(--lrn-radius-sm);
+	white-space:   nowrap;
+}
+
+.lrn-difficulty--1 { background: var(--lrn-success-bg); color: var(--lrn-success); }
+.lrn-difficulty--2 { background: rgba(46, 164, 79, 0.15); color: var(--lrn-success-dark); }
+.lrn-difficulty--3 { background: var(--lrn-warn-bg);    color: var(--lrn-warn); }
+.lrn-difficulty--4 { background: rgba(224, 62, 62, 0.1); color: var(--lrn-danger-hover); }
+.lrn-difficulty--5 { background: var(--lrn-danger-bg);  color: var(--lrn-danger); }
+
+/* ==========================================================================
+   Event badges (webhooks)
+   ========================================================================== */
+
+.lrn-event-badge {
+	display:       inline-flex;
+	padding:       2px var(--lrn-sp-2);
+	font-size:     var(--lrn-text-xs);
+	font-family:   monospace;
+	background:    var(--lrn-bg-tertiary);
+	border-radius: var(--lrn-radius-sm);
+	color:         var(--lrn-text-secondary);
+	margin:        1px;
+}
+
+/* ==========================================================================
+   Bio cell (truncated text)
+   ========================================================================== */
+
+.lrn-bio-cell {
+	max-width: 200px;
+	white-space:   nowrap;
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	color:         var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Checkbox group (webhooks, forms)
+   ========================================================================== */
+
+.lrn-checkbox-group {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2) var(--lrn-sp-4);
+}
+
+.lrn-checkbox-label {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	font-size:   var(--lrn-text-base);
+	color:       var(--lrn-text);
+	cursor:      pointer;
+}
+
+/* ==========================================================================
+   Form grid (categories / coupons / webhooks)
+   ========================================================================== */
+
+.lrn-form-grid {
+	display:               grid;
+	grid-template-columns: 1fr 1fr;
+	gap:                   var(--lrn-sp-4);
+	margin-bottom:         var(--lrn-sp-5);
+}
+
+/*
+ * When the form lives inside a narrow split-layout sidebar (Categories, Tags,
+ * etc.), collapse the two-column grid to a single column. The fixed 360px
+ * form column is too narrow for 1fr 1fr because WP's `regular-text` input
+ * class sets width:25em (~350px), causing the second column to overflow and
+ * appear outside the card.
+ */
+.lrn-split-layout__form .lrn-form-grid {
+	grid-template-columns: 1fr;
+}
+
+.lrn-form-field {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+	min-width:      0;
+}
+
+/*
+ * Scope form-field inputs to width:100% inside the split-layout sidebar so
+ * WP's `regular-text` class (width:25em) can't overflow the narrow card.
+ */
+.lrn-split-layout__form .lrn-form-field input,
+.lrn-split-layout__form .lrn-form-field select,
+.lrn-split-layout__form .lrn-form-field textarea {
+	width:     100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.lrn-form-field--wide {
+	grid-column: 1 / -1;
+}
+
+.lrn-form-field label {
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+}
+
+.lrn-form-field .required {
+	color: var(--lrn-danger);
+}
+
+.lrn-form-field input,
+.lrn-form-field select,
+.lrn-form-field textarea {
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	transition:    border-color var(--lrn-dur) var(--lrn-ease),
+	               box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-form-field input:focus-visible,
+.lrn-form-field select:focus-visible,
+.lrn-form-field textarea:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-form-field input:focus:not(:focus-visible),
+.lrn-form-field select:focus:not(:focus-visible),
+.lrn-form-field textarea:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+/* Prominent identity input — the title field at the top of an editor
+   (course / lesson / quiz). Larger type + roomier padding so it reads as the
+   primary field, not a stock text box. The course title carried this class
+   with no rule behind it, which is why its text looked cramped against the
+   border; defining it once makes every editor's title consistent. */
+.lrn-form-field input.lrn-input--lg {
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-medium);
+	line-height: 1.4;
+}
+
+/* Disabled controls keep the family look — a muted fill + secondary text,
+   not WP-admin's raw #f6f7f7 grey with the native down-arrow SVG that made
+   disabled selects (e.g. Section/Lesson on a standalone quiz) read as
+   out-of-family. The higher specificity (class + element + :disabled) wins
+   over WP core's `select:disabled` without needing !important. */
+.lrn-form-field input:disabled,
+.lrn-form-field select:disabled,
+.lrn-form-field textarea:disabled,
+.lrn-split-layout__form .lrn-form-field select:disabled {
+	background-color: color-mix(in srgb, var(--lrn-bg) 92%, var(--lrn-text) 8%);
+	background-image: none;
+	color:            var(--lrn-text-secondary);
+	border-color:     var(--lrn-border-heavy);
+	opacity:          0.65;
+	cursor:           not-allowed;
+}
+
+/* Form rows (coupon / webhook inline form) */
+.lrn-form-row {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+	margin-bottom:  var(--lrn-sp-4);
+}
+
+.lrn-form-row label {
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+}
+
+.lrn-form-row input,
+.lrn-form-row select,
+.lrn-form-row textarea {
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	color:         var(--lrn-text);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	transition:    border-color var(--lrn-dur) var(--lrn-ease),
+	               box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-form-row input:focus-visible,
+.lrn-form-row select:focus-visible,
+.lrn-form-row textarea:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-form-row input:focus:not(:focus-visible),
+.lrn-form-row select:focus:not(:focus-visible),
+.lrn-form-row textarea:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-form-actions {
+	padding-top: var(--lrn-sp-4);
+}
+
+/* ==========================================================================
+   Inline style spacing for margin-top on table-wraps after cards
+   ========================================================================== */
+
+.lrn-admin-card + .lrn-admin-table-wrap,
+.lrn-admin-card + h2 {
+	margin-top: var(--lrn-sp-6);
+}
+
+/* ==========================================================================
+   Modal — shared baseline so hidden modals stay hidden on every admin page
+   (quiz-editor.css adds the richer styles when its stylesheet is loaded).
+   ========================================================================== */
+
+.lrn-modal.lrn-modal--hidden {
+	display: none !important;
+}
+
+.lrn-modal {
+	position: fixed;
+	inset:    0;
+	z-index:  100000;
+}
+
+.lrn-modal__backdrop {
+	position:   absolute;
+	inset:      0;
+	/* Hex fallback first so contexts where --lrn-text isn't defined still
+	 * show a visible dim. See Basecamp #9925123520. */
+	background: rgba(0, 0, 0, 0.45);
+	background: color-mix(in srgb, var(--lrn-text, #1c1c1c) 50%, transparent);
+}
+
+.lrn-modal__dialog {
+	position:       relative;
+	margin:         5vh auto;
+	max-width: 640px;
+	width:          calc(100% - var(--lrn-sp-8));
+	background:     var(--lrn-bg);
+	border:         1px solid var(--lrn-border-heavy);
+	border-radius:  var(--lrn-radius-lg);
+	box-shadow:     var(--lrn-shadow-lg);
+	display:        flex;
+	flex-direction: column;
+	max-height:     90vh;  /* fallback for older browsers */
+	max-height:     90dvh; /* dynamic viewport — excludes iOS URL bar */
+	overflow:       hidden;
+}
+
+.lrn-modal__head {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	padding:         var(--lrn-sp-4) var(--lrn-sp-5);
+	border-bottom:   1px solid var(--lrn-divider);
+}
+
+.lrn-modal__title {
+	margin:      0;
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-modal__close {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	width:           28px;
+	height:          28px;
+	border:          0;
+	background:      transparent;
+	color:           var(--lrn-text-secondary);
+	cursor:          pointer;
+	border-radius:   var(--lrn-radius-sm);
+}
+
+.lrn-modal__close:hover {
+	background: var(--lrn-bg-hover);
+}
+
+.lrn-modal__body {
+	padding:    var(--lrn-sp-4) var(--lrn-sp-5);
+	overflow-y: auto;
+	flex:       1;
+}
+
+.lrn-modal__foot {
+	display:         flex;
+	justify-content: flex-end;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-3) var(--lrn-sp-5);
+	border-top:      1px solid var(--lrn-divider);
+}
+
+/* ==========================================================================
+   Dashboard-specific
+   ========================================================================== */
+
+.lrn-admin-alert {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	border-inline-start:   3px solid var(--lrn-accent);
+	margin-bottom: var(--lrn-sp-6);
+	/* Let the action drop to its own line rather than being crushed against the
+	   message. Paired with min-height on the button: wrap is what keeps the label
+	   on one line in the common case, min-height is the guarantee it can never
+	   clip in the uncommon one (Basecamp 10148388559). */
+	flex-wrap:     wrap;
+}
+
+/* The message takes the remaining width and may wrap; without min-width: 0 a
+   long unbroken word in it would set the row's min-content and push the action
+   out again. */
+.lrn-admin-alert__text {
+	flex:      1 1 auto;
+	min-width: 0;
+}
+
+.lrn-admin-alert--warn {
+	border-inline-start-color: var(--lrn-warn);
+}
+
+.lrn-admin-alert--success {
+	border-inline-start-color: var(--lrn-success);
+}
+
+.lrn-admin-alert--error {
+	border-inline-start-color: var(--lrn-danger);
+}
+
+/* Lucide icons inside admin alerts size with the text. The default Lucide
+ * size of 24px overpowers the message; matching the icon to text height
+ * keeps the "icon + label" reading rhythm tight. */
+.lrn-admin-alert > svg,
+.lrn-admin-alert > i[data-lucide] {
+	flex-shrink: 0;
+	width:       20px;
+	height:      20px;
+}
+
+.lrn-admin-alert--success > svg,
+.lrn-admin-alert--success > i[data-lucide] {
+	color: var(--lrn-success);
+}
+
+.lrn-admin-alert__text {
+	color:       var(--lrn-text-secondary);
+	margin-inline-start: var(--lrn-sp-2);
+}
+
+.lrn-admin-card-heading {
+	margin:      0 0 var(--lrn-sp-4);
+	font-size:   var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+.lrn-admin-card-heading--sm {
+	margin-bottom: var(--lrn-sp-2);
+}
+
+.lrn-admin-card-body {
+	color:  var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-3);
+}
+
+.lrn-admin-actions-row {
+	display:   flex;
+	gap:       var(--lrn-sp-3);
+	flex-wrap: wrap;
+}
+
+.lrn-mb-6 {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-admin-stat-card__icon--warn {
+	background: var(--lrn-warn-bg);
+	color:      var(--lrn-warn);
+}
+
+.lrn-admin-stat-card__icon--danger {
+	background: color-mix(in srgb, var(--lrn-danger) 14%, transparent);
+	color:      var(--lrn-danger);
+}
+
+/* Operational spacer used by the system-health widget's CTA row. */
+.lrn-mt-3 {
+	margin-top: var(--lrn-sp-3);
+}
+
+/* Section spacer between a page-header/notice and the list table or editor
+   card below it. Used by the Pro admin lists (journeys, cohorts, learning
+   paths) that converged on the family pattern. */
+.lrn-mt-5 {
+	margin-top: var(--lrn-sp-5);
+}
+
+/* WP core floats `.spinner` left; inline AJAX spinners (next to a submit
+   button) need it inline instead. */
+.lrn-spinner-inline {
+	float: none;
+}
+
+/* ── Small utilities + components that replace inline styles (2026-06-03
+   inline-style sweep). Each is reused by 2+ call sites. ───────────────── */
+
+/* 12px inline action icon (e.g. external-link next to a "View" link). */
+.lrn-icon-xs {
+	width:  12px;
+	height: 12px;
+}
+
+/* Right-aligned row (onboarding reopen control, etc.). */
+.lrn-text-right {
+	text-align: end;
+}
+
+/* Stacked checkbox option label inside a settings form-table cell. */
+.lrn-checkbox-row {
+	display:       block;
+	margin-bottom: var(--lrn-sp-2);
+}
+
+/* A flex card body that stacks its children (API-keys section). */
+.lrn-flex-col {
+	flex-direction: column;
+}
+
+/* Block-level inline help note under a value (earnings deduction note). */
+.lrn-note-block {
+	display: block;
+}
+
+/* ==========================================================================
+   Admin feed widgets — recent transactions / new signups
+   ========================================================================== */
+
+.lrn-admin-feed {
+	list-style: none;
+	margin:     0 0 var(--lrn-sp-3);
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-3);
+}
+
+.lrn-admin-feed__item {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+}
+
+.lrn-admin-feed__avatar {
+	flex:         0 0 auto;
+	width:        28px;
+	height:       28px;
+	border-radius: 50%;
+}
+
+.lrn-admin-feed__avatar--placeholder {
+	display:       inline-flex;
+	align-items:   center;
+	justify-content: center;
+	background:    color-mix(in srgb, var(--lrn-text) 8%, transparent);
+	color:         var(--lrn-text-secondary);
+	width:         16px;
+	height:        16px;
+	padding:       6px;
+}
+
+.lrn-admin-feed__body {
+	flex:      1 1 auto;
+	min-width: 0;
+	display:   flex;
+	flex-direction: column;
+}
+
+.lrn-admin-feed__title {
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-admin-feed__email {
+	display:    block;
+	font-size:  var(--lrn-text-xs);
+	color:      var(--lrn-text-secondary);
+	margin-top: 2px;
+}
+
+.lrn-admin-feed__value {
+	font-weight: var(--lrn-weight-semibold);
+	font-variant-numeric: tabular-nums;
+	color:       var(--lrn-accent);
+}
+
+.lrn-admin-feed__time {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Admin top-instructors leaderboard
+   ========================================================================== */
+
+.lrn-admin-leaderboard {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-3);
+	counter-reset: lrn-rank;
+}
+
+.lrn-admin-leaderboard__item {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+}
+
+.lrn-admin-leaderboard__rank {
+	flex:         0 0 auto;
+	width:        28px;
+	font-weight:  var(--lrn-weight-semibold);
+	color:        var(--lrn-accent);
+	font-variant-numeric: tabular-nums;
+}
+
+.lrn-admin-leaderboard__avatar {
+	width:        32px;
+	height:       32px;
+	border-radius: 50%;
+	flex:         0 0 auto;
+}
+
+.lrn-admin-leaderboard__body {
+	flex:           1 1 auto;
+	min-width:      0;
+	display:        flex;
+	flex-direction: column;
+}
+
+.lrn-admin-leaderboard__name {
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-admin-leaderboard__name:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-admin-leaderboard__sub {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-admin-leaderboard__total {
+	flex:        0 0 auto;
+	font-weight: var(--lrn-weight-semibold);
+	font-variant-numeric: tabular-nums;
+	color:       var(--lrn-accent);
+}
+
+/* ==========================================================================
+   Course form layout
+   ========================================================================== */
+
+.lrn-course-form {
+	overflow-x: hidden;
+	max-width:  100%;
+}
+
+.lrn-course-form__layout {
+	display: flex;
+	gap:     var(--lrn-sp-6);
+	align-items: flex-start;
+	margin-top: var(--lrn-sp-5);
+	max-width: 100%;
+}
+
+.lrn-course-form__main {
+	flex:      1;
+	min-width: 0;
+	display:   flex;
+	flex-direction: column;
+	gap:       var(--lrn-sp-5);
+	max-width: 100%;
+	/* No `overflow: hidden` here: it was only meant to keep wide content inside
+	   the flex column (min-width:0 + max-width:100% already do that), but it
+	   also clipped the Editor.js block-tools menu — a floating dropdown that
+	   legitimately extends past the Description card — so its lower items
+	   ("Delimiter" ...) were cut off. Let floating menus overflow. */
+}
+
+.lrn-course-form__sidebar {
+	flex-shrink: 0;
+	width:       300px;
+	display:     flex;
+	flex-direction: column;
+	gap:       var(--lrn-sp-5);
+	max-width: 300px;
+}
+
+/* Prevent course form inputs from overflowing container (e.g. BuddyX theme) */
+.lrn-course-form input[type="text"],
+.lrn-course-form input[type="number"],
+.lrn-course-form input[type="url"],
+.lrn-course-form input[type="date"],
+.lrn-course-form input[type="email"],
+.lrn-course-form select,
+.lrn-course-form textarea {
+	max-width:  100%;
+	box-sizing: border-box;
+}
+
+.lrn-course-form .large-text,
+.lrn-course-form .regular-text {
+	max-width:  100%;
+	width:      100%;
+	box-sizing: border-box;
+}
+
+.lrn-course-form .small-text {
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.lrn-course-form__thumbnail-preview {
+	margin-top: var(--lrn-sp-3);
+}
+
+.lrn-course-form__thumbnail-preview img {
+	max-width:     100%;
+	height:        auto;
+	border-radius: var(--lrn-radius-md);
+	border:        1px solid var(--lrn-border);
+}
+
+/* ==========================================================================
+   Admin container + theme safety net (Card 1)
+   --------------------------------------------------------------------------
+   Some front-end themes (BuddyX for example) inject styles scoped to
+   `.wrap` or to generic inputs and make admin inputs stretch past their
+   container. These rules scope every Learnomy admin screen so inputs,
+   selects, textareas, and buttons never break out.
+   ========================================================================== */
+
+.wrap.learnomy-admin {
+	box-sizing: border-box;
+	max-width:  100%;
+	/*
+	 * `clip`, not `hidden`. CSS coerces the other axis: when one axis is
+	 * `hidden` and the other is `visible`, the visible one computes to `auto`
+	 * — so `overflow-x: hidden` silently turned this page wrap into a VERTICAL
+	 * scroll container. Nothing constrained its height here so it never showed
+	 * a scrollbar, but the container still swallows wheel events aimed past its
+	 * box and rebases `position: sticky` descendants onto the wrap instead of
+	 * the viewport. `clip` is exempt from that coercion, so the other axis
+	 * stays `visible` and the page keeps one scroller: the document.
+	 * The `hidden` line is the pre-Safari-16 fallback and must stay first.
+	 */
+	overflow-x: hidden;
+	overflow-x: clip;
+}
+
+.wrap.learnomy-admin *,
+.wrap.learnomy-admin *::before,
+.wrap.learnomy-admin *::after {
+	box-sizing: border-box;
+}
+
+.wrap.learnomy-admin input[type="text"],
+.wrap.learnomy-admin input[type="search"],
+.wrap.learnomy-admin input[type="url"],
+.wrap.learnomy-admin input[type="email"],
+.wrap.learnomy-admin input[type="password"],
+.wrap.learnomy-admin input[type="number"],
+.wrap.learnomy-admin input[type="date"],
+.wrap.learnomy-admin input[type="datetime-local"],
+.wrap.learnomy-admin select,
+.wrap.learnomy-admin textarea {
+	max-width: 100%;
+}
+
+.wrap.learnomy-admin .regular-text,
+.wrap.learnomy-admin .large-text {
+	width:     100%;
+	max-width: 100%;
+}
+
+.wrap.learnomy-admin .small-text {
+	width: auto;
+}
+
+/* Keep labels aligned to their input with a consistent spacing cadence so
+   themes can't collapse them. */
+.wrap.learnomy-admin .lrn-form-field > label,
+.wrap.learnomy-admin .lrn-form-row > label {
+	margin-bottom: var(--lrn-sp-1);
+	display:       inline-flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-2);
+}
+
+/* Instructor rows — checkbox + name on one side, share % input on the other.
+   Lays the checkbox out as a row rather than the default flex-wrap list so
+   each instructor gets its own editable share value. */
+.lrn-instructor-rows {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-2);
+}
+
+.lrn-instructor-row {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-2) var(--lrn-sp-3);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	background:      var(--lrn-bg);
+}
+
+.lrn-instructor-row .lrn-checkbox-label {
+	flex:    1 1 auto;
+	min-width: 0;
+}
+
+.lrn-instructor-row__name {
+	overflow:      hidden;
+	text-overflow: ellipsis;
+	white-space:   nowrap;
+}
+
+.lrn-instructor-row__share {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	flex-shrink: 0;
+}
+
+.lrn-instructor-row__share-input {
+	width:     80px;
+	max-width: 80px;
+}
+
+.lrn-instructor-row__share-unit {
+	color: var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Toast notification
+   ========================================================================== */
+
+/*
+ * Admin toast — positioned at the TOP of the viewport (offset under the
+ * WP admin bar) so post-save success messages are visible from the user's
+ * natural reading position after clicking Save / Update at the top of a
+ * form. Previously sat at `bottom`, which on long admin forms (Memberships,
+ * Course Builder) left the toast off-screen below the fold — users
+ * thought the action did nothing.
+ *
+ * 32px = WP admin bar height on desktop. Mobile overrides below.
+ */
+.lrn-toast {
+	position:       fixed;
+	top:            calc( 32px + var(--lrn-sp-4) );
+	left:           50%;
+	transform:      translateX(-50%) translateY(-20px);
+	opacity:        0;
+	padding:        var(--lrn-sp-3) var(--lrn-sp-5);
+	border-radius:  var(--lrn-radius-md);
+	font-size:      var(--lrn-text-sm);
+	font-weight:    var(--lrn-weight-medium);
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-2);
+	z-index:        99999;
+	transition:     opacity 0.2s ease, transform 0.2s ease;
+	pointer-events: none;
+	box-shadow:     var(--lrn-shadow-md);
+}
+
+.lrn-toast.is-visible {
+	opacity:   1;
+	transform: translateX(-50%) translateY(0);
+}
+
+/* WP collapses the admin bar to 46px on screens ≤ 782px. */
+@media screen and ( max-width: 782px ) {
+	.lrn-toast {
+		top: calc( 46px + var(--lrn-sp-4) );
+	}
+}
+
+.lrn-toast--success { background: var(--lrn-success); color: var(--lrn-white); }
+.lrn-toast--error   { background: var(--lrn-danger);  color: var(--lrn-white); }
+.lrn-toast--info    { background: var(--lrn-accent);  color: var(--lrn-white); }
+
+.lrn-toast__icon {
+	width:       16px;
+	height:      16px;
+	flex-shrink: 0;
+}
+
+/* ==========================================================================
+   Empty state CTA button
+   ========================================================================== */
+
+.lrn-empty-state__cta {
+	margin-top: var(--lrn-sp-4);
+}
+
+/* ==========================================================================
+   Focus visible (accessibility)
+   ========================================================================== */
+
+.learnomy-admin :focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.learnomy-admin button:focus-visible,
+.learnomy-admin .lrn-admin-btn:focus-visible {
+	box-shadow: 0 0 0 3px var(--lrn-accent-bg);
+}
+
+/* The PRIMARY button is the exception, and it is the one that matters most:
+   it sits on solid accent, and a ring painted in `--lrn-accent-bg` (a pale
+   tint of that same accent) all but vanishes against it -- focused and merely
+   hovered looked identical, so a keyboard user could not tell where they were
+   (Basecamp 10144266079). Two rings instead: a surface-coloured inner one to
+   separate the ring from the button, then the accent outer so the whole thing
+   still reads as ours. Same trick works on any solid-fill variant, so danger
+   gets it too. */
+.learnomy-admin .lrn-admin-btn--primary:focus-visible,
+.learnomy-admin .lrn-admin-btn--danger:focus-visible {
+	/* `--lrn-bg`, not `--lrn-surface`: the latter does not exist, and ONE
+	   undefined custom property invalidates the whole declaration, so the ring
+	   silently disappeared rather than falling back to something visible. */
+	box-shadow:
+		0 0 0 2px var(--lrn-bg),
+		0 0 0 4px var(--lrn-accent);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 782px) {
+	.lrn-admin-stats {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.lrn-course-form__layout {
+		flex-direction: column;
+	}
+
+	.lrn-course-form__sidebar {
+		width:     100%;
+		max-width: 100%;
+	}
+}
+
+@media (max-width: 640px) {
+	.lrn-admin-stats {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-form-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ==========================================================================
+   Webhooks page — secret field, event grid, row-action buttons, label badges
+   (admin.php?page=learnomy-webhooks). Token-driven; inherits dark mode.
+   ========================================================================== */
+
+/* Ghost + icon button modifiers (reused beyond webhooks). */
+.lrn-admin-btn--ghost {
+	background:    transparent;
+	border-color: transparent;
+}
+.lrn-admin-btn--ghost:hover {
+	background:    var(--lrn-bg-hover);
+	border-color:  transparent;
+}
+.lrn-admin-btn--icon {
+	width:        32px;
+	padding:      0;
+	justify-content: center;
+	flex:         0 0 auto;
+}
+
+/* TOUCH INPUT, not narrow screen.
+   wp-admin is deliberately dense: 32px matches WordPress core and is the right
+   size for a mouse, so raising every admin button to 44px everywhere would make
+   the whole admin look bloated to the people who spend all day in it.
+   But a site owner on an iPad is using the same screens with a finger, and
+   32px is genuinely hard to hit -- below even the 34px density-exception floor.
+   `pointer: coarse` asks the honest question ("is this a finger?") rather than
+   inferring it from viewport width, which gets a desktop browser resized to
+   half-screen wrong in both directions.
+   (Basecamp 10144266079) */
+@media (pointer: coarse) {
+	.lrn-admin-btn {
+		min-height: var(--lrn-touch-min);
+	}
+
+	.lrn-admin-btn--icon {
+		width:      var(--lrn-touch-min);
+		min-height: var(--lrn-touch-min);
+	}
+
+	.lrn-admin-btn--sm.lrn-admin-btn--icon {
+		width:      var(--lrn-touch-min);
+		min-height: var(--lrn-touch-min);
+	}
+}
+.lrn-admin-btn--sm.lrn-admin-btn--icon {
+	width: 28px;
+	/* Re-assert the icon-button's zero padding: the --sm padding (0 12px)
+	   outranked --icon's here, leaving a 28px button with 24px of padding -
+	   a 4px content box that squashed the glyph to nothing (2026-08-07). */
+	padding: 0;
+}
+
+/* Inline text button (e.g. "Select all"). */
+.lrn-link-btn {
+	background:      none;
+	border:         0;
+	padding:        0;
+	font-size:      var(--lrn-text-sm);
+	font-weight:    var(--lrn-weight-medium);
+	color:          var(--lrn-accent);
+	cursor:         pointer;
+}
+.lrn-link-btn:hover { text-decoration: underline; }
+
+/* Secret key: input grows, copy/regenerate sit inline at full row height. */
+.lrn-secret-field {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	max-width:   42rem;
+}
+.lrn-secret-field__input {
+	flex:        1 1 auto;
+	min-width:   0;
+	font-family: var(--lrn-font-mono, monospace);
+}
+
+/* Events: header row with the select-all toggle + a responsive grid. */
+.lrn-checkbox-group__head {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	margin-bottom:   var(--lrn-sp-2);
+}
+.lrn-checkbox-group--grid {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+	gap:                   var(--lrn-sp-2) var(--lrn-sp-4);
+}
+
+/* Webhook "Events to Send" — grouped by family so a long flat grid becomes
+   scannable sub-sections, each with its own select-all. */
+.lrn-webhook-event-group + .lrn-webhook-event-group {
+	margin-top:  var(--lrn-sp-4);
+	padding-top: var(--lrn-sp-4);
+	border-top:  1px solid var(--lrn-border);
+}
+.lrn-webhook-event-group__head {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	margin-bottom:   var(--lrn-sp-2);
+}
+.lrn-webhook-event-group__title {
+	font-size:      var(--lrn-text-sm);
+	font-weight:    var(--lrn-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color:          var(--lrn-text-secondary);
+}
+.lrn-link-btn--sm {
+	font-size: var(--lrn-text-sm);
+}
+
+/* Event label badges in the list (wrap, don't sprawl). */
+.lrn-event-badges {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-1);
+	max-width: 24rem;
+}
+
+/* Keep the delivery URL on one line so it never char-wraps into a sliver;
+   the table wrapper scrolls horizontally when space is tight. */
+.lrn-webhook-url code { white-space: nowrap; }
+.lrn-webhook-fired    { white-space: nowrap; color: var(--lrn-text-secondary); }
+.lrn-webhook-table .lrn-col-actions { white-space: nowrap; }
+
+/* Why an endpoint stopped working: the last HTTP code under the timestamp,
+   and — when the row is Failed — the one sentence that tells the owner how to
+   bring it back. Without these the Failed badge is a dead end. */
+.lrn-webhook-last-code {
+	display:    block;
+	font-size:  var(--lrn-text-sm);
+}
+.lrn-webhook-status-hint {
+	margin:     var(--lrn-sp-1) 0 0;
+	max-width:  18rem;
+	font-size:  var(--lrn-text-sm);
+	white-space: normal;
+}
+
+/* ==========================================================================
+   Row-actions overflow menu — the canonical admin "family" pattern.
+   1-2 primary actions inline + the rest behind a ⋮ menu. Rendered by
+   \Learnomy\Admin\UX::row_actions(); toggled by assets/js/admin/row-actions.js.
+   ========================================================================== */
+.lrn-row-actions__menu {
+	position:    relative;
+	display:     inline-flex;
+}
+.lrn-row-actions__panel {
+	position:      absolute;
+	inset-inline-end: 0;
+	top:           calc(100% + var(--lrn-sp-1));
+	z-index:       var(--lrn-z-dropdown, 50);
+	display:       flex;
+	flex-direction: column;
+	min-width:     11rem;
+	padding:       var(--lrn-sp-1);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	box-shadow:    var(--lrn-shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.18));
+}
+.lrn-row-actions__panel[hidden] { display: none; }
+/* Flip-up variant: row-actions.js adds this when opening downward would
+   clip the panel against the bottom of the scrolling table wrap. */
+.lrn-row-actions__menu--up .lrn-row-actions__panel {
+	top:    auto;
+	bottom: calc(100% + var(--lrn-sp-1));
+}
+.lrn-row-actions__item {
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-2);
+	width:          100%;
+	padding:        var(--lrn-sp-2) var(--lrn-sp-3);
+	font-size:      var(--lrn-text-sm);
+	color:          var(--lrn-text);
+	text-align:     start;
+	text-decoration: none;
+	background:     none;
+	border:         0;
+	border-radius:  var(--lrn-radius-sm);
+	cursor:         pointer;
+	white-space:    nowrap;
+}
+.lrn-row-actions__item:hover,
+.lrn-row-actions__item:focus-visible {
+	background: var(--lrn-bg-hover);
+	color:      var(--lrn-text);
+}
+.lrn-row-actions__item--danger { color: var(--lrn-danger); }
+.lrn-row-actions__item--danger:hover { background: var(--lrn-danger-bg); color: var(--lrn-danger); }
+.lrn-row-actions__item [data-lucide] { width: 15px; height: 15px; flex: 0 0 auto; }
+
+/* Row-actions ⋮ trigger: tidy 16px glyph (the 24px Lucide default looked
+   cramped + the bordered box read as "empty"; --ghost drops the border). */
+.lrn-row-actions__trigger [data-lucide],
+.lrn-row-actions__trigger svg {
+	width:  16px;
+	height: 16px;
+	/* The trigger is a flex row; without this the svg shrank to 0 wide. */
+	flex:   0 0 auto;
+}
+
+/* Menu items indicate focus with the same background the pointer gets -
+   the global focus ring drew a heavy outline around the auto-focused
+   first item every time the menu opened (2026-08-07). The background
+   change is the visible indicator, per the standard menu pattern. */
+.lrn-row-actions__item:focus {
+	/* :focus, not :focus-visible - WP core paints its ring via a:focus
+	   box-shadow, which :focus-visible alone does not beat. */
+	outline:    none;
+	box-shadow: none;
+	background: var(--lrn-bg-hover, var(--lrn-bg-secondary, #f0f0f1));
+}
+
+/* Identity cell name stays on ONE line (premium); long names ellipsize
+   instead of wrapping under the avatar. Used by students / instructors /
+   applications / certificates / subscriptions. */
+.lrn-user-cell { min-width: 0; }
+.lrn-user-cell__name {
+	min-width:     0;
+	white-space:   nowrap;
+	overflow:      hidden;
+	text-overflow: ellipsis;
+}
+
+/* Stacked identity — avatar in one column, name + email (+ optional headline)
+   stacked beside it, so people lists (Students, Instructors) carry the whole
+   identity in ONE column instead of spending a separate Email column. The
+   avatar aligns to the top of the stack rather than centering against it. */
+.lrn-user-cell:has( .lrn-user-cell__name--stacked ) { align-items: flex-start; }
+.lrn-user-cell__name--stacked {
+	display:        flex;
+	flex-direction: column;
+	gap:            1px;
+	line-height:    1.35;
+	white-space:    normal;
+	overflow:       visible;
+}
+
+/* Primary record link inside a table cell (e.g. an instructor name that links
+   to the detail page). Reads as the bold name first, link affordance on hover —
+   so a linked name matches a non-linked one (Students) instead of rendering as
+   raw browser-blue. */
+.lrn-admin-table__primary {
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+.lrn-admin-table__primary:hover,
+.lrn-admin-table__primary:focus-visible {
+	color: var(--lrn-accent);
+}
+
+/* Email sub-line under the name. Muted + small so the name leads; still a
+   mailto link, so it shifts to accent + underlines on hover. */
+.lrn-user-cell__email {
+	font-size:       var(--lrn-text-sm);
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+}
+.lrn-user-cell__email:hover,
+.lrn-user-cell__email:focus-visible {
+	color:           var(--lrn-accent);
+	text-decoration: underline;
+}
+.lrn-admin-table__sub {
+	display:   block;
+	font-size: var(--lrn-text-sm);
+}
+
+/* "Grant course access" control on the student detail page — a course
+   picker + button on one row. */
+.lrn-grant-access {
+	display:            flex;
+	flex-wrap:          wrap;
+	gap:                var(--lrn-sp-2);
+	align-items:        center;
+	margin-block-start: var(--lrn-sp-3);
+}
+.lrn-grant-access select { max-width: 24rem; }
+
+/* Taxonomy term checklist (course editor Tags + any registered taxonomy).
+   No bullets, tight rows, scrolls when a taxonomy has many terms. */
+.lrn-tag-checklist {
+	list-style:     none;
+	margin:         0;
+	padding:        0;
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+	max-height:     14rem;
+	overflow-y:     auto;
+}
+.lrn-tag-checklist li { margin: 0; }
+
+/* Inline "add tag" row under a taxonomy checklist (admin-only). */
+.lrn-tag-quick-add {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	margin-top:  var(--lrn-sp-3);
+}
+.lrn-tag-quick-add__input {
+	flex:      1 1 8rem;
+	min-width: 0;
+}
+.lrn-tag-quick-add__status {
+	flex-basis: 100%;
+	font-size:  var(--lrn-text-sm);
+	color:      var(--lrn-text-secondary);
+}
+.lrn-tag-quick-add__status.is-error { color: var(--lrn-danger); }
+
+/* Read-only Details metadata list — reused by the lesson + question editors. */
+.lrn-meta-list {
+	margin:         0;
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2);
+}
+.lrn-meta-list__row {
+	display:         flex;
+	align-items:     baseline;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+}
+.lrn-meta-list__row dt {
+	margin:    0;
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+.lrn-meta-list__row dd {
+	margin:      0;
+	text-align:  end;
+	font-weight: var(--lrn-weight-medium);
+}
+
+/* Read-only code block (e.g. a transaction's raw gateway metadata). */
+.lrn-code-block {
+	margin:        var(--lrn-sp-3) 0 0;
+	padding:       var(--lrn-sp-3);
+	max-height:    20rem;
+	overflow:      auto;
+	background:    var(--lrn-bg-subtle, color-mix(in srgb, var(--lrn-text) 4%, var(--lrn-bg)));
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	font-family:   var(--lrn-font-mono, monospace);
+	font-size:     var(--lrn-text-sm);
+	line-height:   1.5;
+	color:         var(--lrn-text);
+	white-space:   pre-wrap;
+	word-break:    break-word;
+}
+
+/* ==========================================================================
+   Editor.js host — shared styling for EVERY admin block editor (course
+   Description `.lrn-editor-host` + lesson Content `.lrn-lesson-editor__editorjs`)
+   so they read identically. Editor.js ships a 650px-centred content column +
+   left toolbar gutter; inside a wide card that leaves a dead left margin and
+   the text floating mid-card. Pull content to the card's full width (flush
+   with the field above it) and token-style the type + tools.
+   ========================================================================== */
+/* Uniform primary-content height — every block editor reads as a main content
+   area, not a one-line field. Editor.js also sets minHeight in JS; this is the
+   host baseline so an empty editor still looks intentional. The height also has
+   to clear the "+" block-menu popover (search field + ~12 tools, ~20rem tall) so
+   the menu opens INSIDE the editor instead of spilling past its bottom edge into
+   the help text below. */
+.lrn-editor-host,
+.lrn-lesson-editor__editorjs {
+	min-height: 22rem;
+}
+
+.lrn-editor-host .ce-block__content,
+.lrn-editor-host .ce-toolbar__content,
+.lrn-lesson-editor__editorjs .ce-block__content,
+.lrn-lesson-editor__editorjs .ce-toolbar__content {
+	max-width: 100%;
+	margin:    0;
+}
+
+/* Reserve a horizontal gutter on the TEXT only (not the toolbar, which stays
+   full-width) so Editor.js's "+" button (left) and settings handle (right) sit
+   BESIDE the first line, not on top of it / the placeholder. Without this the
+   content sat flush to the card edge and the "+" overlapped "Describe what
+   students will learn..." (owner report). */
+.lrn-editor-host .ce-block__content,
+.lrn-lesson-editor__editorjs .ce-block__content {
+	/* Wide left gutter for the toolbox handle (anchored at .ce-toolbar__actions
+	   below); minimal right padding since Editor.js 2.30 keeps both the "+" and
+	   the block-settings handle on the LEFT, not split left/right. */
+	padding-inline-start: 3.75rem;
+	padding-inline-end:   var(--lrn-sp-2);
+}
+
+/* Editor.js 2.30 groups the "+" add-block button AND the block-settings handle
+   in .ce-toolbar__actions and positions them at left:-58px — a left gutter that
+   falls OUTSIDE the editor host / card, so the "+" was clipped and only
+   partially visible (Basecamp #9972337649). Anchor the actions to the host's
+   left edge instead; the wide left padding on .ce-block__content above keeps
+   them beside the line, fully visible, without overlapping the text. */
+.lrn-editor-host .ce-toolbar__actions,
+.lrn-lesson-editor__editorjs .ce-toolbar__actions {
+	inset-inline-start: 0;
+}
+
+.lrn-editor-host .ce-paragraph,
+.lrn-lesson-editor__editorjs .ce-paragraph {
+	font-family: var(--lrn-font);
+	font-size:   var(--lrn-text-base);
+	line-height: 1.7;
+	color:       var(--lrn-text);
+}
+
+.lrn-editor-host .ce-header,
+.lrn-lesson-editor__editorjs .ce-header {
+	font-family: var(--lrn-font);
+	color:       var(--lrn-text);
+}
+
+.lrn-editor-host .cdx-block,
+.lrn-lesson-editor__editorjs .cdx-block {
+	padding: var(--lrn-sp-1) 0;
+}
+
+.lrn-editor-host .ce-toolbar__plus,
+.lrn-editor-host .ce-toolbar__settings-btn,
+.lrn-lesson-editor__editorjs .ce-toolbar__plus,
+.lrn-lesson-editor__editorjs .ce-toolbar__settings-btn {
+	color:      var(--lrn-text-secondary);
+	background: var(--lrn-bg);
+	border:     1px solid var(--lrn-border);
+}
+
+.lrn-editor-host .ce-toolbar__plus:hover,
+.lrn-editor-host .ce-toolbar__settings-btn:hover,
+.lrn-lesson-editor__editorjs .ce-toolbar__plus:hover,
+.lrn-lesson-editor__editorjs .ce-toolbar__settings-btn:hover {
+	background: var(--lrn-bg-hover);
+}
+
+.lrn-editor-host .ce-inline-toolbar,
+.lrn-lesson-editor__editorjs .ce-inline-toolbar {
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	box-shadow:    var(--lrn-shadow-md);
+}
+
+/* Block-tools popover (the "+" / convert menu). Editor.js ships it with its
+   own system font + default greys, which read as foreign next to the
+   token-driven admin cards. Align the container, rows, tool icons and the
+   search field to the design system so the toolbar feels native: consistent
+   font, border, radius, shadow, and a clear token hover/focus state. */
+.lrn-editor-host .ce-popover__container,
+.lrn-lesson-editor__editorjs .ce-popover__container {
+	font-family:   var(--lrn-font);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	box-shadow:    var(--lrn-shadow-lg);
+}
+
+.lrn-editor-host .ce-popover-item,
+.lrn-lesson-editor__editorjs .ce-popover-item {
+	color:         var(--lrn-text);
+	border-radius: var(--lrn-radius-md);
+}
+
+/* Honour Editor.js's own opt-out contract: a state that must keep its own
+   background (the armed "Click to delete" confirmation is red with WHITE
+   text) tags itself --no-hover / --no-focus, and every upstream hover/focus
+   rule carries these :not() guards. Ours didn't, so this rule painted
+   pale --lrn-bg-hover over the red while the title stayed white — the
+   near-invisible "Click to Delete" (Basecamp 10172130834). */
+.lrn-editor-host .ce-popover-item:not(.ce-popover-item--no-hover):hover,
+.lrn-editor-host .ce-popover-item--focused:not(.ce-popover-item--no-focus),
+.lrn-lesson-editor__editorjs .ce-popover-item:not(.ce-popover-item--no-hover):hover,
+.lrn-lesson-editor__editorjs .ce-popover-item--focused:not(.ce-popover-item--no-focus) {
+	background: var(--lrn-bg-hover);
+}
+
+.lrn-editor-host .ce-popover-item__icon,
+.lrn-lesson-editor__editorjs .ce-popover-item__icon {
+	background:    var(--lrn-bg-secondary);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-sm);
+	box-shadow:    none;
+}
+
+.lrn-editor-host .cdx-search-field,
+.lrn-lesson-editor__editorjs .cdx-search-field {
+	background:    var(--lrn-bg-secondary);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+}
+
+/* ==========================================================================
+   Filter bar (Question Bank + any list with multi-select filters). Was
+   unstyled → the selects, Filter button and search input touched each other.
+   Now: filters on one wrapping row with breathing room; search on its own row.
+   ========================================================================== */
+.lrn-filter-bar { margin-bottom: var(--lrn-sp-5); }
+.lrn-filter-bar form {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+.lrn-filter-bar select {
+	height:    36px;
+	max-width: 14rem;
+}
+.lrn-filter-bar input[type="search"] {
+	flex:        1 1 100%;
+	margin-top:  var(--lrn-sp-1);
+	max-width:   28rem;
+}
+
+/* ── Integrations tab (Academy Stack companions) ───────────────────────────
+   Cards mirror the pro-features card conventions: token-driven, family badges
+   + buttons. One card per Companion_Registry entry. */
+.lrn-integrations-grid {
+	display:               grid;
+	/* A bare minmax() floor is a HARD minimum: on a viewport narrower than the
+	   floor the track keeps that width and the cards overflow their container.
+	   min(<floor>, 100%) collapses the floor to the container on small screens
+	   and behaves exactly as before everywhere else. */
+	grid-template-columns: repeat( auto-fill, minmax( min( 320px, 100% ), 1fr ) );
+	gap:                   var(--lrn-sp-4, 16px);
+	margin-top:            var(--lrn-sp-4, 16px);
+}
+.lrn-integration-card {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-3, 12px);
+	padding:        var(--lrn-sp-5, 20px);
+	background:     var(--lrn-bg, #fff);
+	border:         1px solid var(--lrn-border, #e2e4e7);
+	border-radius:  var(--lrn-radius-lg, 10px);
+}
+.lrn-integration-card__head {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-2, 8px);
+}
+.lrn-integration-card__title {
+	margin:    0;
+	font-size: var(--lrn-fs-lg, 1.05em);
+	font-weight: 700;
+}
+.lrn-integration-card__why {
+	margin: 0;
+	color:  var(--lrn-text-secondary, #6b6b6b);
+}
+.lrn-integration-card__unlocks {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+	margin:      0;
+	font-size:   var(--lrn-fs-sm, 0.9em);
+	color:       var(--lrn-success, #1a7f37);
+}
+.lrn-integration-card__unlocks svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.lrn-integration-card__actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+	margin-top:  auto;
+	padding-top: var(--lrn-sp-2, 8px);
+	flex-wrap:   wrap;
+}
+.lrn-integration-card__actions form { margin: 0; }
+.lrn-integrations-footnote { margin-top: var(--lrn-sp-5, 20px); }
+
+/* ── Coupon course-scope picker (coupons admin) ───────────────────────── */
+.lrn-coupon-scope { margin-block-start: var(--lrn-space-4, 1rem); }
+.lrn-coupon-scope__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lrn-space-2, 0.5rem);
+	margin-block: var(--lrn-space-2, 0.5rem);
+}
+.lrn-coupon-scope__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-space-2, 0.5rem);
+	padding: var(--lrn-space-1, 0.25rem) var(--lrn-space-3, 0.75rem);
+	border: 1px solid var(--lrn-border, #dcdcde);
+	border-radius: var(--lrn-radius-pill, 999px);
+	background: var(--lrn-bg-muted, #f6f7f7);
+	font-size: var(--lrn-text-sm, 0.8125rem);
+}
+.lrn-coupon-scope__chip-x {
+	border: 0;
+	background: none;
+	cursor: pointer;
+	font-size: 1.1em;
+	line-height: 1;
+	color: var(--lrn-text-secondary, #646970);
+	padding: 0;
+}
+.lrn-coupon-scope__search { position: relative; max-width: 28rem; }
+.lrn-coupon-scope__search input { width: 100%; }
+.lrn-coupon-scope__results {
+	list-style: none;
+	margin: var(--lrn-space-1, 0.25rem) 0 0;
+	padding: var(--lrn-space-1, 0.25rem);
+	position: absolute;
+	inset-inline: 0;
+	z-index: 20;
+	background: var(--lrn-bg, #fff);
+	border: 1px solid var(--lrn-border, #dcdcde);
+	border-radius: var(--lrn-radius-md, 6px);
+	box-shadow: 0 2px 8px color-mix(in srgb, var(--lrn-text, #1e1e1e) 12%, transparent);
+	max-height: 16rem;
+	overflow-y: auto;
+}
+.lrn-coupon-scope__option {
+	padding: var(--lrn-space-2, 0.5rem) var(--lrn-space-3, 0.75rem);
+	border-radius: var(--lrn-radius-sm, 4px);
+	cursor: pointer;
+}
+.lrn-coupon-scope__option.is-active,
+.lrn-coupon-scope__option:hover {
+	background: color-mix(in srgb, var(--lrn-accent, #2271b1) 12%, transparent);
+}
+
+/* Pricing model — a set of choices, not a table of rules.
+ *
+ * Three passes to get here. Inline help stretched a description the width of
+ * the window. A divider under each option turned six choices into a ruled
+ * table, where the eye read the lines and nothing marked the selected one. The
+ * fix then failed silently: the same selector lives in admin.css at equal
+ * specificity, and THIS sheet loads later, so `display: block` quietly beat
+ * `display: grid` and only the colours landed. The rules belong here, in the
+ * page's own sheet, with one owner.
+ *
+ * No rules between options. Whitespace separates them and the SELECTED one is
+ * the only thing drawn, because the chosen model is the fact an owner opens
+ * this panel to check. */
+/* Scoped to beat `.wrap.learnomy-admin .lrn-form-field > label { display:
+ * inline-flex }` (0,3,1), which is why three earlier attempts at `display:
+ * grid` silently did nothing — the panel kept laying out inline and the help
+ * stayed beside its label. Not a load-order problem; a specificity one. */
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	column-gap: var(--lrn-sp-3);
+	align-items: start;
+	margin-block: 0 var(--lrn-sp-1);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border-inline-start: 3px solid transparent;
+	border-radius: var(--lrn-radius-md);
+	cursor: pointer;
+	transition: background-color var(--lrn-dur) ease, border-color var(--lrn-dur) ease;
+}
+
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label:hover {
+	background: var(--lrn-bg-secondary);
+}
+
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label:has( input[type="radio"]:checked ) {
+	background: var(--lrn-accent-bg);
+	border-inline-start-color: var(--lrn-accent);
+}
+
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label:has( input[type="radio"]:checked ) strong {
+	color: var(--lrn-accent);
+}
+
+/* The radio is too small to carry a focus ring on its own, so the whole
+ * option takes it. */
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label:has( input[type="radio"]:focus-visible ) {
+	outline: 2px solid var(--lrn-accent);
+	outline-offset: 2px;
+}
+
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label input[type="radio"] {
+	grid-column: 1;
+	grid-row: 1;
+	margin: 2px 0 0;
+}
+
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label strong {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+/* Under the label, not beside it — one column of text, capped so a long
+ * description cannot run the width of the browser. */
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label__help {
+	grid-column: 2;
+	grid-row: 2;
+	max-width: 60ch;
+	margin: var(--lrn-sp-1) 0 0;
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label--disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.wrap.learnomy-admin .lrn-pricing-radio-group .lrn-radio-label--disabled:hover {
+	background: transparent;
+}
+
+/* ==========================================================================
+   Community & Discussion section
+   --------------------------------------------------------------------------
+   Rendered identically on the course editor, the course builder, a cohort and
+   a Learnomy Space. It carries `postbox` so it inherits the same card the
+   sibling panels use rather than sitting naked on the background beside them,
+   which is how it first shipped and read as unstyled.
+   ========================================================================== */
+
+.lrn-object-integrations {
+	padding:          12px;
+	margin-block-start: 12px;
+}
+
+.lrn-object-integrations__title {
+	font-size:          14px;
+	margin:             0 0 8px;
+	padding:            0;
+	border:             0;
+}
+
+.lrn-object-integrations .description {
+	margin-block-start: 6px;
+}
+
+.lrn-object-integrations__link {
+	margin-block-start: 8px;
+	margin-block-end:   0;
+}

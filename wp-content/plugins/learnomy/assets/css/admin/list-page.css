@@ -1,0 +1,298 @@
+/**
+ * Learnomy — List page enhancements (Pattern B)
+ *
+ * Shared styles for all list/table pages: checkbox column,
+ * filter bar, bulk actions bar, sortable headers.
+ * Loaded on all Pattern B admin pages.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Checkbox column
+   ========================================================================== */
+
+.lrn-admin-table .lrn-col-check {
+	width:      40px;
+	text-align: center;
+	padding:    var(--lrn-sp-3) var(--lrn-sp-2);
+}
+
+.lrn-admin-table .lrn-col-check input[type="checkbox"] {
+	width:  16px;
+	height: 16px;
+	margin: 0;
+	cursor: pointer;
+	accent-color: var(--lrn-accent);
+}
+
+/* Highlight selected rows */
+.lrn-admin-table tbody tr.is-selected td {
+	background: var(--lrn-accent-bg);
+}
+
+/* ==========================================================================
+   Filter bar (search + dropdowns + buttons)
+   ========================================================================== */
+
+.lrn-filter-bar {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	flex-wrap:     wrap;
+	margin-bottom: var(--lrn-sp-4);
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	background:    var(--lrn-bg);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+}
+
+.lrn-filter-bar__search {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	flex:        1;
+	min-width: 200px;
+	max-width: 320px;
+}
+
+.lrn-filter-bar__search input[type="search"] {
+	width:         100%;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	transition:    border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-filter-bar__search input[type="search"]:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+.lrn-filter-bar__search input[type="search"]:focus:not(:focus-visible) {
+	outline:      none;
+	border-color: var(--lrn-accent);
+	box-shadow:   0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-filter-bar select {
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-base);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+	cursor:        pointer;
+}
+
+.lrn-filter-bar__actions {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	margin-inline-start: auto;
+}
+
+.lrn-filter-bar__clear {
+	color:           var(--lrn-text-tertiary);
+	font-size:       var(--lrn-text-sm);
+	text-decoration: none;
+	cursor:          pointer;
+}
+
+.lrn-filter-bar__clear:hover {
+	color:           var(--lrn-text-secondary);
+	text-decoration: underline;
+}
+
+/* ==========================================================================
+   Bulk actions bar
+   ========================================================================== */
+
+.lrn-bulk-bar {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+	background:      var(--lrn-accent-bg);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-lg);
+	/* Sits ABOVE the table now (WP core convention - Basecamp 10149762104):
+	   select-all lives in the header, so the Apply control belongs beside it,
+	   not two screens down. Standalone strip, no longer the table's bottom cap. */
+	margin-block-end: var(--lrn-sp-3);
+}
+
+.lrn-bulk-bar__left {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+}
+
+.lrn-bulk-bar__count {
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-accent);
+}
+
+.lrn-bulk-bar select {
+	padding:       var(--lrn-sp-1) var(--lrn-sp-3);
+	font-family:   var(--lrn-font);
+	font-size:     var(--lrn-text-sm);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+}
+
+.lrn-bulk-bar--hidden {
+	display: none;
+}
+
+/* ==========================================================================
+   Sortable column headers
+   ========================================================================== */
+
+.lrn-admin-table th.lrn-sortable {
+	cursor:     pointer;
+	user-select: none;
+}
+
+.lrn-admin-table th.lrn-sortable:hover {
+	color:      var(--lrn-text);
+	background: var(--lrn-bg-tertiary);
+}
+
+.lrn-admin-table th.lrn-sortable .lrn-sort-indicator {
+	display:     inline-flex;
+	margin-inline-start: var(--lrn-sp-1);
+	opacity:     0.4;
+	font-size:   var(--lrn-text-xs);
+}
+
+.lrn-admin-table th.lrn-sortable.lrn-sort-asc .lrn-sort-indicator,
+.lrn-admin-table th.lrn-sortable.lrn-sort-desc .lrn-sort-indicator {
+	opacity: 1;
+	color:   var(--lrn-accent);
+}
+
+/* ==========================================================================
+   Row actions (show on hover)
+   ========================================================================== */
+
+.lrn-admin-table .row-actions {
+	visibility: hidden;
+	padding:    0;
+	font-size:  var(--lrn-text-sm);
+}
+
+.lrn-admin-table tbody tr:hover .row-actions {
+	visibility: visible;
+}
+
+.lrn-admin-table .row-actions a {
+	color:           var(--lrn-accent);
+	text-decoration: none;
+}
+
+.lrn-admin-table .row-actions a:hover {
+	text-decoration: underline;
+}
+
+.lrn-admin-table .row-actions .delete a,
+.lrn-admin-table .row-actions .trash a {
+	color: var(--lrn-danger);
+}
+
+.lrn-admin-table .row-actions span + span::before {
+	content: " | ";
+	color:   var(--lrn-border-heavy);
+}
+
+/* ==========================================================================
+   Filter dropdowns — even widths
+   --------------------------------------------------------------------------
+   A long option label (course / category names) was ballooning the first
+   <select> to ~half the filter bar and crowding the search field. Cap the
+   width so every filter dropdown sits at a consistent, readable size across
+   Courses / Lessons / Quizzes / Question Bank.
+   ========================================================================== */
+
+/* Scoped under .wrap.learnomy-admin so this beats the broad
+   `.wrap.learnomy-admin select { max-width: 100% }` reset (0,2,1) that was
+   otherwise letting a long option label balloon the first dropdown. */
+.wrap.learnomy-admin .lrn-admin-filters select,
+.wrap.learnomy-admin .lrn-filter-bar select {
+	max-width: 14rem;
+	/* WordPress core sets `select { line-height: 2.71… }` (≈38px at our 14px
+	   font). Inside our padded, fixed-height filter box that line is taller
+	   than the content area, so the option label clipped at the bottom. Force
+	   a sane line-height + auto height (min 40 for the 40px tap target) so the
+	   text sits centred and uncut. */
+	min-height:  40px;
+	height:      auto;
+	line-height: 1.4;
+}
+
+/* ==========================================================================
+   Sticky Actions column — narrow screens only
+   --------------------------------------------------------------------------
+   On desktop the whole table fits, so the Actions column is a normal flush
+   column flush with every other row item — no divider, nothing detached.
+   Only at iPad / narrower widths (≤1024) do these tables scroll horizontally,
+   so there we pin the last column (Edit + the ⋮ menu) to the right edge and
+   draw a left divider so the primary action stays reachable and visually
+   separated from the content scrolling beneath it. Applying the divider on
+   desktop made the Actions column read as a bolted-on panel.
+   ========================================================================== */
+
+@media (max-width: 1024px) {
+	.lrn-admin-table th:last-child,
+	.lrn-admin-table td:last-child {
+		position:   sticky;
+		inset-inline-end: 0;
+		background: var(--lrn-bg);
+		/* border-collapse drops the cell border under a sticky cell — draw the
+		   leading divider with a shadow so the pinned column stays separated
+		   from the content scrolling beneath it. box-shadow has no logical
+		   form, so the offset is mirrored explicitly below for RTL: the column
+		   pins to the inline-end edge, which is the LEFT edge in RTL, and the
+		   divider has to move to its right or it draws off-canvas. */
+		box-shadow: -1px 0 0 var(--lrn-border);
+	}
+
+	[dir="rtl"] .lrn-admin-table th:last-child,
+	[dir="rtl"] .lrn-admin-table td:last-child {
+		box-shadow: 1px 0 0 var(--lrn-border);
+	}
+
+	.lrn-admin-table thead th:last-child {
+		background: var(--lrn-bg-secondary);
+	}
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 782px) {
+	.lrn-filter-bar {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+
+	.lrn-filter-bar__search {
+		max-width: none;
+	}
+
+	.lrn-filter-bar__actions {
+		margin-inline-start: 0;
+	}
+
+	.lrn-admin-table .row-actions {
+		visibility: visible;
+	}
+}

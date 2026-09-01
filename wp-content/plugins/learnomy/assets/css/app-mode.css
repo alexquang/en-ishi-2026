@@ -1,0 +1,56 @@
+/**
+ * App WebView mode — chromeless content-screen styling.
+ *
+ * Loaded only when the page renders inside the Learnomy native app shell
+ * (?lrn_app=1 / lrn_app cookie → body.lrn-app-mode). The site's normal web
+ * visitors never receive this stylesheet. The native shell owns the top/bottom
+ * navigation; here we only make the plugin content area sit correctly inside a
+ * notched, gesture-bar device and hide anything that is web-only chrome.
+ *
+ * Token rules apply: colours come from --lrn-* tokens, never raw hex. env()
+ * safe-area values are device geometry, not design values.
+ */
+
+body.lrn-app-mode {
+	/* Paint the LMS background under the status bar / home indicator so the
+	   notch area matches the content instead of flashing theme/white. */
+	background: var(--lrn-bg);
+	/* Respect the device safe areas (notch, rounded corners, home bar). */
+	padding-top: env(safe-area-inset-top);
+	padding-bottom: env(safe-area-inset-bottom);
+	padding-inline-start: env(safe-area-inset-left);
+	padding-inline-end: env(safe-area-inset-right);
+	/* The native shell scrolls the WebView; avoid a double scrollbar gutter. */
+	overflow-x: hidden;
+}
+
+/* The native shell provides global nav, so suppress any in-page site nav /
+   footer / breadcrumb-to-home that a template or override theme still prints.
+   Mark such elements with .lrn-site-only (or set the data attribute) to opt
+   them out of the app surface without affecting the web layout. */
+body.lrn-app-mode .lrn-site-only,
+body.lrn-app-mode [data-lrn-app-hidden] {
+	display: none !important;
+}
+
+/* Floating web widgets the native shell already provides: the notification
+   bell (app owns push + the notifications screen) and the dark-mode toggle
+   (the app/OS drives theme). Leaving them would float orphaned over content. */
+body.lrn-app-mode .lrn-notification-bell,
+body.lrn-app-mode .lrn-dark-toggle {
+	display: none !important;
+}
+
+/* Content screens are full-bleed in the app — the desktop max-width gutter
+   reads as wasted margin on a phone-sized WebView. */
+body.lrn-app-mode .lrn-app {
+	--lrn-container-width: 100%;
+}
+
+/* The mobile sticky enroll/buy bar on a single course pins to the viewport
+   bottom — lift it clear of the device home indicator in the WebView so the
+   CTA isn't half-hidden under the gesture bar. (The native shell insets or
+   hides its own bottom tab bar on full-screen content screens.) */
+body.lrn-app-mode .lrn-course-stickybar {
+	padding-block-end: calc(var(--lrn-sp-3) + env(safe-area-inset-bottom));
+}

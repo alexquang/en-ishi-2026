@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/enrollment-cta",
+    "version": "1.0.0",
+    "title": "Enroll Button",
+    "category": "learnomy",
+    "icon": "welcome-learn-more",
+    "description": "Show an enroll button or an already-enrolled badge for a course.",
+    "textdomain": "learnomy",
+    "attributes": {
+        "courseId": {
+            "type": "integer"
+        },
+        "buttonText": {
+            "type": "string",
+            "default": "Enroll Now"
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

@@ -1,0 +1,523 @@
+/**
+ * Learnomy — Admin question editor styles.
+ *
+ * Mirrors the Course form pattern: `.lrn-admin-card` shell wraps a
+ * `.lrn-settings-section` accordion (Lucide icon in the header, chevron on
+ * the right, smooth toggle). Scoped under `.lrn-question-editor` so
+ * neighbouring editor forms (lesson, quiz) are unaffected. Every value
+ * references a `--lrn-*` token with a sensible fallback — no hardcoded
+ * hex/px live outside `var(...)` wrappers.
+ *
+ * @package Learnomy
+ */
+
+/* ── Page layout ──────────────────────────────────────────────────────── */
+
+.lrn-question-editor {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-4, 16px);
+	/* Card #9861910738 — 960px capped the form short of the admin content area
+	 * on wide monitors, leaving an extra right-side gap. 1280px matches the
+	 * rest of the Learnomy admin shell while keeping line lengths readable. */
+	max-width: 1280px;
+}
+
+.lrn-question-editor__card {
+	padding: 0;
+	overflow: hidden;
+}
+
+/* ── Settings section accordion (scoped copy so the editor CSS doesn't
+   depend on course-form.css being enqueued alongside it) ──────────────── */
+
+.lrn-question-editor .lrn-settings-section {
+	border:        0;
+	border-radius: 0;
+	background:    transparent;
+	margin:        0;
+	transition:    border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.lrn-question-editor .lrn-settings-section__header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	width:           100%;
+	padding:         var(--lrn-sp-4, 16px) var(--lrn-sp-5, 20px);
+	background:      transparent;
+	border:          0;
+	font:            inherit;
+	color:           var(--lrn-text, var(--lrn-text));
+	cursor:          pointer;
+	text-align:      start;
+	transition:      background-color 150ms ease;
+}
+
+.lrn-question-editor .lrn-settings-section__header:hover,
+.lrn-question-editor .lrn-settings-section__header:focus-visible {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+}
+
+.lrn-question-editor .lrn-settings-section__header:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-question-editor .lrn-settings-section__header:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.lrn-question-editor .lrn-settings-section__heading {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3, 12px);
+	font-size:   var(--lrn-text-md, 15px);
+	font-weight: var(--lrn-weight-semibold, 600);
+	color:       var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-question-editor .lrn-settings-section__heading svg {
+	color:       var(--lrn-accent, var(--lrn-accent));
+	flex-shrink: 0;
+	width:       var(--lrn-icon-md, 18px);
+	height:      var(--lrn-icon-md, 18px);
+}
+
+.lrn-question-editor .lrn-settings-section__chevron {
+	color:       var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+	transition:  transform 150ms ease;
+	flex-shrink: 0;
+}
+
+.lrn-question-editor .lrn-settings-section.is-open .lrn-settings-section__chevron {
+	transform: rotate(180deg);
+}
+
+.lrn-question-editor .lrn-settings-section__body {
+	display:    none;
+	padding:    var(--lrn-sp-5, 20px);
+	border-top: 1px solid var(--lrn-divider, rgba(55, 53, 47, 0.06));
+}
+
+.lrn-question-editor .lrn-settings-section.is-open .lrn-settings-section__body {
+	display: block;
+}
+
+.lrn-question-editor .lrn-settings-section__help {
+	margin:      0 0 var(--lrn-sp-4, 16px);
+	color:       var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:   var(--lrn-text-sm, 13px);
+	line-height: 1.5;
+}
+
+/* ── Details fields — grid for the four compact selects ───────────────── */
+
+.lrn-question-editor__grid {
+	display:               grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap:                   var(--lrn-sp-4, 16px);
+	margin-bottom:         var(--lrn-sp-4, 16px);
+}
+
+.lrn-question-editor__grid .lrn-form-field {
+	margin: 0;
+}
+
+/* Stack sibling form fields inside the details body with consistent rhythm
+   — the global .lrn-form-field uses `gap` internally but does not set outer
+   margin, which made Hint hug Additional Context in the old layout. */
+.lrn-question-editor .lrn-settings-section__body > .lrn-form-field {
+	margin-bottom: var(--lrn-sp-4, 16px);
+}
+
+.lrn-question-editor .lrn-settings-section__body > .lrn-form-field:last-child {
+	margin-bottom: 0;
+}
+
+.lrn-question-editor .lrn-form-field textarea.lrn-input--lg {
+	font-size: var(--lrn-text-md, 15px);
+	padding:   var(--lrn-sp-3, 12px);
+}
+
+/* ── Answers region ───────────────────────────────────────────────────── */
+
+.lrn-question-editor .lrn-answers-region {
+	padding: 0;
+}
+
+.lrn-question-editor .lrn-answers-loading {
+	margin:     0;
+	padding:    var(--lrn-sp-4, 16px);
+	color:      var(--lrn-text-secondary, var(--lrn-text-secondary));
+	text-align: center;
+	font-style: italic;
+}
+
+.lrn-question-editor .lrn-answers-list {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-3, 12px);
+	margin:         0;
+	padding:        0;
+	list-style:     none;
+}
+
+.lrn-question-editor .lrn-answer-row {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-3, 12px);
+	padding:        var(--lrn-sp-4, 16px);
+	background:     var(--lrn-bg, var(--lrn-white));
+	border:         1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius:  var(--lrn-radius-md, 6px);
+	transition:     border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.lrn-question-editor .lrn-answer-row:hover {
+	border-color: var(--lrn-border-heavy, rgba(55, 53, 47, 0.16));
+}
+
+.lrn-question-editor .lrn-answer-row:focus-within {
+	border-color: var(--lrn-accent, var(--lrn-accent));
+	box-shadow:   var(--lrn-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+/* Row main: the content input + remove button on a single line. */
+.lrn-question-editor .lrn-answer-row__main {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-3, 12px);
+}
+
+.lrn-question-editor .lrn-answer-row__main > input[type="text"] {
+	flex:      1 1 240px;
+	min-width: 0;
+}
+
+/* Row controls: the correctness + fraction controls sit on their own row
+   so mc_multi's "Correct" + "Credit" don't collide the way they used to. */
+.lrn-question-editor .lrn-answer-row__controls {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-4, 16px);
+	padding-top: var(--lrn-sp-1, 4px);
+}
+
+.lrn-question-editor .lrn-answer-row__correct,
+.lrn-question-editor .lrn-answer-row__case {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+	font-size:   var(--lrn-text-sm, 13px);
+	color:       var(--lrn-text, var(--lrn-text));
+	font-weight: var(--lrn-weight-medium, 500);
+	margin:      0;
+	cursor:      pointer;
+}
+
+.lrn-question-editor .lrn-answer-row__correct input[type="checkbox"],
+.lrn-question-editor .lrn-answer-row__correct input[type="radio"],
+.lrn-question-editor .lrn-answer-row__case input[type="checkbox"] {
+	margin: 0;
+}
+
+.lrn-question-editor .lrn-answer-row__fraction {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+	font-size:   var(--lrn-text-sm, 13px);
+	color:       var(--lrn-text-secondary, var(--lrn-text-secondary));
+	margin:      0;
+}
+
+.lrn-question-editor .lrn-answer-row__fraction-label {
+	white-space: nowrap;
+}
+
+.lrn-question-editor .lrn-answer-row__fraction-slider {
+	width:      120px;
+	min-width: 100px;
+	max-width: 180px;
+}
+
+.lrn-question-editor .lrn-answer-row__fraction-value {
+	min-width:            3ch;
+	text-align:           end;
+	font-variant-numeric: tabular-nums;
+	font-weight:          var(--lrn-weight-medium, 500);
+	color:                var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-question-editor .lrn-answer-row__label {
+	flex:        1 1 120px;
+	font-weight: var(--lrn-weight-semibold, 600);
+	color:       var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-question-editor .lrn-answer-row__feedback {
+	width:     100%;
+	font-size: var(--lrn-text-sm, 13px);
+	resize:    vertical;
+	min-height: 2.25rem;
+}
+
+.lrn-question-editor .lrn-answer-row__remove {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	width:           2rem;
+	height:          2rem;
+	padding:         0;
+	border:          1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	background:      var(--lrn-bg, var(--lrn-white));
+	color:           var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+	border-radius:   var(--lrn-radius-sm, 4px);
+	cursor:          pointer;
+	transition:      background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+	margin-inline-start:     auto;
+}
+
+.lrn-question-editor .lrn-answer-row__remove:hover {
+	background:   var(--lrn-danger-bg, rgba(220, 38, 38, 0.08));
+	color:        var(--lrn-danger, var(--lrn-danger-strong));
+	border-color: var(--lrn-danger, var(--lrn-danger-strong));
+}
+
+.lrn-question-editor .lrn-answer-row__remove svg {
+	width:  16px;
+	height: 16px;
+}
+
+/* ── Ordering rows (drag + drop) ──────────────────────────────────────── */
+
+.lrn-question-editor .lrn-answers-list--order {
+	counter-reset: lrn-order;
+}
+
+.lrn-question-editor .lrn-answer-row--order {
+	flex-direction: row;
+	align-items:    center;
+	gap:            var(--lrn-sp-3, 12px);
+	padding:        var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px);
+}
+
+.lrn-question-editor .lrn-answer-row--order > input[type="text"] {
+	flex:      1 1 240px;
+	min-width: 0;
+}
+
+.lrn-question-editor .lrn-answer-row__drag {
+	display:     inline-flex;
+	align-items: center;
+	padding:     var(--lrn-sp-1, 4px);
+	color:       var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+	cursor:      grab;
+}
+
+.lrn-question-editor .lrn-answer-row__drag:active {
+	cursor: grabbing;
+}
+
+.lrn-question-editor .lrn-answer-row--order.is-dragging {
+	opacity: 0.4;
+}
+
+.lrn-question-editor .lrn-answer-row--order.is-over {
+	border-color: var(--lrn-accent, var(--lrn-accent));
+	box-shadow:   0 0 0 2px var(--lrn-accent-soft, rgba(35, 131, 226, 0.2));
+}
+
+/* ── Matching pair rows ───────────────────────────────────────────────── */
+
+.lrn-question-editor .lrn-answer-row--pair {
+	flex-direction: row;
+	flex-wrap:      wrap;
+	align-items:    center;
+	gap:            var(--lrn-sp-3, 12px);
+}
+
+.lrn-question-editor .lrn-answer-row--pair > input[type="text"] {
+	flex:      1 1 200px;
+	min-width: 0;
+}
+
+.lrn-question-editor .lrn-answer-row--pair .lrn-answer-row__pair-sep {
+	display:     inline-flex;
+	align-items: center;
+	color:       var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+	font-size:   var(--lrn-text-lg, 18px);
+	padding:     0 var(--lrn-sp-1, 4px);
+}
+
+/* ── Fill-in-the-blank grouped fieldset ───────────────────────────────── */
+
+.lrn-question-editor .lrn-blank-group {
+	margin:        0 0 var(--lrn-sp-4, 16px) 0;
+	padding:       var(--lrn-sp-4, 16px);
+	border:        1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-md, 6px);
+	background:    var(--lrn-bg-subtle, rgba(55, 53, 47, 0.02));
+}
+
+.lrn-question-editor .lrn-blank-group legend {
+	padding:     0 var(--lrn-sp-2, 8px);
+	font-weight: var(--lrn-weight-semibold, 600);
+	color:       var(--lrn-text, var(--lrn-text));
+	font-size:   var(--lrn-text-sm, 13px);
+}
+
+.lrn-question-editor .lrn-blank-group__rows {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2, 8px);
+	margin-bottom:  var(--lrn-sp-3, 12px);
+}
+
+.lrn-question-editor .lrn-answer-row--blank {
+	flex-direction: row;
+	align-items:    center;
+	gap:            var(--lrn-sp-3, 12px);
+	padding:        var(--lrn-sp-3, 12px);
+}
+
+.lrn-question-editor .lrn-answer-row--blank > input[type="text"] {
+	flex:      1 1 240px;
+	min-width: 0;
+}
+
+/* ── Essay note ───────────────────────────────────────────────────────── */
+
+.lrn-question-editor .lrn-muted {
+	margin:        0;
+	padding:       var(--lrn-sp-4, 16px);
+	color:         var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:     var(--lrn-text-sm, 13px);
+	background:    var(--lrn-bg-subtle, rgba(55, 53, 47, 0.02));
+	border:        1px dashed var(--lrn-border, rgba(55, 53, 47, 0.12));
+	border-radius: var(--lrn-radius-md, 6px);
+}
+
+/* ── Answers footer & sticky save bar ─────────────────────────────────── */
+
+.lrn-question-editor .lrn-answers-footer {
+	margin-top:  var(--lrn-sp-4, 16px);
+	padding-top: var(--lrn-sp-4, 16px);
+	border-top:  1px solid var(--lrn-divider, rgba(55, 53, 47, 0.06));
+}
+
+.lrn-question-editor__actions {
+	display:         flex;
+	justify-content: flex-end;
+	gap:             var(--lrn-sp-3, 12px);
+	padding:         var(--lrn-sp-3, 12px) 0;
+}
+
+.lrn-question-editor__actions .lrn-admin-btn svg {
+	width:  16px;
+	height: 16px;
+}
+
+/* ── Shared picker styles (used by quiz-editor modal; kept for compat) ── */
+
+.lrn-picker-item {
+	padding:       var(--lrn-sp-2, 8px);
+	border-bottom: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+}
+
+.lrn-picker-item__label {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+	cursor:      pointer;
+}
+
+.lrn-picker-item__meta {
+	display:     flex;
+	flex:        1 1 auto;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+	flex-wrap:   wrap;
+}
+
+.lrn-picker-item__type {
+	font-size:     var(--lrn-text-xs, 12px);
+	color:         var(--lrn-text-secondary, var(--lrn-text-secondary));
+	padding:       2px var(--lrn-sp-2, 8px);
+	background:    var(--lrn-bg-subtle, rgba(55, 53, 47, 0.03));
+	border-radius: var(--lrn-radius-sm, 4px);
+}
+
+.lrn-picker-item__badge {
+	font-size:     var(--lrn-text-xs, 12px);
+	color:         var(--lrn-accent, var(--lrn-accent));
+	padding:       2px var(--lrn-sp-2, 8px);
+	border:        1px solid var(--lrn-accent, var(--lrn-accent));
+	border-radius: var(--lrn-radius-pill, 999px);
+}
+
+.lrn-picker-pager__page {
+	padding:   0 var(--lrn-sp-2, 8px);
+	font-size: var(--lrn-text-sm, 13px);
+	color:     var(--lrn-text-secondary, var(--lrn-text-secondary));
+}
+
+.lrn-csv-import-result {
+	margin-top:    var(--lrn-sp-3, 12px);
+	padding:       var(--lrn-sp-2, 8px);
+	background:    var(--lrn-bg-subtle, rgba(55, 53, 47, 0.03));
+	border-radius: var(--lrn-radius-sm, 4px);
+}
+
+.lrn-csv-errors {
+	margin:       var(--lrn-sp-2, 8px) 0 0 0;
+	padding-inline-start: var(--lrn-sp-5, 20px);
+	color:        var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:    var(--lrn-text-sm, 13px);
+}
+
+/* ── Responsive tweaks ────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+	.lrn-question-editor__grid {
+		grid-template-columns: 1fr;
+	}
+	.lrn-question-editor .lrn-answer-row__fraction-slider {
+		width: 100%;
+	}
+}
+
+/* "Add to quizzes" multi-select listbox — the hook class was declared in the
+   markup but never styled, so its option rows fell back to raw native
+   rendering. Token-driven box + comfortable option rows + accent selection. */
+.lrn-question-editor__quiz-select {
+	width:         100%;
+	min-height:    9rem;
+	max-height:    16rem;
+	padding:       var(--lrn-sp-1);
+	border:        1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+	font-size:     var(--lrn-text-base);
+}
+.lrn-question-editor__quiz-select option {
+	padding:       var(--lrn-sp-1) var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+}
+.lrn-question-editor__quiz-select option:checked {
+	background: var(--lrn-accent-bg);
+	color:      var(--lrn-text);
+}
+
+/* A3: rich question stem (Editor.js) holder — bordered editing surface. */
+.lrn-question-editor__stem {
+	min-height: 120px;
+	padding: var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px);
+	border: 1px solid var(--lrn-border, #e0e0e0);
+	border-radius: var(--lrn-radius-md, 8px);
+	background: var(--lrn-bg, #fff);
+}
+.lrn-question-editor__stem .codex-editor__redactor { padding-bottom: 0 !important; }

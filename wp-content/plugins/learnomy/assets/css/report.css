@@ -1,0 +1,104 @@
+/**
+ * Learnomy — front-end "Report" affordance styles.
+ *
+ * The small, muted flag button that appears on reviews, lesson comments, and
+ * courses. Deliberately low-emphasis (it is a moderation escape hatch, not a
+ * primary action) and consistent across all three placements. Tokens only —
+ * no hardcoded hex / px / colors.
+ *
+ * @package Learnomy
+ */
+
+.lrn-report-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-1, 0.25rem);
+	padding: var(--lrn-sp-1, 0.25rem) var(--lrn-sp-2, 0.5rem);
+	border: 0;
+	background: transparent;
+	color: var(--lrn-text-secondary, #6b6b6b);
+	font-size: var(--lrn-text-sm, 0.85rem);
+	line-height: 1.4;
+	cursor: pointer;
+	border-radius: var(--lrn-radius-sm, 0.375rem);
+	transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.lrn-report-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.lrn-report-btn:hover,
+.lrn-report-btn:focus-visible {
+	color: var(--lrn-danger, #c0392b);
+	background: color-mix(in srgb, var(--lrn-danger, #c0392b) 8%, transparent);
+}
+
+.lrn-report-btn[disabled],
+.lrn-report-btn--done {
+	color: var(--lrn-text-secondary, #6b6b6b);
+	background: transparent;
+	cursor: default;
+	opacity: 0.7;
+}
+
+/* Foot-of-content placements sit right-aligned and quiet. */
+.lrn-review-card__report,
+.lrn-course-report {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--lrn-sp-1, 0.25rem);
+	margin-top: var(--lrn-sp-2, 0.5rem);
+}
+
+/* Block button — same muted, low-emphasis treatment as report, sitting beside
+   it. Token-driven; danger accent on hover to signal it hides a member. */
+.lrn-block-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-1, 0.25rem);
+	padding: var(--lrn-sp-1, 0.25rem) var(--lrn-sp-2, 0.5rem);
+	border: 0;
+	background: transparent;
+	color: var(--lrn-text-secondary, #6b6b6b);
+	font-size: var(--lrn-text-sm, 0.85rem);
+	line-height: 1.4;
+	cursor: pointer;
+	border-radius: var(--lrn-radius-sm, 0.375rem);
+	transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.lrn-block-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.lrn-block-btn:hover,
+.lrn-block-btn:focus-visible {
+	color: var(--lrn-danger, #c0392b);
+	background: color-mix(in srgb, var(--lrn-danger, #c0392b) 8%, transparent);
+}
+
+.lrn-block-btn[disabled] {
+	cursor: default;
+	opacity: 0.7;
+}
+
+/* Tap floor (technique 1, see "Tap targets" in learnomy.css). Both buttons are
+   4px of padding around 13px text, so they render ~26px tall — and they sit
+   side by side with a 4px gap, which makes Report and Block a genuine mis-tap
+   pair on a phone. The floor plus a wider gap fixes both halves of that; the
+   buttons stay visually quiet because their resting background is transparent,
+   so a taller box reads as breathing room, not as a new button. */
+@media (max-width: 640px) {
+	.lrn-report-btn,
+	.lrn-block-btn {
+		min-height: var(--lrn-touch-min);
+	}
+
+	.lrn-review-card__report,
+	.lrn-course-report {
+		gap: var(--lrn-sp-3, 0.75rem);
+	}
+}

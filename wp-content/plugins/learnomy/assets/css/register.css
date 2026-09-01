@@ -1,0 +1,518 @@
+/**
+ * Registration pages — student and instructor forms.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Layout — centered card
+   ========================================================================== */
+
+.lrn-register {
+	display: flex;
+	justify-content: center;
+	padding-top: var(--lrn-sp-10);
+	padding-bottom: var(--lrn-sp-16);
+}
+
+.lrn-register__card {
+	width: 100%;
+	max-width: 640px;
+	padding: var(--lrn-sp-8);
+}
+
+.lrn-register--instructor .lrn-register__card {
+	max-width: 560px;
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+
+.lrn-register__header {
+	text-align: center;
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-register__title {
+	font-size: var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+	color: var(--lrn-text);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-register__subtitle {
+	font-size: var(--lrn-text-base);
+	color: var(--lrn-text-secondary);
+	margin: 0;
+}
+
+/* ==========================================================================
+   Alert messages
+   ========================================================================== */
+
+.lrn-register__alert {
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-md);
+	font-size: var(--lrn-text-sm);
+	line-height: var(--lrn-leading-normal);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-register__alert--error {
+	background: var(--lrn-danger-bg);
+	color: var(--lrn-danger);
+	border: 1px solid var(--lrn-danger);
+}
+
+.lrn-register__alert--success {
+	background: var(--lrn-success-bg);
+	color: var(--lrn-success);
+	border: 1px solid var(--lrn-success);
+}
+
+/* ==========================================================================
+   Form
+   ========================================================================== */
+
+.lrn-register__form {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-4);
+}
+
+.lrn-register__fieldset {
+	border: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-4);
+}
+
+.lrn-register__legend {
+	font-size: var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+	padding-bottom: var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-2);
+	border-bottom: 1px solid var(--lrn-divider);
+	width: 100%;
+}
+
+.lrn-register__row {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--lrn-sp-4);
+}
+
+/* Form groups, labels, hints — shared classes from learnomy.css */
+.lrn-register .lrn-form-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-1);
+}
+
+.lrn-register .lrn-form-label {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text);
+}
+
+.lrn-register .lrn-form-label span {
+	color: var(--lrn-danger);
+}
+
+.lrn-register .lrn-form-hint {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-tertiary);
+	margin: 0;
+}
+
+/* Input styles */
+.lrn-register .lrn-input,
+.lrn-register .lrn-textarea {
+	width: 100%;
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	font-family: var(--lrn-font);
+	font-size: var(--lrn-text-base);
+	color: var(--lrn-text);
+	background: var(--lrn-bg);
+	border: 1px solid var(--lrn-border-heavy);
+	border-radius: var(--lrn-radius-md);
+	transition: border-color var(--lrn-dur) var(--lrn-ease),
+	            box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+/* Keyboard focus — visible 2px ring (companion to the outline: none rule
+   below; both must ship together to keep keyboard a11y intact). */
+.lrn-register .lrn-input:focus-visible,
+.lrn-register .lrn-textarea:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+/* Mouse focus only — suppress the native outline since the :focus-visible
+   block above already paints a ring for keyboard users. */
+.lrn-register .lrn-input:focus:not(:focus-visible),
+.lrn-register .lrn-textarea:focus:not(:focus-visible) {
+	outline: none;
+	border-color: var(--lrn-accent);
+	box-shadow: 0 0 0 3px var(--lrn-accent-bg);
+}
+
+.lrn-register .lrn-input::placeholder,
+.lrn-register .lrn-textarea::placeholder {
+	color: var(--lrn-text-placeholder);
+}
+
+/* Error state */
+.lrn-register .lrn-input--error {
+	border-color: var(--lrn-danger);
+}
+
+.lrn-register .lrn-input--error:focus {
+	box-shadow: 0 0 0 3px var(--lrn-danger-bg);
+}
+
+.lrn-register .lrn-form-error {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-danger);
+	min-height: 0;
+}
+
+.lrn-register .lrn-form-error[hidden] {
+	display: none;
+}
+
+/* ==========================================================================
+   Submit button
+   ========================================================================== */
+
+.lrn-register__submit {
+	width: 100%;
+	margin-top: var(--lrn-sp-2);
+}
+
+/* ==========================================================================
+   Footer links
+   ========================================================================== */
+
+.lrn-register__footer {
+	text-align: center;
+	margin-top: var(--lrn-sp-6);
+	padding-top: var(--lrn-sp-4);
+	border-top: 1px solid var(--lrn-divider);
+}
+
+.lrn-register__footer p {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-register__footer p:last-child {
+	margin-bottom: 0;
+}
+
+.lrn-register__footer a {
+	color: var(--lrn-accent);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-register__footer a:hover {
+	color: var(--lrn-accent-hover);
+}
+
+/* ==========================================================================
+   Become-instructor (application form)
+   --------------------------------------------------------------------------
+   Renders on the /become-instructor/ route via templates/become-instructor.php.
+   Shares the auth slice because it's the same onboarding family as the two
+   register routes — applicant-facing forms enqueued conditionally.
+   ========================================================================== */
+
+.lrn-become-instructor__header {
+	text-align: center;
+	margin-block-end: var(--lrn-sp-8);
+}
+
+.lrn-become-instructor__header h1 {
+	font-size: var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-become-instructor__subtitle {
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-become-instructor__status {
+	text-align: center;
+	padding: var(--lrn-sp-8);
+}
+
+.lrn-become-instructor__status-icon {
+	width: var(--lrn-icon-xl);
+	height: var(--lrn-icon-xl);
+	color: var(--lrn-warn);
+	margin-block-end: var(--lrn-sp-3);
+}
+
+.lrn-become-instructor__status--rejected .lrn-become-instructor__status-icon {
+	color: var(--lrn-danger);
+}
+
+.lrn-become-instructor__submitted-date {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-become-instructor__form {
+	max-width: 768px;
+	margin-inline: auto;
+	padding: var(--lrn-sp-6);
+}
+
+/* Tap target: submit button must reach 40 px. */
+.lrn-become-instructor__form .lrn-btn {
+	min-height: 40px;
+}
+
+/* ==========================================================================
+   Responsive
+   --------------------------------------------------------------------------
+   Two width breakpoints total — 640px (tablet/mobile) and 480px (small phone).
+   Aligns with ux-foundation responsive contract.
+   ========================================================================== */
+
+@media ( max-width: 640px ) {
+	.lrn-register__card {
+		padding: var(--lrn-sp-5);
+	}
+
+	.lrn-register__row {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-become-instructor__form {
+		padding: var(--lrn-sp-4) var(--lrn-sp-3);
+	}
+
+	.lrn-become-instructor__form .lrn-btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+@media ( max-width: 640px ) {
+	.lrn-register__card {
+		padding: var(--lrn-sp-3);
+	}
+
+	.lrn-register__title {
+		font-size: var(--lrn-text-lg);
+	}
+}
+
+/* ==========================================================================
+   Multi-select fields on the sign-up form
+   ========================================================================== */
+
+/* A `select[multiple]` inherits the single-line control styling — fixed height
+   plus the theme's dropdown arrow — so it renders as a squashed dropdown that
+   clips its own options. Nothing in Learnomy renders one on this form (tick
+   boxes won that argument), but a consumer might, and it should not look
+   broken when it does. */
+.lrn-field__input[multiple],
+select[multiple].lrn-field__input {
+	height:              auto;
+	padding:             var(--lrn-sp-2);
+	background-image:    none;
+	line-height:         1.6;
+}
+
+.lrn-field__input[multiple] option {
+	padding: var(--lrn-sp-1) var(--lrn-sp-2);
+}
+
+/* Option lists reflow into columns on their own — no count threshold and no
+   breakpoint list to maintain. Each column holds its natural width, so three
+   organisations stay one column on a phone and twelve become three across on a
+   desktop without anybody choosing a number. */
+.lrn-signup-spaces__list {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap:                   var(--lrn-sp-1) var(--lrn-sp-4);
+	margin-block-start:    var(--lrn-sp-2);
+}
+
+/* ==========================================================================
+   Fields contributed by plugins
+   ========================================================================== */
+
+/* The sign-up form's own fields use .lrn-form-group / .lrn-form-label /
+   .lrn-input. Everything rendered through `learnomy_account_fields` uses the
+   ACCOUNT convention instead — .lrn-field / .lrn-field__label /
+   .lrn-field__input — because that same hook also fires on the account screens,
+   where those classes are correct.
+
+   The result on this page was a visible seam: a contributed field sat on a
+   23.4px gap next to 20px ones, with a label that was inline, larger and
+   lighter than its neighbours. Rather than ask every consumer to branch on
+   $context and emit different markup per surface, the two conventions are made
+   equivalent HERE, so either one renders natively on the sign-up form. Values
+   are taken from the same tokens .lrn-form-group uses, so the two cannot drift
+   apart later.
+
+   Scoped to the register card, so the account screens keep their own rhythm. */
+.lrn-register .lrn-field,
+.lrn-become-instructor .lrn-field {
+	margin-block-end: var(--lrn-sp-5);
+}
+
+.lrn-register .lrn-field__label,
+.lrn-become-instructor .lrn-field__label {
+	display:          block;
+	/* --lrn-text-sm, matching .lrn-register .lrn-form-label above rather than
+	   the global .lrn-form-label default: this page deliberately runs a smaller
+	   label, and a contributed field has to match the page it is on. */
+	font-size:        var(--lrn-text-sm);
+	font-weight:      var(--lrn-weight-medium);
+	color:            var(--lrn-text);
+	margin-block-end: var(--lrn-sp-2);
+}
+
+.lrn-register .lrn-field__input,
+.lrn-become-instructor .lrn-field__input {
+	padding:   var(--lrn-sp-2) var(--lrn-sp-3);
+	font-size: var(--lrn-text-base);
+}
+
+/* A fieldset groups controls rather than labelling one, so it keeps the group
+   spacing but its legend behaves like a field label. */
+.lrn-register fieldset.lrn-field > legend.lrn-field__label {
+	padding-inline: 0;
+}
+
+/* The organisation select owns every property it needs and inherits none.
+   Safari and iOS render a native select with their own chrome — rounded ends, a
+   grey gradient, their own arrow — and will paint that over generic form
+   styling, so the control looks like a different product on an iPhone than it
+   does on Android. `appearance: none` opts out of that and the arrow is drawn
+   here as an inline SVG, which needs no extra request and takes the token
+   colour.
+
+   It deliberately does NOT reuse `.lrn-select` from learnomy.css, and that is
+   worth stating because the two now look similar. That rule is shared with
+   `.lrn-input` and `.lrn-textarea`: a future change made for text inputs would
+   silently reshape this control, on the one form where a half-styled select is
+   most visible. Isolation is the point, so the duplication is accepted.
+
+   The 16px floor is not cosmetic: iOS Safari zooms the whole page when a form
+   control smaller than that takes focus, and the page never zooms back. A
+   student tapping this on an iPhone would be left scrolled sideways mid-signup. */
+.lrn-signup-spaces__select {
+	appearance:         none;
+	-webkit-appearance: none;
+	display:            block;
+	width:              100%;
+	/* Height is left to grow from the content: a select given generous vertical
+	   padding is capped by the browser at its own intrinsic height instead, and
+	   the label is then clipped inside a box that measures fine from the outside
+	   (getBoundingClientRect says 42px; the usable content box is 16px against a
+	   23.8px line). min-height keeps it a comfortable touch target without
+	   fighting the control for the space. */
+	height:             auto;
+	min-height:         var(--lrn-touch-min);
+	padding:            var(--lrn-sp-2) var(--lrn-sp-8) var(--lrn-sp-2) var(--lrn-sp-4);
+	border:             1px solid var(--lrn-border);
+	border-radius:      var(--lrn-radius-md);
+	background-color:   var(--lrn-bg);
+	background-image:   url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat:   no-repeat;
+	background-position: right var(--lrn-sp-4) center;
+	color:              var(--lrn-text);
+	/* Never below 16px — see above. */
+	font-size:          max(16px, var(--lrn-text-base));
+	line-height:        1.2;
+}
+
+/* Mirror the arrow to the other edge under RTL. */
+[dir="rtl"] .lrn-signup-spaces__select {
+	padding:             var(--lrn-sp-2) var(--lrn-sp-4) var(--lrn-sp-2) var(--lrn-sp-8);
+	background-position: left var(--lrn-sp-4) center;
+}
+
+.lrn-signup-spaces__select:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+	border-color:   var(--lrn-accent);
+}
+
+/* Chosen organisations, one row each. A list rather than inline pills: names
+   are long and of unpredictable length, and pills that wrap mid-name are
+   harder to scan than rows that simply stack. */
+.lrn-signup-spaces__chosen {
+	list-style: none;
+	margin:     var(--lrn-sp-2) 0 0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-1);
+}
+
+.lrn-signup-spaces__chip {
+	display:       flex;
+	align-items:   center;
+	justify-content: space-between;
+	gap:           var(--lrn-sp-2);
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	background:    var(--lrn-bg-subtle);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	font-size:     var(--lrn-text-sm);
+}
+
+.lrn-signup-spaces__remove {
+	flex:        0 0 auto;
+	min-width:   2rem;
+	min-height:  2rem;
+	padding:     0;
+	border:      0;
+	border-radius: var(--lrn-radius-sm);
+	background:  transparent;
+	color:       var(--lrn-text-secondary);
+	font-size:   var(--lrn-text-base);
+	line-height: 1;
+	cursor:      pointer;
+}
+
+.lrn-signup-spaces__remove:hover,
+.lrn-signup-spaces__remove:focus-visible {
+	background: var(--lrn-danger-bg);
+	color:      var(--lrn-danger);
+}
+
+/* The picker groups related controls, so it carries a fieldset. Browsers give
+   fieldsets a default border and inline padding that reads as a stray box
+   inside an otherwise flat form. */
+.lrn-signup-spaces {
+	margin:  0 0 var(--lrn-sp-4);
+	padding: 0;
+	border:  0;
+}
+
+.lrn-signup-spaces .lrn-checkbox-label {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	margin-block: var(--lrn-sp-2);
+	cursor:      pointer;
+}
+
+.lrn-signup-spaces .lrn-field__help {
+	margin:    var(--lrn-sp-1) 0 var(--lrn-sp-2);
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}

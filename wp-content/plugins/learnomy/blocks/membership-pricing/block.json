@@ -1,0 +1,16 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/membership-pricing",
+    "version": "1.0.0",
+    "title": "Membership Pricing",
+    "category": "learnomy",
+    "icon": "tag",
+    "description": "Display all active membership plans in a pricing table.",
+    "textdomain": "learnomy",
+    "attributes": {},
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

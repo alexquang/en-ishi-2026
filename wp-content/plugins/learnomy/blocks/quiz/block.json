@@ -1,0 +1,20 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/quiz",
+    "version": "1.0.0",
+    "title": "Quiz",
+    "category": "learnomy",
+    "icon": "clipboard",
+    "description": "Show a quiz intro with title, description, rules, and a start button.",
+    "textdomain": "learnomy",
+    "attributes": {
+        "quizId": {
+            "type": "integer"
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

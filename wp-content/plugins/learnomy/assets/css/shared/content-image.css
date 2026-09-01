@@ -1,0 +1,224 @@
+/**
+ * Content images — width, alignment, and the three native style tunes.
+ *
+ * SHARED, deliberately. This one file is loaded by the lesson/course front end
+ * AND by the admin editor (same pattern as shared/embed.css), so the size an
+ * author picks in the editor is the size the student sees. Two stylesheets would
+ * mean two answers to "how big is this image", and the author would only find out
+ * which one was right after publishing.
+ *
+ * Classes are emitted by Content_HTML::image_classes() and read back by
+ * image_layout_from_classes(). Defaults (100% wide, centred) emit NO class — so a
+ * plain <figure class="lrn-image"> is the common case and stays cheap.
+ *
+ * @package Learnomy
+ */
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+
+.lrn-image {
+	margin-block: var(--lrn-sp-6);
+	margin-inline: auto;          /* logical → correct under RTL without a flip */
+	max-width: 100%;
+}
+
+.lrn-image img {
+	display: block;
+	width: 100%;
+	height: auto;                 /* never distort an author's upload */
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-image figcaption {
+	margin-block: var(--lrn-sp-2) 0;
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+	text-align: center;
+	line-height: 1.5;
+}
+
+/* ── Width ────────────────────────────────────────────────────────────────── */
+
+.lrn-image--w-25 { width: 25%; }
+.lrn-image--w-50 { width: 50%; }
+.lrn-image--w-75 { width: 75%; }
+
+/* ── Alignment ────────────────────────────────────────────────────────────────
+ *
+ * Logical properties throughout: `margin-inline-end` is "the side text flows
+ * away from", which is the right edge in English and the LEFT edge in Arabic or
+ * Hebrew. Using margin-right here would silently break RTL sites.
+ *
+ * A floated image only makes sense when it is narrower than the column — at 100%
+ * there is nothing to flow beside it — so the float rules are scoped to the
+ * widths that leave room. Centre is the default and needs no class.
+ */
+
+.lrn-image--left:not(.lrn-image--w-100) {
+	float: inline-start;
+	margin-inline: 0 var(--lrn-sp-6);
+	margin-block-start: 0;
+}
+
+.lrn-image--right:not(.lrn-image--w-100) {
+	float: inline-end;
+	margin-inline: var(--lrn-sp-6) 0;
+	margin-block-start: 0;
+}
+
+/* Don't let a float escape its section and drag text up alongside the next
+ * heading. Cheap insurance; without it a left-aligned image at the end of a
+ * paragraph bleeds into whatever follows. */
+.lrn-image--left + *,
+.lrn-image--right + * {
+	overflow: hidden;             /* establishes a BFC beside the float */
+}
+
+/* ── Style tunes (Editor.js natives — now actually persisted) ─────────────── */
+
+.lrn-image--bordered img {
+	border: var(--lrn-border-width) solid var(--lrn-border);
+}
+
+.lrn-image--bg {
+	padding: var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-lg);
+	background: var(--lrn-bg-subtle);
+}
+
+/* "Stretch" breaks out of the content column — it is the full-bleed option, and
+ * it is distinct from width:100%, which fills the column but respects it. */
+.lrn-image--stretched {
+	width: 100%;
+	max-width: none;
+	float: none;
+	margin-inline: 0;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────────
+ *
+ * Under 640px a 25%-wide floated image is unreadable and the text beside it is
+ * a 2-word column. Every image goes full width and stops floating — the standard
+ * behaviour of every WP theme, and what an author expects without being told.
+ */
+
+@media (max-width: 640px) {
+	.lrn-image,
+	.lrn-image--w-25,
+	.lrn-image--w-50,
+	.lrn-image--w-75 {
+		width: 100%;
+		margin-inline: auto;
+	}
+
+	/* Match the float rules' selector shape (:not() counts as a class, so the
+	 * float rules are 0-2-0). A plain `.lrn-image--left { float: none }` here is
+	 * 0-1-0 and silently LOSES — the image would look full-width but still be
+	 * floated, dragging the next paragraph up beside it. */
+	.lrn-image--left:not(.lrn-image--w-100),
+	.lrn-image--right:not(.lrn-image--w-100) {
+		float: none;
+		margin-inline: auto;
+		margin-block-start: var(--lrn-sp-6);
+	}
+}
+
+/* ── Editor preview ───────────────────────────────────────────────────────────
+ *
+ * The same width/alignment classes are mirrored onto the block inside Editor.js
+ * (see image-layout-tune.js) so the author sees the real result while editing
+ * rather than after publishing. Scoped to .lrn-image-preview so these rules can
+ * never leak onto the published page.
+ */
+
+.lrn-image-preview.lrn-image--w-25 { width: 25%; }
+.lrn-image-preview.lrn-image--w-50 { width: 50%; }
+.lrn-image-preview.lrn-image--w-75 { width: 75%; }
+
+.lrn-image-preview.lrn-image--left  { margin-inline: 0 auto; }
+.lrn-image-preview.lrn-image--right { margin-inline: auto 0; }
+
+/* ── The tune control itself (segmented width + align) ────────────────────────
+ *
+ * Lives in the Editor.js block-settings popover. Kept in this file rather than
+ * admin.css so the whole image-layout feature — storage classes, front-end
+ * rendering, editor preview, and the control that drives them — is one thing you
+ * can read top to bottom.
+ */
+
+/* The label sits ABOVE its control, and the segments flex to fill whatever width
+ * the popover gives us. Laying the label beside the control forced a fixed width
+ * and the popover simply clipped it — the "100%" and "Right" options were
+ * rendered but unreachable, which is a worse failure than not shipping them. */
+.lrn-image-tune {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-3);
+	padding: var(--lrn-sp-2);
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.lrn-tune-row {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: var(--lrn-sp-1);
+	min-width: 0;
+}
+
+.lrn-tune-row__label {
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+	white-space: nowrap;
+}
+
+.lrn-tune-seg {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	border: var(--lrn-border-width) solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	overflow: hidden;
+}
+
+.lrn-tune-seg__btn {
+	appearance: none;
+	border: 0;
+	background: var(--lrn-bg);
+	color: var(--lrn-text);
+	cursor: pointer;
+	font-size: var(--lrn-text-sm);
+	line-height: 1;
+
+	/* Equal shares of the row, so a 4-up (width) and a 3-up (align) both fill it
+	   and neither can overflow. */
+	flex: 1 1 0;
+	min-width: 0;
+
+	/* 40px minimum tap target — the responsive contract, and these are the
+	   controls an author on a tablet actually has to hit. */
+	min-height: 40px;
+	padding-inline: var(--lrn-sp-1);
+	text-align: center;
+	white-space: nowrap;
+}
+
+.lrn-tune-seg__btn + .lrn-tune-seg__btn {
+	border-inline-start: var(--lrn-border-width) solid var(--lrn-border);
+}
+
+.lrn-tune-seg__btn:hover {
+	background: var(--lrn-bg-hover);
+}
+
+.lrn-tune-seg__btn--active {
+	background: var(--lrn-accent);
+	color: #fff;
+}
+
+.lrn-tune-seg__btn:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}

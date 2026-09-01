@@ -1,0 +1,290 @@
+/* --------------------------------------------------------------------------
+   Instructor Grading — /instructor/grading/
+
+   The teaching shell's grading queue and per-attempt grader. Two surfaces,
+   one slice, loaded only on this route.
+
+   Everything below is token-driven (no raw hex, px or font), so it follows
+   whatever palette the theme is in, and every interactive control clears the
+   --lrn-touch-min tap floor at phone width. Marking essays on a phone between
+   classes is the real use case here, not a fallback.
+   -------------------------------------------------------------------------- */
+
+/* --- Queue toolbar: the count on the left, the course filter on the right --- */
+
+.lrn-grading-toolbar {
+	display:          flex;
+	flex-wrap:        wrap;
+	align-items:      center;
+	justify-content:  space-between;
+	gap:              var(--lrn-sp-3);
+	margin-block-end: var(--lrn-sp-4);
+}
+
+.lrn-grading-toolbar__count {
+	margin:      0;
+	color:       var(--lrn-text-secondary);
+	font-size:   var(--lrn-text-sm);
+}
+
+.lrn-grading-toolbar__filter {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+/* --- Queue list ---------------------------------------------------------- */
+
+.lrn-grading-queue {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    grid;
+	gap:        var(--lrn-sp-2);
+}
+
+.lrn-grading-queue__item {
+	display:         flex;
+	flex-wrap:       wrap;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-3);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	background:      var(--lrn-bg);
+}
+
+.lrn-grading-queue__identity {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	min-width:   0;
+}
+
+.lrn-grading-queue__identity img {
+	border-radius: var(--lrn-radius-full);
+	flex-shrink:   0;
+}
+
+.lrn-grading-queue__text {
+	display:       flex;
+	flex-direction: column;
+	gap:           var(--lrn-sp-1);
+	min-width:     0;
+}
+
+.lrn-grading-queue__student {
+	color:       var(--lrn-text);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-grading-queue__quiz {
+	color:     var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-grading-queue__meta {
+	color:     var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-xs);
+}
+
+.lrn-grading-queue__status {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	flex-shrink: 0;
+}
+
+/* --- Integrity signals above the grader ---------------------------------- */
+
+.lrn-grading-meta {
+	display:          flex;
+	flex-wrap:        wrap;
+	align-items:      center;
+	gap:              var(--lrn-sp-2) var(--lrn-sp-4);
+	margin-block:     0 var(--lrn-sp-4);
+	color:            var(--lrn-text-secondary);
+	font-size:        var(--lrn-text-sm);
+}
+
+.lrn-grading-signal {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+}
+
+.lrn-grading-signal svg {
+	width:  1em;
+	height: 1em;
+}
+
+/* Advisory, never a verdict — warn colour, not danger. */
+.lrn-grading-signal--flagged {
+	color: var(--lrn-warn);
+}
+
+.lrn-grading-signal__hint {
+	color:     var(--lrn-text-tertiary);
+	font-size: var(--lrn-text-xs);
+}
+
+/* --- Per-response grading card ------------------------------------------- */
+
+.lrn-grading {
+	display: grid;
+	gap:     var(--lrn-sp-4);
+}
+
+.lrn-grading .lrn-notice[hidden] {
+	display: none;
+}
+
+.lrn-grading-card {
+	display: grid;
+	gap:     var(--lrn-sp-3);
+}
+
+.lrn-grading-card__head {
+	display: grid;
+	gap:     var(--lrn-sp-2);
+}
+
+.lrn-grading-card__title {
+	margin:      0;
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-normal);
+	color:       var(--lrn-text);
+}
+
+.lrn-grading-card__meta {
+	display:     flex;
+	flex-wrap:   wrap;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	margin:      0;
+	font-size:   var(--lrn-text-sm);
+}
+
+.lrn-grading-card__label {
+	margin:      0 0 var(--lrn-sp-1);
+	font-size:   var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color:       var(--lrn-text-tertiary);
+}
+
+/* The student's words are the thing being judged, so they get a quiet surface
+   of their own rather than running into the grading controls below. */
+.lrn-grading-card__answer-body {
+	padding:       var(--lrn-sp-3);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg-secondary);
+	color:         var(--lrn-text);
+	line-height:   var(--lrn-leading-relaxed);
+	overflow-wrap: anywhere;
+}
+
+.lrn-grading-card__result {
+	display: grid;
+	gap:     var(--lrn-sp-1);
+	padding: var(--lrn-sp-3);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-success-bg);
+}
+
+.lrn-grading-card__result p {
+	margin: 0;
+}
+
+.lrn-grading-card__result[hidden] {
+	display: none;
+}
+
+.lrn-grading-card__result p[hidden] {
+	display: none;
+}
+
+.lrn-grading-card__form {
+	display: grid;
+	gap:     var(--lrn-sp-3);
+}
+
+.lrn-grading-card__form[hidden] {
+	display: none;
+}
+
+.lrn-grading-card__score {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+/* A mark is at most a few characters — a full-width number field invites
+   pasting an essay into it. */
+.lrn-grading-card__score .lrn-input {
+	inline-size: 7rem;
+}
+
+.lrn-grading-card__actions {
+	display:         flex;
+	justify-content: flex-end;
+}
+
+.lrn-grading-card.is-graded .lrn-grading-card__answer-body {
+	background: var(--lrn-bg-tertiary);
+}
+
+/* --- Phone --------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+	/* Queue rows become a stacked card: identity, then status + action on one
+	   full-width line, so the Grade button is a thumb-sized target instead of
+	   a link squeezed against the right edge. */
+	.lrn-grading-queue__item {
+		flex-direction:  column;
+		align-items:     stretch;
+	}
+
+	.lrn-grading-queue__status {
+		justify-content: space-between;
+	}
+
+	.lrn-grading-queue__status .lrn-btn {
+		min-height: var(--lrn-touch-min);
+	}
+
+	.lrn-grading-toolbar {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+
+	.lrn-grading-toolbar__filter .lrn-input {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.lrn-grading-toolbar__filter .lrn-btn,
+	.lrn-grading-toolbar__filter .lrn-input {
+		min-height: var(--lrn-touch-min);
+	}
+
+	/* The score field and the save button are the two controls a grader taps
+	   over and over on a phone. */
+	.lrn-grading-card__score .lrn-input,
+	.lrn-grading-card__actions .lrn-btn {
+		min-height: var(--lrn-touch-min);
+	}
+
+	.lrn-grading-card__actions .lrn-btn {
+		inline-size:     100%;
+		justify-content: center;
+	}
+
+	.lrn-tab {
+		min-height:  var(--lrn-touch-min);
+		align-items: center;
+	}
+}

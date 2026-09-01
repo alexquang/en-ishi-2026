@@ -1,0 +1,326 @@
+/**
+ * Sectioned quiz styles -- multi-section exam layout.
+ *
+ * Uses lrn-sect__* prefix. All values reference --lrn-* tokens.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Top bar: section name + progress segments + timer
+   ========================================================================== */
+
+.lrn-sect__top-bar {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-4);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	background: var(--lrn-bg);
+	background: color-mix(in srgb, var(--lrn-bg) 85%, transparent);
+	-webkit-backdrop-filter: blur(12px);
+	backdrop-filter: blur(12px);
+	border-bottom: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg) var(--lrn-radius-lg) 0 0;
+}
+
+.lrn-sect__section-info {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	flex-shrink: 0;
+}
+
+.lrn-sect__section-name {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+	white-space: nowrap;
+}
+
+.lrn-sect__section-counter {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-tertiary);
+	white-space: nowrap;
+}
+
+/* ==========================================================================
+   Progress segments -- one block per section
+   ========================================================================== */
+
+.lrn-sect__progress-wrap {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+	min-width: 0;
+}
+
+.lrn-sect__progress-segments {
+	display: flex;
+	gap: 3px;
+	width: 100%;
+	height: 6px;
+}
+
+.lrn-sect__progress-segment {
+	flex: 1;
+	height: 100%;
+	border-radius: 3px;
+	background: var(--lrn-border);
+	transition: background-color var(--lrn-dur) var(--lrn-ease);
+}
+
+/* Active section -- accent color */
+.lrn-sect__progress-segment--active {
+	background: var(--lrn-accent);
+}
+
+/* Completed section -- success color */
+.lrn-sect__progress-segment--completed {
+	background: var(--lrn-success);
+}
+
+/* Locked section -- muted success with opacity */
+.lrn-sect__progress-segment--locked {
+	background: var(--lrn-success);
+	opacity: 0.6;
+}
+
+.lrn-sect__overall-progress {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-tertiary);
+	white-space: nowrap;
+}
+
+/* ==========================================================================
+   Section intro card -- full-width centered between sections
+   ========================================================================== */
+
+.lrn-sect__intro {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 400px;
+	padding: var(--lrn-sp-8);
+}
+
+.lrn-sect__intro-card {
+	text-align: center;
+	max-width: 640px;
+	width: 100%;
+	padding: var(--lrn-sp-10) var(--lrn-sp-8);
+}
+
+.lrn-sect__intro-badge {
+	display: inline-block;
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--lrn-accent);
+	background: var(--lrn-accent-bg);
+	padding: var(--lrn-sp-1) var(--lrn-sp-3);
+	border-radius: var(--lrn-radius-full);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-sect__intro-title {
+	font-size: var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin: 0 0 var(--lrn-sp-2);
+	color: var(--lrn-text);
+}
+
+.lrn-sect__intro-meta {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-8);
+}
+
+.lrn-sect__intro-btn {
+	min-width: 180px;
+}
+
+/* ==========================================================================
+   Question area
+   ========================================================================== */
+
+.lrn-sect__question-area {
+	padding: var(--lrn-sp-6) var(--lrn-sp-4);
+}
+
+/* ==========================================================================
+   Review: section groups
+   ========================================================================== */
+
+.lrn-sect__review-group {
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-sect__review-group-title {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--lrn-text-tertiary);
+	margin: 0 0 var(--lrn-sp-4);
+	padding-bottom: var(--lrn-sp-2);
+	border-bottom: 1px solid var(--lrn-divider);
+}
+
+/* ==========================================================================
+   Responsive: mobile adjustments
+   ========================================================================== */
+
+@media (max-width: 768px) {
+	.lrn-sect__top-bar {
+		flex-wrap: wrap;
+		padding: var(--lrn-sp-2) var(--lrn-sp-3);
+		gap: var(--lrn-sp-2);
+	}
+
+	.lrn-sect__section-info {
+		flex-direction: row;
+		gap: var(--lrn-sp-2);
+		align-items: baseline;
+	}
+
+	.lrn-sect__progress-wrap {
+		order: 3;
+		width: 100%;
+	}
+
+	.lrn-sect__intro {
+		min-height: 300px;
+		padding: var(--lrn-sp-4);
+	}
+
+	.lrn-sect__intro-card {
+		padding: var(--lrn-sp-6) var(--lrn-sp-4);
+	}
+
+	.lrn-sect__question-area {
+		padding: var(--lrn-sp-4) var(--lrn-sp-3);
+	}
+}
+
+@media (max-width: 640px) {
+	.lrn-sect__top-bar .lrn-quiz__timer {
+		order: 2;
+		margin-inline-start: auto;
+	}
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media ( prefers-reduced-motion: reduce ) {
+	.lrn-sect__progress-segment {
+		transition: none;
+	}
+}
+
+/* Small phones — plan-02 phase D */
+@media (max-width: 640px) {
+	.lrn-sect__question,
+	.lrn-sect__card {
+		padding: var(--lrn-sp-3);
+	}
+
+	.lrn-sect__timer {
+		font-size: var(--lrn-text-sm);
+	}
+
+	.lrn-sect__nav,
+	.lrn-sect__actions {
+		flex-direction: column;
+		gap: var(--lrn-sp-2);
+	}
+
+	.lrn-sect__nav .lrn-btn,
+	.lrn-sect__actions .lrn-btn {
+		width: 100%;
+		justify-content: center;
+	}
+}
+
+/* ── Free section-navigation picker (BC #9993392864) ────────────────────── */
+.lrn-sect__picker-card {
+	max-width: 640px;
+	margin-inline: auto;
+	text-align: center;
+	padding: var(--lrn-sp-6, 1.5rem);
+}
+
+.lrn-sect__picker-title {
+	margin: 0 0 var(--lrn-sp-2);
+}
+
+.lrn-sect__picker-help {
+	margin: 0 0 var(--lrn-sp-4);
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-sect__picker-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+	gap: var(--lrn-sp-3);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-sect__picker-item {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-1);
+	padding: var(--lrn-sp-4) var(--lrn-sp-3);
+	background: var(--lrn-bg);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	font: inherit;
+	cursor: pointer;
+	transition: border-color var(--lrn-dur) var(--lrn-ease), background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-sect__picker-item:hover,
+.lrn-sect__picker-item:focus-visible {
+	border-color: var(--lrn-accent);
+	background: var(--lrn-accent-bg);
+}
+
+.lrn-sect__picker-item.is-current {
+	border-color: var(--lrn-accent);
+}
+
+.lrn-sect__picker-item-name {
+	font-weight: 600;
+	color: var(--lrn-text);
+}
+
+.lrn-sect__picker-item-count {
+	color: var(--lrn-text-secondary);
+	font-variant-numeric: tabular-nums;
+}
+
+.lrn-sect__picker-item-check {
+	position: absolute;
+	inset-block-start: var(--lrn-sp-2);
+	inset-inline-end: var(--lrn-sp-2);
+	width: 1em;
+	height: 1em;
+	opacity: 0;
+	color: var(--lrn-accent);
+}
+
+.lrn-sect__picker-item.is-complete .lrn-sect__picker-item-check {
+	opacity: 1;
+}
+
+.lrn-sect__to-picker {
+	margin-inline-end: var(--lrn-sp-2);
+}
