@@ -1,0 +1,363 @@
+/**
+ * Getting Started onboarding panel.
+ *
+ * Renders at the top of the Learnomy admin dashboard. Uses --lrn-* tokens
+ * from learnomy.css (root block) — no hardcoded hex/px/font values.
+ */
+
+.lrn-onboarding {
+	position: relative;
+	margin-bottom: var(--lrn-sp-6);
+	padding: var(--lrn-sp-8);
+	background: color-mix(in srgb, var(--lrn-accent) 4%, var(--lrn-bg));
+	background-image: linear-gradient(135deg, color-mix(in srgb, var(--lrn-accent) 8%, transparent) 0%, transparent 60%);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-xl);
+	box-shadow: var(--lrn-shadow-md);
+	overflow: hidden;
+	transition: opacity var(--lrn-dur) var(--lrn-ease), transform var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-onboarding[data-collapsed="true"] .lrn-onboarding__body,
+.lrn-onboarding[data-collapsed="true"] .lrn-onboarding__progress {
+	display: none;
+}
+
+.lrn-onboarding[data-dismissing="true"] {
+	opacity: 0;
+	transform: translateY(-8px);
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.lrn-onboarding__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--lrn-sp-4);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-onboarding__heading {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.lrn-onboarding__title {
+	margin: 0 0 var(--lrn-sp-1);
+	font-size: var(--lrn-text-xl);
+	font-weight: var(--lrn-weight-semibold);
+	line-height: var(--lrn-leading-tight);
+	color: var(--lrn-text);
+}
+
+.lrn-onboarding__subtitle {
+	margin: 0;
+	font-size: var(--lrn-text-base);
+	color: color-mix(in srgb, var(--lrn-text) 55%, transparent);
+}
+
+.lrn-onboarding__actions {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	flex-shrink: 0;
+}
+
+.lrn-onboarding__ghost-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-secondary);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: var(--lrn-radius-md);
+	cursor: pointer;
+	transition: background-color var(--lrn-dur) var(--lrn-ease),
+		color var(--lrn-dur) var(--lrn-ease),
+		border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-onboarding__ghost-btn:hover {
+	color: var(--lrn-text);
+	background: var(--lrn-bg-hover);
+	border-color: var(--lrn-border);
+}
+.lrn-onboarding__ghost-btn:focus-visible {
+	color: var(--lrn-text);
+	background: var(--lrn-bg-hover);
+	border-color: var(--lrn-border);
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-onboarding__ghost-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+.lrn-onboarding__toggle[aria-expanded="false"] svg {
+	transform: rotate(180deg);
+}
+
+/* ── Progress bar ────────────────────────────────────────────────────────── */
+
+.lrn-onboarding__progress {
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-onboarding__progress-label {
+	margin-bottom: var(--lrn-sp-2);
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-onboarding__progress-bar {
+	position: relative;
+	width: 100%;
+	height: 6px;
+	background: var(--lrn-bg-tertiary);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.lrn-onboarding__progress-fill {
+	display: block;
+	height: 100%;
+	background: var(--lrn-accent);
+	border-radius: 999px;
+	transition: width 400ms var(--lrn-ease);
+}
+
+/* ── Completed group (collapsible) ───────────────────────────────────────── */
+
+.lrn-onboarding__completed-group {
+	margin-bottom: var(--lrn-sp-4);
+	border: 1px solid var(--lrn-divider);
+	border-radius: var(--lrn-radius-lg);
+	background: var(--lrn-bg);
+}
+
+.lrn-onboarding__completed-summary {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-secondary);
+	cursor: pointer;
+	list-style: none;
+	user-select: none;
+}
+
+.lrn-onboarding__completed-summary::-webkit-details-marker {
+	display: none;
+}
+
+.lrn-onboarding__completed-summary svg {
+	width: 16px;
+	height: 16px;
+	color: var(--lrn-success);
+}
+
+.lrn-onboarding__steps--completed {
+	padding: 0 var(--lrn-sp-3) var(--lrn-sp-3);
+}
+
+/* ── Step grid / cards ───────────────────────────────────────────────────── */
+
+.lrn-onboarding__steps {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--lrn-sp-3);
+}
+
+.lrn-onboarding__card {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-4);
+	padding: var(--lrn-sp-4) var(--lrn-sp-5);
+	background: var(--lrn-bg);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	transition: transform var(--lrn-dur) var(--lrn-ease),
+		box-shadow var(--lrn-dur) var(--lrn-ease),
+		border-color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-onboarding__card:hover {
+	transform: translateY(-1px);
+	border-color: var(--lrn-border-heavy);
+	box-shadow: var(--lrn-shadow-sm);
+}
+
+.lrn-onboarding__card--completed {
+	opacity: 0.7;
+	background: transparent;
+	border-style: solid;
+	border-color: var(--lrn-divider);
+}
+
+.lrn-onboarding__card--completed:hover {
+	opacity: 1;
+	transform: none;
+	box-shadow: none;
+}
+
+.lrn-onboarding__card--skipped {
+	border-style: dashed;
+	border-color: var(--lrn-border-heavy);
+	background: var(--lrn-bg-secondary);
+}
+
+.lrn-onboarding__card-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
+	background: var(--lrn-accent-bg);
+	color: var(--lrn-accent);
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-onboarding__card--completed .lrn-onboarding__card-icon {
+	background: var(--lrn-success-bg);
+	color: var(--lrn-success);
+}
+
+.lrn-onboarding__card--skipped .lrn-onboarding__card-icon {
+	background: var(--lrn-bg-tertiary);
+	color: var(--lrn-text-tertiary);
+}
+
+.lrn-onboarding__card-icon svg {
+	width: 20px;
+	height: 20px;
+}
+
+.lrn-onboarding__card-body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.lrn-onboarding__card-title {
+	margin: 0 0 var(--lrn-sp-1);
+	font-size: var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+	line-height: var(--lrn-leading-tight);
+}
+
+.lrn-onboarding__card-desc {
+	margin: 0;
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+	line-height: var(--lrn-leading-normal);
+}
+
+.lrn-onboarding__pill {
+	display: inline-block;
+	margin-top: var(--lrn-sp-2);
+	padding: 2px var(--lrn-sp-2);
+	font-size: var(--lrn-text-xs);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-tertiary);
+	background: var(--lrn-bg-tertiary);
+	border-radius: var(--lrn-radius-sm);
+}
+
+.lrn-onboarding__card-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	flex-shrink: 0;
+}
+
+.lrn-onboarding__cta svg {
+	width: 14px;
+	height: 14px;
+	margin-inline-start: var(--lrn-sp-1);
+}
+
+/* ── All-done banner ─────────────────────────────────────────────────────── */
+
+.lrn-onboarding__all-done {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-3);
+	margin-top: var(--lrn-sp-4);
+	padding: var(--lrn-sp-4) var(--lrn-sp-5);
+	background: var(--lrn-success-bg);
+	border: 1px solid color-mix(in srgb, var(--lrn-success) 30%, transparent);
+	border-radius: var(--lrn-radius-lg);
+	color: var(--lrn-text);
+}
+
+.lrn-onboarding__all-done svg {
+	width: 28px;
+	height: 28px;
+	color: var(--lrn-success);
+	flex-shrink: 0;
+}
+
+.lrn-onboarding__all-done strong {
+	display: block;
+	font-size: var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+.lrn-onboarding__all-done span {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 782px) {
+	.lrn-onboarding {
+		padding: var(--lrn-sp-5);
+	}
+
+	.lrn-onboarding__header {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.lrn-onboarding__actions {
+		justify-content: flex-end;
+	}
+
+	.lrn-onboarding__card {
+		flex-wrap: wrap;
+		align-items: flex-start;
+	}
+
+	.lrn-onboarding__card-actions {
+		flex-basis: 100%;
+		justify-content: stretch;
+	}
+
+	.lrn-onboarding__cta {
+		flex: 1 1 auto;
+		justify-content: center;
+	}
+}
+
+/* ── Reopen button on Settings page ──────────────────────────────────────── */
+
+.lrn-onboarding-reopen-row {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-3);
+}
+
+.lrn-onboarding-reopen-row .description {
+	margin: 0;
+}

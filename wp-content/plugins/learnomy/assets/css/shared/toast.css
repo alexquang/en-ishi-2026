@@ -1,0 +1,343 @@
+/**
+ * Learnomy toast notifications.
+ *
+ * Works in both .learnomy-admin and .lrn-app contexts because
+ * both define the same --lrn-* tokens. The toast stack sits on
+ * <body>, which is outside both scopes, so we reference tokens
+ * via inherit / fallbacks where needed.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Stack container
+   ========================================================================== */
+
+/* The stack is pinned with inset-inline-end, so it sits on the right in LTR
+   and the left in RTL. CSS transforms are NOT mirrored by direction, so a
+   fixed translateX(100%) entry would fly the toast in from the right in both
+   — across the whole viewport on an RTL site. The offset is a token instead,
+   flipped once here, so the slide always begins off the edge the stack is
+   pinned to. Declared on :root and the two scope roots because the stack
+   lives on <body>, outside .lrn-app / .learnomy-admin. */
+:root,
+.lrn-app,
+.learnomy-admin {
+	--lrn-toast-slide-from: 100%;
+}
+
+[dir="rtl"] :root,
+[dir="rtl"],
+[dir="rtl"] .lrn-app,
+[dir="rtl"] .learnomy-admin {
+	--lrn-toast-slide-from: -100%;
+}
+
+.lrn-toast-stack {
+	position: fixed;
+	bottom: var(--lrn-sp-6, 24px);
+	inset-inline-end: var(--lrn-sp-6, 24px);
+	z-index: 99999;
+	display: flex;
+	flex-direction: column-reverse;
+	gap: var(--lrn-sp-2, 8px);
+	pointer-events: none;
+	max-width: 400px;
+	width: 100%;
+}
+
+/* ==========================================================================
+   Single toast
+
+   These rules belong to the STACK-based toast system (frontend
+   `assets/js/shared/toast.js`), whose toasts are children of a
+   position:fixed `.lrn-toast-stack`. They are therefore scoped to
+   `.lrn-toast-stack .lrn-toast` so they never leak onto the standalone
+   admin toast that `assets/js/admin/list-page.js` appends straight to
+   <body>. That standalone toast is positioned by `assets/css/admin.css`
+   (position:fixed, top-centre). Before this scoping, toast.css loaded
+   after admin.css and its `position: relative` here dropped the admin
+   toast into normal flow at the page bottom (bug card #9867548570).
+   Scoping is the single source of truth — no !important needed.
+
+   Scoping the POSITION was only half the job, and the other half shipped broken
+   (Basecamp 10153654878). `admin.css` also gives the bare `.lrn-toast` a
+   `top: calc( 32px + var(--lrn-sp-4) )` and `left: 50%`, which are correct for a
+   position:fixed top-centre toast and meaningless here — but they are not
+   overridden by `position: relative` alone. They kept applying, and on a
+   RELATIVE box an offset shifts the element out of flow position: the stacked
+   toast was pushed 48px down (24px below the viewport, so its bottom half was
+   cut off) and 200px right (570px past the right edge). It read as "the success
+   message is partially hidden at the bottom-right", which is exactly what it
+   was.
+   ========================================================================== */
+
+.lrn-toast-stack .lrn-toast {
+	/* Neutralise the offsets inherited from the standalone admin toast rule
+	   above. The stack positions its children; a toast inside it must carry no
+	   offset of its own. */
+	inset: auto;
+
+	/* Own the box model rather than inheriting one. wp-admin does not apply a
+	   border-box reset here, so the toast computed `content-box`: `max-width:
+	   100%` then capped only the CONTENT box and the horizontal padding was
+	   added on top. At 390px that made a 366px cap render as a 427px card,
+	   overflowing its stack by 49px and taking the × dismiss off-screen — a
+	   second, independent defect sitting underneath the offset leak, and
+	   invisible on desktop where 400px + padding still fits. A component that
+	   ships into someone else's stylesheet cannot assume a reset reached it. */
+	box-sizing: border-box;
+	display: flex;
+	align-items: flex-start;
+	gap: var(--lrn-sp-3, 12px);
+	padding: var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px);
+	background: var(--lrn-bg, var(--lrn-white));
+	border: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-inline-start-width: 4px;
+	border-radius: var(--lrn-radius-md, 6px);
+	box-shadow: var(--lrn-shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+	font-family: var(--lrn-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif);
+	font-size: var(--lrn-text-sm, 13px);
+	color: var(--lrn-text, var(--lrn-text));
+	line-height: 1.5;
+	position: relative;
+	overflow: hidden;
+	pointer-events: auto;
+	animation: lrn-toast-slide-in 0.3s ease-out forwards;
+}
+
+/* --- Type-specific border colors --- */
+
+.lrn-toast--success {
+	border-inline-start-color: var(--lrn-success, var(--lrn-success));
+}
+
+.lrn-toast--error {
+	border-inline-start-color: var(--lrn-danger, var(--lrn-danger));
+}
+
+.lrn-toast--info {
+	border-inline-start-color: var(--lrn-accent, var(--lrn-accent));
+}
+
+.lrn-toast--warning {
+	border-inline-start-color: var(--lrn-warn, var(--lrn-warn));
+}
+
+/* --- Icon colour per type --- */
+
+.lrn-toast--success .lrn-toast__icon {
+	color: var(--lrn-success, var(--lrn-success));
+}
+
+.lrn-toast--error .lrn-toast__icon {
+	color: var(--lrn-danger, var(--lrn-danger));
+}
+
+.lrn-toast--info .lrn-toast__icon {
+	color: var(--lrn-accent, var(--lrn-accent));
+}
+
+.lrn-toast--warning .lrn-toast__icon {
+	color: var(--lrn-warn, var(--lrn-warn));
+}
+
+/* ==========================================================================
+   Inner elements
+   ========================================================================== */
+
+.lrn-toast__icon {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	margin-top: 1px;
+}
+
+.lrn-toast__message {
+	flex: 1;
+	min-width: 0;
+	word-break: break-word;
+}
+
+.lrn-toast__dismiss {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	margin: -2px -4px 0 0;
+	background: none;
+	border: none;
+	border-radius: var(--lrn-radius-sm, 3px);
+	color: var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+	cursor: pointer;
+	transition: background var(--lrn-dur, 120ms) var(--lrn-ease, ease-out),
+	            color var(--lrn-dur, 120ms) var(--lrn-ease, ease-out);
+}
+
+.lrn-toast__dismiss:hover {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+	color: var(--lrn-text, var(--lrn-text));
+}
+
+/* ==========================================================================
+   Progress bar
+   ========================================================================== */
+
+.lrn-toast__progress {
+	position: absolute;
+	bottom: 0;
+	inset-inline-start: 0;
+	height: 3px;
+	width: 100%;
+	transform-origin: left;
+	animation: lrn-toast-progress linear forwards;
+	animation-duration: inherit;
+}
+
+.lrn-toast--success .lrn-toast__progress {
+	background: var(--lrn-success, var(--lrn-success));
+}
+
+.lrn-toast--error .lrn-toast__progress {
+	background: var(--lrn-danger, var(--lrn-danger));
+}
+
+.lrn-toast--info .lrn-toast__progress {
+	background: var(--lrn-accent, var(--lrn-accent));
+}
+
+.lrn-toast--warning .lrn-toast__progress {
+	background: var(--lrn-warn, var(--lrn-warn));
+}
+
+/* ==========================================================================
+   Undo toast — reversible action with an inline button
+   ========================================================================== */
+
+.lrn-toast--undo {
+	border-inline-start-color: var(--lrn-accent, var(--lrn-accent));
+}
+
+.lrn-toast--undo .lrn-toast__icon {
+	color: var(--lrn-accent, var(--lrn-accent));
+}
+
+.lrn-toast--undo .lrn-toast__progress {
+	background: var(--lrn-accent, var(--lrn-accent));
+}
+
+.lrn-toast__undo {
+	flex-shrink: 0;
+	background: transparent;
+	border: 1px solid var(--lrn-border, rgba(55, 53, 47, 0.16));
+	border-radius: var(--lrn-radius-sm, 4px);
+	color: var(--lrn-accent, var(--lrn-accent));
+	cursor: pointer;
+	font: inherit;
+	font-weight: 600;
+	padding: var(--lrn-sp-1, 4px) var(--lrn-sp-3, 12px);
+	margin-inline-end: var(--lrn-sp-1, 4px);
+	transition: background var(--lrn-dur, 120ms) var(--lrn-ease, ease-out);
+}
+
+.lrn-toast__undo:hover {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+}
+
+.lrn-toast__undo:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+@keyframes lrn-toast-progress {
+	from { width: 100%; }
+	to   { width: 0%; }
+}
+
+/* ==========================================================================
+   Slide-in / slide-out animations
+   ========================================================================== */
+
+@keyframes lrn-toast-slide-in {
+	from {
+		opacity: 0;
+		transform: translateX(100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes lrn-toast-slide-out {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(100%);
+	}
+}
+
+/* Scoped to the stack to MATCH `.lrn-toast-stack .lrn-toast`, which sets the
+   entry animation. As a bare `.lrn-toast--exit` this rule was one class against
+   two and simply never applied: the exit animation never started, so the
+   `animationend` that removes the toast never fired, and the × button was inert
+   on any toast without an auto-dismiss progress bar to bubble an event up
+   (Basecamp 10144304356). Keep this selector as specific as the base rule. */
+.lrn-toast-stack .lrn-toast--exit {
+	animation: lrn-toast-slide-out 0.2s ease-in forwards;
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+.lrn-toast--no-motion,
+.lrn-toast--no-motion .lrn-toast__progress {
+	animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	/* Stack-scoped for the same reason as the exit rule above — a bare
+	   `.lrn-toast` here loses to `.lrn-toast-stack .lrn-toast`, so the
+	   animations it means to switch off kept running. */
+	.lrn-toast-stack .lrn-toast {
+		animation: none;
+	}
+
+	.lrn-toast-stack .lrn-toast--exit {
+		animation: none;
+		display: none;
+	}
+
+	.lrn-toast__progress {
+		animation: none;
+		width: 0;
+	}
+}
+
+/* ==========================================================================
+   Responsive — full width on small screens
+   ========================================================================== */
+
+@media (max-width: 640px) {
+	.lrn-toast-stack {
+		left: var(--lrn-sp-3, 12px);
+		right: var(--lrn-sp-3, 12px);
+		bottom: var(--lrn-sp-3, 12px);
+		max-width: none;
+
+		/* Release the base `width: 100%` so the two insets decide the width.
+		   With left, right AND an explicit width all set, width wins and `right`
+		   is ignored — so the stack stayed a full viewport wide while starting
+		   12px in, hanging 12px off the right edge and taking the toast's
+		   dismiss button with it. `max-width: none` alone could not fix that,
+		   because the constraint being violated was the width, not the cap. */
+		width: auto;
+	}
+}

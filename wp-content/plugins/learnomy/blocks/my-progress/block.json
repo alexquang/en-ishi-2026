@@ -1,0 +1,16 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/my-progress",
+    "version": "1.0.0",
+    "title": "My Learning Progress",
+    "category": "learnomy",
+    "icon": "chart-line",
+    "description": "Show the current user's overall learning stats and courses in progress.",
+    "textdomain": "learnomy",
+    "attributes": {},
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

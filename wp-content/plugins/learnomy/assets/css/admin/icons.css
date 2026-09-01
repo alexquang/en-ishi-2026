@@ -1,0 +1,83 @@
+/**
+ * Lucide icon styles for Learnomy admin.
+ *
+ * Lucide replaces <i data-lucide="name"></i> with inline <svg> elements.
+ * These styles ensure consistent sizing and alignment across the admin UI.
+ *
+ * @package Learnomy
+ */
+
+/* ── Base icon ────────────────────────────────────────────────────────── */
+
+.learnomy-admin [data-lucide] {
+	width:          18px;
+	height:         18px;
+	stroke-width:   1.75;
+	vertical-align: middle;
+	color:          currentColor;
+}
+
+/* ── Size variants ────────────────────────────────────────────────────── */
+
+.lrn-icon--sm [data-lucide],
+[data-lucide].lrn-icon--sm {
+	width:  14px;
+	height: 14px;
+}
+
+.lrn-icon--lg [data-lucide],
+[data-lucide].lrn-icon--lg {
+	width:  24px;
+	height: 24px;
+}
+
+.lrn-icon--xl [data-lucide],
+[data-lucide].lrn-icon--xl {
+	width:  32px;
+	height: 32px;
+}
+
+/* ── Color variants (use --lrn-* tokens) ──────────────────────────────── */
+
+.lrn-icon--accent [data-lucide],
+[data-lucide].lrn-icon--accent {
+	color: var(--lrn-accent);
+}
+
+.lrn-icon--success [data-lucide],
+[data-lucide].lrn-icon--success {
+	color: var(--lrn-success);
+}
+
+.lrn-icon--warn [data-lucide],
+[data-lucide].lrn-icon--warn {
+	color: var(--lrn-warn);
+}
+
+.lrn-icon--danger [data-lucide],
+[data-lucide].lrn-icon--danger {
+	color: var(--lrn-danger);
+}
+
+.lrn-icon--muted [data-lucide],
+[data-lucide].lrn-icon--muted {
+	color: var(--lrn-text-tertiary);
+}
+
+/* ── Stat card icon override ──────────────────────────────────────────── */
+/* Lucide SVGs inside stat cards need to fill the 40x40 container. */
+
+.lrn-admin-stat-card__icon [data-lucide] {
+	width:  20px;
+	height: 20px;
+}
+
+/* ── Button inline icons ──────────────────────────────────────────────── */
+/* Icons inside .lrn-admin-btn should sit inline with button text. */
+
+.lrn-admin-btn [data-lucide] {
+	width:          16px;
+	height:         16px;
+	vertical-align: -2px;
+	margin-inline-end:   var(--lrn-sp-1);
+}

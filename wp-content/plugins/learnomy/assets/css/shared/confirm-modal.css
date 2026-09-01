@@ -1,0 +1,307 @@
+/**
+ * Learnomy confirmation modal dialog.
+ *
+ * Works in both admin (.learnomy-admin) and frontend (.lrn-app) contexts
+ * by targeting the top-level .lrn-confirm-modal class directly — the
+ * dialog mounts on <body>, outside both scopes, so we reference --lrn-*
+ * tokens with safe hex fallbacks.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Positioning — covers the viewport above everything.
+   ========================================================================== */
+
+.lrn-confirm-modal {
+	position:        fixed;
+	top:             0;
+	left:            0;
+	right:           0;
+	bottom:          0;
+	/* No `width: 100vw` here. The four insets already define the box, and a
+	   width declaration OVERRIDES `right`, so 100vw made the overlay exactly
+	   one scrollbar wider than the viewport it covers (Basecamp 10184327445). */
+	height:          100vh;  /* fallback for older browsers */
+	height:          100dvh; /* dynamic viewport — excludes iOS URL bar */
+	/* Override base .lrn-modal which (a) caps width/height and (b) paints a
+	 * white surface + border + shadow because it doubles as a dialog widget
+	 * elsewhere. Here .lrn-modal is the viewport WRAPPER — its child
+	 * .lrn-modal__backdrop does the dimming; the wrapper itself must stay
+	 * transparent, or the page underneath gets covered before the backdrop
+	 * can dim it (which is exactly the "background overlay disappears"
+	 * regression QA caught on the lesson delete confirm). Basecamp #9925123520. */
+	max-width:       none;
+	max-height:      none;
+	background:      transparent;
+	border:          0;
+	border-radius:   0;
+	box-shadow:      none;
+	overflow:        visible;
+	animation:       none;
+	z-index:         100001;
+	/* Force a new stacking context so the backdrop can never escape behind
+	 * page content even on pages that establish their own stacking contexts
+	 * above this fixed element. See Basecamp #9925123520 bounce. */
+	isolation:       isolate;
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	padding:         var(--lrn-sp-5, 20px);
+	box-sizing:      border-box;
+}
+
+.lrn-confirm-modal.lrn-modal--hidden {
+	display: none;
+}
+
+/* ==========================================================================
+   Backdrop
+   ========================================================================== */
+
+.lrn-confirm-modal .lrn-modal__backdrop {
+	position:   fixed;
+	top:        0;
+	left:       0;
+	right:      0;
+	bottom:     0;
+	/* Hex fallback first so older Safari (no color-mix) AND any context where
+	 * --lrn-text fails to resolve still gets a visible 45% black dim. Modern
+	 * browsers with the token defined override with the color-mix line. The
+	 * earlier `color-mix(..., var(--lrn-text, var(--lrn-text)) ...)` fell back
+	 * to the same undefined custom property, producing an invalid color and no
+	 * backdrop at all. See Basecamp #9925123520. */
+	background: rgba(0, 0, 0, 0.45);
+	background: color-mix(in srgb, var(--lrn-text, #1c1c1c) 50%, transparent);
+	animation:  lrn-confirm-fade-in 140ms ease-out forwards;
+	/* z-index 0 sits inside the modal's isolated stacking context, below
+	 * the dialog (z-index 1) but above any page content the modal mounts
+	 * over. Previously -1, which on some screens slipped behind the page. */
+	z-index:    0;
+}
+
+/* ==========================================================================
+   Dialog
+   ========================================================================== */
+
+.lrn-confirm-modal__dialog {
+	position:       relative;
+	z-index:        1;
+	margin:         0;
+	max-width: 440px;
+	width:          100%;
+	max-height:     calc(100vh - 40px);  /* fallback for older browsers */
+	max-height:     calc(100dvh - 40px); /* dynamic viewport — excludes iOS URL bar */
+	background:     var(--lrn-bg, var(--lrn-white));
+	border:         1px solid var(--lrn-border-heavy, rgba(55, 53, 47, 0.16));
+	border-radius:  var(--lrn-radius-lg, 8px);
+	box-shadow:     var(--lrn-shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.18));
+	display:        flex;
+	flex-direction: column;
+	overflow-y:     auto;
+	animation:      lrn-confirm-scale-in 160ms ease-out forwards;
+}
+
+.lrn-confirm-modal .lrn-modal__head {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	padding:         var(--lrn-sp-4, 16px) var(--lrn-sp-5, 20px);
+	border-bottom:   1px solid var(--lrn-divider, rgba(55, 53, 47, 0.09));
+}
+
+.lrn-confirm-modal .lrn-modal__title {
+	margin:      0;
+	font-size:   var(--lrn-text-md, 15px);
+	font-weight: var(--lrn-weight-semibold, 600);
+	color:       var(--lrn-text, var(--lrn-text));
+	font-family: var(--lrn-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif);
+}
+
+.lrn-confirm-modal .lrn-modal__body {
+	padding:    var(--lrn-sp-4, 16px) var(--lrn-sp-5, 20px);
+	overflow-y: auto;
+}
+
+.lrn-confirm-modal__message {
+	margin:     0;
+	color:      var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:  var(--lrn-text-sm, 13px);
+	line-height: 1.55;
+	font-family: var(--lrn-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif);
+	/* The message is set with textContent (no innerHTML, by design), so a
+	   caller listing several consequences separates them with blank lines.
+	   pre-line honours those breaks while still collapsing the ordinary
+	   wrapping whitespace of a single-sentence message. */
+	white-space: pre-line;
+}
+
+.lrn-confirm-modal .lrn-modal__foot {
+	display:         flex;
+	justify-content: flex-end;
+	gap:             var(--lrn-sp-2, 8px);
+	padding:         var(--lrn-sp-3, 12px) var(--lrn-sp-5, 20px);
+	border-top:      1px solid var(--lrn-divider, rgba(55, 53, 47, 0.09));
+}
+
+/* ==========================================================================
+   Destructive variant — red accent on the border-top of the footer to cue
+   the user before they click, even when button styles are overridden by a
+   surrounding theme.
+   ========================================================================== */
+
+.lrn-confirm-modal.lrn-modal--destructive .lrn-modal__foot {
+	border-top-color: var(--lrn-danger, var(--lrn-danger));
+}
+
+/* ==========================================================================
+   Closing state — shortens the fade so close() resolves quickly.
+   ========================================================================== */
+
+.lrn-confirm-modal.lrn-modal--closing {
+	animation: lrn-confirm-fade-out 120ms ease-in forwards;
+	transition-duration: 120ms;
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes lrn-confirm-fade-in {
+	from { opacity: 0; }
+	to   { opacity: 1; }
+}
+
+@keyframes lrn-confirm-fade-out {
+	from { opacity: 1; }
+	to   { opacity: 0; }
+}
+
+@keyframes lrn-confirm-scale-in {
+	from {
+		opacity:   0;
+		transform: scale(0.96);
+	}
+	to {
+		opacity:   1;
+		transform: scale(1);
+	}
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.lrn-confirm-modal .lrn-modal__backdrop,
+	.lrn-confirm-modal__dialog,
+	.lrn-confirm-modal.lrn-modal--closing {
+		animation: none;
+	}
+}
+
+/* ==========================================================================
+   Prompt variant — adds a label + input below the message.
+   Inherits all dialog positioning/background from .lrn-confirm-modal above.
+   ========================================================================== */
+
+.lrn-prompt-modal__label {
+	display:       block;
+	margin:        var(--lrn-sp-3, 12px) 0 var(--lrn-sp-2, 8px);
+	font-size:     var(--lrn-text-sm, 13px);
+	font-weight:   500;
+	color:         var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-prompt-modal__input {
+	width:         100%;
+	padding:       var(--lrn-sp-2, 8px) var(--lrn-sp-3, 12px);
+	font-size:     var(--lrn-text-base, 14px);
+	color:         var(--lrn-text, var(--lrn-text));
+	background:    var(--lrn-bg, var(--lrn-white));
+	border:        1px solid var(--lrn-border-heavy, rgba(55, 53, 47, 0.16));
+	border-radius: var(--lrn-radius-md, 6px);
+	box-shadow:    none;
+	transition:    border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.lrn-prompt-modal__input:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-prompt-modal__input:focus:not(:focus-visible) {
+	outline:       none;
+	border-color:  var(--lrn-accent, var(--lrn-accent));
+	box-shadow:    0 0 0 3px color-mix(in srgb, var(--lrn-accent, var(--lrn-accent)) 18%, transparent);
+}
+
+.lrn-prompt-modal__input::placeholder {
+	color: color-mix(in srgb, var(--lrn-text, var(--lrn-text)) 40%, transparent);
+}
+
+/* ==========================================================================
+   Withdraw modal — multi-field variant.
+   Stacks amount + method fields with consistent spacing. Wider dialog than
+   the prompt variant so longer labels don't wrap awkwardly.
+   ========================================================================== */
+
+.lrn-withdraw-modal .lrn-modal__dialog {
+	max-width: 640px;
+}
+
+.lrn-withdraw-modal__field {
+	margin-top: var(--lrn-sp-4, 16px);
+}
+
+.lrn-withdraw-modal__field:first-of-type {
+	margin-top: var(--lrn-sp-3, 12px);
+}
+
+.lrn-withdraw-modal__field .lrn-prompt-modal__label {
+	margin-top:    0;
+	margin-bottom: var(--lrn-sp-2, 8px);
+}
+
+.lrn-withdraw-modal__balance {
+	margin:        var(--lrn-sp-3, 12px) 0 0;
+	padding:       var(--lrn-sp-3, 12px);
+	background:    color-mix(in srgb, var(--lrn-accent, var(--lrn-accent)) 6%, transparent);
+	border-radius: var(--lrn-radius-md, 6px);
+	font-size:     var(--lrn-text-sm, 13px);
+	color:         var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-withdraw-modal__balance strong {
+	color: var(--lrn-accent, var(--lrn-accent));
+}
+
+/* Settlement disclosure under the amount field: what this request will really
+   settle. Earnings pay out as whole commission rows, so the figure typed and
+   the figure settled can differ — `.is-adjusted` is the state where they do,
+   and it must read as information, not as an error. */
+.lrn-withdraw-modal__settle {
+	margin:        var(--lrn-sp-2, 8px) 0 0;
+	font-size:     var(--lrn-text-sm, 13px);
+	line-height:   1.5;
+	color:         var(--lrn-text-muted, var(--lrn-text-muted));
+}
+
+.lrn-withdraw-modal__settle.is-adjusted {
+	padding:              var(--lrn-sp-2, 8px) var(--lrn-sp-3, 12px);
+	border-inline-start:  var(--lrn-sp-1, 3px) solid var(--lrn-accent, var(--lrn-accent));
+	border-radius:        var(--lrn-radius-sm, 4px);
+	background:           color-mix(in srgb, var(--lrn-accent, var(--lrn-accent)) 6%, transparent);
+	color:                var(--lrn-text, var(--lrn-text));
+}
+
+/* Select uses the same input chrome. */
+.lrn-withdraw-modal select.lrn-prompt-modal__input {
+	appearance:          none;
+	-webkit-appearance:  none;
+	background-image:    linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position: calc(100% - 18px) center, calc(100% - 13px) center;
+	background-size:     5px 5px, 5px 5px;
+	background-repeat:   no-repeat;
+	padding-inline-end:       var(--lrn-sp-6, 32px);
+}

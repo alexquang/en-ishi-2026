@@ -1,0 +1,1240 @@
+/**
+ * Learnomy — Dashboards stylesheet.
+ *
+ * Page-specific styles for the three dashboard routes:
+ *   • student-dashboard.php   (route 'student-dashboard')   — /my-courses/
+ *   • instructor-dashboard.php (route 'instructor-dashboard') — /instructor/
+ *   • instructor-profile.php   (route 'instructor-profile')   — /instructor/{slug}/
+ *
+ * Loaded only on those routes via Template_Loader::enqueue_assets() so
+ * the other ~10 frontend routes don't pay for the KPI / certificate /
+ * profile-header CSS that they never render.
+ *
+ * Shared primitives consumed but not owned here:
+ *   .lrn-card, .lrn-btn*, .lrn-badge*, .lrn-grid, .lrn-table*,
+ *   .lrn-empty-state*, .lrn-activity-list*, .lrn-tab-nav*,
+ *   .lrn-tab-panel, .lrn-course-card*
+ * Those live in learnomy.css because every route relies on them.
+ *
+ * Instructor-only widgets that remain in learnomy.css for now (own slice
+ * candidates): .lrn-funnel*, .lrn-earnings-summary*, .lrn-rating-cell*,
+ * .lrn-engagement-alerts, .lrn-alert-card*, .lrn-review-item*.
+ *
+ * Responsive contract: exactly two @media queries at the bottom of the
+ * file — 1024px (tablet ↔ desktop) and 640px (mobile). No intermediate
+ * breakpoints. Consolidates four legacy breakpoints (480 / 640 / 768 /
+ * 1024-1439) that previously targeted .lrn-stats-row + dashboard headers.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Dashboard header — avatar + greeting + (instructor) action buttons
+   ========================================================================== */
+
+.lrn-dashboard__header {
+	display:         flex;
+	justify-content: space-between;
+	align-items:     center;
+	margin-bottom:   var(--lrn-sp-6);
+}
+
+.lrn-dashboard__welcome {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-4);
+}
+
+.lrn-dashboard__avatar {
+	width:         64px;
+	height:        64px;
+	border-radius: 50%;
+	flex-shrink:   0;
+}
+
+.lrn-dashboard__greeting {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-1);
+}
+
+.lrn-dashboard__subtitle {
+	color:  var(--lrn-text-secondary);
+	margin: 0;
+}
+
+/* ==========================================================================
+   Stats row — KPI tiles
+   ========================================================================== */
+
+/* 2 columns on tablet (the lowest reasonable width before mobile collapse).
+   Wide desktop (1024px+) bumps to 4 columns; mobile collapses to 1. */
+.lrn-stats-row {
+	display:               grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap:                   var(--lrn-sp-4);
+	margin-bottom:         var(--lrn-sp-8);
+}
+
+/* Stat tiles read as one row of tiles, not four independent boxes.
+ *
+ * Third pass on this layout, so the history matters. Row + align-items:center
+ * misaligned the four tiles (a wrapping label re-centred its own icon, so
+ * icons sat at four heights). The stacked column fixed alignment but floated
+ * the chip above a column of air - the owner read icon and number as two
+ * unrelated things (2026-08-07). Row + align-items:FLEX-START keeps both
+ * promises: every tile's chip and number start at the same y across the row,
+ * and a wrapping label grows its tile downward without moving anything.
+ */
+.lrn-stat-card {
+	background:     var(--lrn-bg);
+	border:         1px solid var(--lrn-border);
+	border-radius:  var(--lrn-radius-lg);
+	padding:        var(--lrn-sp-5);
+	display:        flex;
+	flex-direction: row;
+	align-items:    flex-start;
+	gap:            var(--lrn-sp-4);
+	box-shadow:     var(--lrn-shadow-sm);
+}
+
+/* The icon gets its own tinted chip. A bare accent glyph floating beside a
+   number is the "half cooked" look — the chip gives the tile a deliberate
+   anchor and picks up the same accent tint the rest of the admin uses. */
+.lrn-stat-card svg,
+.lrn-stat-card__icon {
+	width:         var(--lrn-icon-md);
+	height:        var(--lrn-icon-md);
+	color:         var(--lrn-accent);
+	flex-shrink:   0;
+	box-sizing:    content-box;
+	padding:       var(--lrn-sp-2);
+	background:    var(--lrn-accent-bg);
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-stat-card__content {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+}
+
+.lrn-stat-card strong,
+.lrn-stat-card__count {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-bold);
+	line-height: 1.1;
+}
+
+/* Labels sit tight under their number and read as one phrase when they wrap,
+   instead of two loose lines at body leading. */
+.lrn-stat-card__label {
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+	line-height: 1.3;
+	text-wrap:   balance;
+}
+
+/* ==========================================================================
+   Dashboard sections — vertical rhythm for each labelled section
+   ========================================================================== */
+
+.lrn-dashboard__section {
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-dashboard__section-title {
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-4);
+}
+
+/* Uniform shell for single-content dashboard widgets (announcements,
+   recent activity, quiz scores, membership, …). Multi-item grids —
+   courses, certificates — stay naked because each item already has its
+   own card. `--flush` zeroes the padding so a wrapped table can hug
+   the edge. Pulse-on-hover is suppressed because this is a static
+   container, not an interactive surface. */
+.lrn-dashboard__section-card:hover {
+	box-shadow:   var(--lrn-shadow-sm);
+	border-color: var(--lrn-border);
+}
+
+.lrn-dashboard__section-card--flush {
+	padding:  0;
+	overflow: hidden;
+}
+
+.lrn-dashboard__section-card .lrn-activity-list {
+	margin: 0;
+}
+
+/* The wrapped table has its own padding inside `.lrn-table-wrap`, so the
+   card frame just provides the visual border + radius. */
+.lrn-dashboard__section-card--flush .lrn-table-wrap {
+	border:        0;
+	border-radius: 0;
+}
+
+/* ==========================================================================
+   Continue-learning hero (priority=5, lives above the stats row visually
+   because it's the first widget in the rendered list).
+   ========================================================================== */
+
+.lrn-dashboard__hero {
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-resume-hero {
+	display:        grid;
+	/* minmax(0, 1fr), not 1fr: a grid track's implicit min-width is min-content,
+	   so a long course title refuses to shrink and shoves the actions column off
+	   the card instead (Basecamp 10143939242). minmax(0, …) lets the text track
+	   go narrower than its longest word and wrap, which is what the eye expects. */
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap:            var(--lrn-sp-5);
+	align-items:    center;
+	padding:        var(--lrn-sp-6) var(--lrn-sp-7);
+	border-radius:  var(--lrn-radius-lg);
+	background:     linear-gradient(
+		135deg,
+		color-mix(in srgb, var(--lrn-accent) 10%, var(--lrn-bg)),
+		var(--lrn-bg)
+	);
+	border:         1px solid var(--lrn-border);
+}
+
+.lrn-resume-hero__eyebrow {
+	font-size:      var(--lrn-text-xs);
+	font-weight:    var(--lrn-weight-semibold);
+	color:          var(--lrn-accent);
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	margin:         0 0 var(--lrn-sp-1);
+}
+
+.lrn-resume-hero__title {
+	font-size:    var(--lrn-text-xl);
+	font-weight:  var(--lrn-weight-semibold);
+	margin:       0 0 var(--lrn-sp-2);
+	color:        var(--lrn-text);
+	/* Course titles are owner-authored and can contain a URL, a hashtag or a
+	   long compound word that no space will break. Without this the title sets
+	   the card's min-content width and the layout gives way around it. */
+	overflow-wrap: break-word;
+}
+
+.lrn-resume-hero__meta {
+	margin: 0;
+	color:  var(--lrn-text-secondary);
+	overflow-wrap: break-word;
+}
+
+.lrn-resume-hero__progress {
+	margin-top:    var(--lrn-sp-3);
+	height:        6px;
+	border-radius: 3px;
+	background:    color-mix(in srgb, var(--lrn-accent) 18%, transparent);
+	overflow:      hidden;
+}
+
+.lrn-resume-hero__progress-fill {
+	display:    block;
+	height:     100%;
+	width:      var(--pct, 0%);
+	background: var(--lrn-accent);
+	transition: width var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-resume-hero__actions {
+	display: flex;
+	gap:     var(--lrn-sp-2);
+	/* Wrap rather than run off the card. Two buttons fit side by side at 390px
+	   in English and did NOT at 320px — "Course home" hung 15px past the card
+	   edge and was effectively untappable. Relying on the labels being short is
+	   not a plan: German and Portuguese are routinely half again as long, so the
+	   same break would reach 390px on a translated site. */
+	flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+	.lrn-resume-hero {
+		/* minmax(0, …) here too — stacking to one column does not by itself let
+		   the track shrink below its longest word. */
+		grid-template-columns: minmax(0, 1fr);
+		padding: var(--lrn-sp-5);
+	}
+}
+
+/* Certificate card variant for orphan rows — visually deprioritized. */
+.lrn-certificate-card--archived {
+	opacity: 0.7;
+}
+
+/* ==========================================================================
+   Inline broadcast form — instructor + space-owner widgets share this
+   ========================================================================== */
+
+.lrn-broadcast-form__intro {
+	margin: 0 0 var(--lrn-sp-3);
+	color:  var(--lrn-text-secondary);
+}
+
+.lrn-broadcast-form__form {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-3);
+}
+
+.lrn-broadcast-form__actions {
+	display:         flex;
+	justify-content: space-between;
+	align-items:     center;
+	gap:             var(--lrn-sp-3);
+	flex-wrap:       wrap;
+}
+
+.lrn-broadcast-form__email-toggle {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	color:       var(--lrn-text-secondary);
+	font-size:   var(--lrn-text-sm);
+}
+
+.lrn-broadcast-form__status {
+	margin:        0;
+	padding:       var(--lrn-sp-2) var(--lrn-sp-3);
+	border-radius: var(--lrn-radius-md);
+	font-size:     var(--lrn-text-sm);
+}
+
+.lrn-broadcast-form__status--info {
+	background: color-mix(in srgb, var(--lrn-accent) 10%, transparent);
+	color:      var(--lrn-text);
+}
+
+.lrn-broadcast-form__status--success {
+	background: color-mix(in srgb, var(--lrn-success, var(--lrn-accent)) 14%, transparent);
+	color:      var(--lrn-text);
+}
+
+.lrn-broadcast-form__status--error {
+	background: color-mix(in srgb, var(--lrn-danger) 14%, transparent);
+	color:      var(--lrn-danger);
+}
+
+/* ==========================================================================
+   Announcements compose widget (instructor + space-owner variants share)
+   ========================================================================== */
+
+.lrn-announcements-widget__heading {
+	margin:      var(--lrn-sp-4) 0 var(--lrn-sp-2);
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.lrn-announcements-widget__list {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-3);
+}
+
+.lrn-announcements-widget__item {
+	display:     flex;
+	gap:         var(--lrn-sp-3);
+	align-items: flex-start;
+}
+
+.lrn-announcements-widget__icon {
+	flex:   0 0 auto;
+	width:  18px;
+	height: 18px;
+	color:  var(--lrn-accent);
+	margin-top: 2px;
+}
+
+.lrn-announcements-widget__body {
+	flex:           1 1 auto;
+	min-width:      0;
+	display:        flex;
+	flex-direction: column;
+}
+
+.lrn-announcements-widget__title {
+	font-weight: var(--lrn-weight-medium);
+	overflow:    hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-announcements-widget__meta {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-announcements-widget__empty {
+	margin: var(--lrn-sp-3) 0 0;
+	color:  var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Student streak widget — small motivational header above today-agenda
+   ========================================================================== */
+
+.lrn-streak {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	padding:     var(--lrn-sp-3) var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-md);
+	background:    color-mix(in srgb, var(--lrn-warn) 12%, var(--lrn-bg));
+	border:        1px solid color-mix(in srgb, var(--lrn-warn) 30%, var(--lrn-border));
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-streak__icon {
+	flex:   0 0 auto;
+	width:  24px;
+	height: 24px;
+	color:  var(--lrn-warn);
+}
+
+.lrn-streak__body {
+	display:        flex;
+	flex-direction: column;
+}
+
+.lrn-streak__count {
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-streak__flavor {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Student "Today's plan" agenda widget
+   ========================================================================== */
+
+.lrn-today-agenda {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-3);
+}
+
+.lrn-today-agenda__link {
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-3);
+	color:          var(--lrn-text);
+	text-decoration: none;
+	padding:        var(--lrn-sp-2) 0;
+}
+
+.lrn-today-agenda__link:hover:not(.lrn-today-agenda__link--inert) .lrn-today-agenda__title {
+	color: var(--lrn-accent);
+}
+
+.lrn-today-agenda__icon {
+	flex:   0 0 auto;
+	width:  18px;
+	height: 18px;
+	color:  var(--lrn-text-secondary);
+}
+
+.lrn-today-agenda__item--assignment .lrn-today-agenda__icon { color: var(--lrn-accent); }
+.lrn-today-agenda__item--drip       .lrn-today-agenda__icon { color: var(--lrn-warn); }
+.lrn-today-agenda__item--cohort     .lrn-today-agenda__icon { color: var(--lrn-success, var(--lrn-accent)); }
+
+.lrn-today-agenda__body {
+	flex:           1 1 auto;
+	min-width:      0;
+	display:        flex;
+	flex-direction: column;
+}
+
+.lrn-today-agenda__title {
+	font-weight: var(--lrn-weight-medium);
+	overflow:    hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.lrn-today-agenda__subtitle {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-today-agenda__time {
+	flex:        0 0 auto;
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-accent);
+	font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Instructor "Students at Risk" widget
+   ========================================================================== */
+
+.lrn-at-risk-list {
+	list-style: none;
+	margin:     0 0 var(--lrn-sp-3);
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-3);
+}
+
+.lrn-at-risk-list__item {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+}
+
+.lrn-at-risk-list__avatar {
+	flex:         0 0 auto;
+	width:        32px;
+	height:       32px;
+	border-radius: 50%;
+}
+
+.lrn-at-risk-list__body {
+	flex:           1 1 auto;
+	min-width:      0;
+	display:        flex;
+	flex-direction: column;
+}
+
+.lrn-at-risk-list__name {
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+}
+
+.lrn-at-risk-list__course {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-at-risk-list__course a {
+	color: inherit;
+	text-decoration: none;
+}
+
+/* This link sits inside a small secondary line, so it inherits ~15px of text
+   height — fine to read, too small to tap, and it is the instructor's route
+   from "this student is struggling" to the course itself (Basecamp
+   10146578631). The line must stay visually secondary, so the TYPE size does
+   not change: on a touch device the link becomes an inline-block with enough
+   vertical padding to clear --lrn-touch-min, and negative margins keep it from
+   pushing the row apart. Only `pointer: coarse`; with a mouse a 15px link is
+   perfectly clickable and the extra box would overlap its neighbours. */
+@media (pointer: coarse) {
+	.lrn-at-risk-list__course a {
+		display:        inline-block;
+		padding-block:  var(--lrn-sp-3);
+		margin-block:   calc( var(--lrn-sp-3) * -1 );
+		min-height:     var(--lrn-touch-min);
+		box-sizing:     content-box;
+	}
+}
+
+.lrn-at-risk-list__course a:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-at-risk-list__signal {
+	flex:        0 0 auto;
+	font-size:   var(--lrn-text-xs);
+	color:       var(--lrn-warn);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+/* Phone: stack the signal under the student instead of holding a column beside
+ * them. Same three-part media row as .lrn-activity-list__item, same failure —
+ * an unshrinkable trailing label ("Last active 3 weeks ago") squeezes the
+ * course title down to its longest word, and the centred avatar ends up
+ * halfway down the wrapped block (Basecamp 10143802598). */
+@media (max-width: 640px) {
+	.lrn-at-risk-list__item {
+		display:               grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items:           start;
+		column-gap:            var(--lrn-sp-3);
+		row-gap:               var(--lrn-sp-1);
+	}
+
+	.lrn-at-risk-list__signal {
+		grid-column: 2;
+	}
+}
+
+/* ==========================================================================
+   Instructor revenue-trend widget (CSS-only bar chart, no JS lib)
+   ========================================================================== */
+
+.lrn-revenue-trend__header {
+	display:         flex;
+	justify-content: space-between;
+	align-items:     baseline;
+	gap:             var(--lrn-sp-3);
+	margin-bottom:   var(--lrn-sp-3);
+}
+
+.lrn-revenue-trend__total {
+	font-size:   var(--lrn-text-2xl, var(--lrn-text-xl));
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-accent);
+	font-variant-numeric: tabular-nums;
+}
+
+.lrn-revenue-trend__total-label {
+	display:    block;
+	font-size:  var(--lrn-text-xs);
+	color:      var(--lrn-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.lrn-revenue-trend__peak {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-revenue-trend__bars {
+	list-style: none;
+	margin:     0 0 var(--lrn-sp-2);
+	padding:    0;
+	display:    flex;
+	align-items: flex-end;
+	gap:        4px;
+	height:     80px;
+}
+
+.lrn-revenue-trend__day {
+	flex:    1 1 0;
+	height:  100%;
+	display: flex;
+	align-items: flex-end;
+}
+
+.lrn-revenue-trend__bar {
+	display:       block;
+	width:         100%;
+	height:        var(--pct, 1%);
+	background:    var(--lrn-accent);
+	border-radius: 2px 2px 0 0;
+	transition:    height var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-revenue-trend__day:hover .lrn-revenue-trend__bar {
+	background: color-mix(in srgb, var(--lrn-accent) 80%, black);
+}
+
+.lrn-revenue-trend__legend {
+	display:         flex;
+	justify-content: space-between;
+	font-size:       var(--lrn-text-xs);
+	color:           var(--lrn-text-secondary);
+}
+
+/* ==========================================================================
+   Instructor Q&A inbox widget
+   ========================================================================== */
+
+.lrn-qa-inbox {
+	list-style: none;
+	margin:     0;
+	padding:    0;
+	display:    flex;
+	flex-direction: column;
+	gap:        var(--lrn-sp-4);
+}
+
+.lrn-qa-inbox__item {
+	display:         flex;
+	align-items:     flex-start;
+	gap:             var(--lrn-sp-3);
+	padding-bottom:  var(--lrn-sp-3);
+	border-bottom:   1px solid var(--lrn-border);
+}
+
+.lrn-qa-inbox__item:last-child {
+	border-bottom: 0;
+	padding-bottom: 0;
+}
+
+.lrn-qa-inbox__link {
+	display:         flex;
+	gap:             var(--lrn-sp-3);
+	text-decoration: none;
+	color:           var(--lrn-text);
+	flex:            1 1 auto;
+	min-width:       0;
+}
+
+.lrn-qa-inbox__link:hover .lrn-qa-inbox__meta strong {
+	color: var(--lrn-accent);
+}
+
+.lrn-qa-inbox__avatar {
+	flex:         0 0 auto;
+	width:        32px;
+	height:       32px;
+	border-radius: 50%;
+}
+
+.lrn-qa-inbox__body {
+	flex:           1 1 auto;
+	min-width:      0;
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+}
+
+.lrn-qa-inbox__meta {
+	margin:    0;
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-qa-inbox__excerpt {
+	margin:    0;
+	color:     var(--lrn-text);
+	font-size: var(--lrn-text-sm);
+	overflow:  hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+.lrn-qa-inbox__time {
+	flex:      0 0 auto;
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-secondary);
+}
+
+/* Instructor dashboard "section header" — title + action button row. */
+.lrn-dashboard__section-header {
+	display:         flex;
+	justify-content: space-between;
+	align-items:     center;
+	margin-bottom:   var(--lrn-sp-4);
+}
+
+/* ==========================================================================
+   Membership card — "My Membership" panel on the student dashboard
+   ========================================================================== */
+
+.lrn-membership-card__header {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-membership-card__header h3 {
+	margin: 0;
+}
+
+/* ==========================================================================
+   Certificate cards — earned certificates row on the student dashboard
+   ========================================================================== */
+
+/* Grid that arranges certificate cards. auto-fill keeps the row dense
+   without exposing a third breakpoint. The 340px minimum is safe on
+   tablet+ but would overflow a ≤480px phone where the content column
+   is ~320-340px — a second rule below narrows it to a safe single
+   column for narrow viewports. */
+.lrn-certificates-grid {
+	/* A bare minmax() floor is a HARD minimum: on a viewport narrower than the
+	   floor the track keeps that width and the cards overflow their container.
+	   min(<floor>, 100%) collapses the floor to the container on small screens
+	   and behaves exactly as before everywhere else. */
+	grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+}
+
+@media (max-width: 480px) {
+	.lrn-certificates-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.lrn-certificate-card {
+	padding: var(--lrn-sp-6);
+}
+
+.lrn-certificate-card__header {
+	display:       flex;
+	align-items:   flex-start;
+	gap:           var(--lrn-sp-3);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-certificate-card__icon {
+	color:       var(--lrn-accent);
+	width:       var(--lrn-icon-xl);
+	height:      var(--lrn-icon-xl);
+	flex-shrink: 0;
+	margin-top:  var(--lrn-sp-1);
+}
+
+.lrn-certificate-card__title {
+	font-size:   var(--lrn-text-base);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-1);
+	line-height: 1.3;
+}
+
+.lrn-certificate-card__meta {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+	margin:    0;
+}
+
+.lrn-certificate-card__meta code {
+	font-size: var(--lrn-text-xs);
+}
+
+.lrn-certificate-card__actions {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-2);
+}
+
+/* Icon inside each action button — sits to the inline-start of the
+   label. `margin-inline-end` (logical) replaces the legacy
+   `margin-right` so RTL locales mirror correctly. */
+.lrn-certificate-card__actions svg {
+	margin-inline-end: var(--lrn-sp-1);
+	vertical-align:    middle;
+	width:             var(--lrn-icon-sm);
+	height:            var(--lrn-icon-sm);
+}
+
+/* ==========================================================================
+   Instructor profile — public profile page rendered at /instructor/{slug}/
+   ========================================================================== */
+
+.lrn-instructor-profile__header {
+	display:       flex;
+	align-items:   flex-start;
+	gap:           var(--lrn-sp-6);
+	padding:       var(--lrn-sp-8);
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-instructor-profile__avatar {
+	width:         120px;
+	height:        120px;
+	border-radius: 50%;
+	flex-shrink:   0;
+}
+
+.lrn-instructor-profile__name {
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-2);
+}
+
+.lrn-instructor-profile__expertise {
+	display:       flex;
+	flex-wrap:     wrap;
+	gap:           var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+.lrn-instructor-profile__bio {
+	color:         var(--lrn-text-secondary);
+	line-height:   var(--lrn-leading-relaxed);
+	margin:        0 0 var(--lrn-sp-4);
+}
+
+.lrn-instructor-profile__stats {
+	display:       flex;
+	gap:           var(--lrn-sp-6);
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-instructor-profile__stats strong {
+	color: var(--lrn-text);
+}
+
+.lrn-instructor-profile__social {
+	display: flex;
+	gap:     var(--lrn-sp-3);
+}
+
+/* Social-link circles — only the instructor profile renders these. */
+.lrn-social-link {
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	width:           36px;
+	height:          36px;
+	border-radius:   50%;
+	background:      var(--lrn-bg-secondary);
+	color:           var(--lrn-text-secondary);
+	transition:      background var(--lrn-dur) var(--lrn-ease),
+	                 color var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-social-link:hover {
+	background: var(--lrn-accent-bg);
+	color:      var(--lrn-accent);
+}
+
+/* Keyboard focus ring — the legacy CSS shipped a hover state but no
+   visible focus, so tabbing through the social icons gave no feedback.
+   `:focus-visible` keeps mouse clicks ring-free while preserving the
+   ring for keyboard users. */
+.lrn-social-link:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-instructor-profile__courses {
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-instructor-profile__courses h2 {
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-5);
+}
+
+/* ==========================================================================
+   Responsive — exactly two breakpoints
+
+   Per ux-foundation responsive rules: 1024px (tablet ↔ desktop) and
+   640px (mobile). The legacy stylesheet hit four breakpoints in this
+   area (480 / 640 / 768 / 1024-1439) — collapsed here.
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+	/* Wide desktop: KPI strip becomes 4-up. Below this the base 2-col
+	   layout keeps each tile readable on a laptop / tablet. */
+	.lrn-stats-row {
+		grid-template-columns: repeat(4, 1fr);
+	}
+}
+
+@media (max-width: 640px) {
+	/* Mobile: single-column KPI strip with a tighter gap so 4 tiles
+	   stack without dominating the viewport. */
+	.lrn-stats-row {
+		grid-template-columns: 1fr;
+		gap:                   var(--lrn-sp-2);
+	}
+
+	/* Stack the dashboard greeting + action buttons vertically so a
+	   long display name doesn't fight the Create / Catalog buttons
+	   for horizontal space. */
+	.lrn-dashboard__header {
+		flex-direction: column;
+		align-items:    flex-start;
+		gap:            var(--lrn-sp-4);
+	}
+
+	.lrn-dashboard__actions {
+		width:     100%;
+		flex-wrap: wrap;
+	}
+
+	/* The slim icon rail narrows the content column on phones, so a 64px
+	   avatar + 2xl greeting pushed a long name onto three lines. Shrink both
+	   so the avatar + name read as a tidy unit (name on 1–2 lines), and let
+	   the actions sit full-width below. */
+	.lrn-dashboard__welcome {
+		gap: var(--lrn-sp-3);
+	}
+
+	.lrn-dashboard__avatar {
+		width:  48px;
+		height: 48px;
+	}
+
+	.lrn-dashboard__greeting {
+		font-size: var(--lrn-text-xl);
+	}
+
+	/* Instructor profile header collapses to centered column — 120px
+	   avatar plus bio is too wide for the row layout on a phone. */
+	.lrn-instructor-profile__header {
+		flex-direction: column;
+		align-items:    center;
+		text-align:     center;
+	}
+
+	.lrn-instructor-profile__stats {
+		justify-content: center;
+	}
+
+	.lrn-instructor-profile__social {
+		justify-content: center;
+	}
+}
+
+/* Course-list overflow notice — shown when an instructor has more courses than
+   the dashboard lists, linking to the paginated management screen. */
+.lrn-dashboard-widget__overflow {
+	margin:      var(--lrn-sp-3, 12px) 0 0;
+	padding-top: var(--lrn-sp-3, 12px);
+	border-top:  1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	color:       var(--lrn-text-secondary, #6b6b6b);
+	font-size:   var(--lrn-text-sm, 13px);
+}
+
+.lrn-dashboard-widget__overflow a {
+	margin-inline-start: var(--lrn-sp-1, 4px);
+	color:               var(--lrn-accent, #2383e2);
+	font-weight:         500;
+	text-decoration:     none;
+}
+
+.lrn-dashboard-widget__overflow a:hover,
+.lrn-dashboard-widget__overflow a:focus-visible {
+	text-decoration: underline;
+}
+
+/* My Courses async Prev/Next pager. */
+.lrn-courses-pager {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3, 12px);
+	margin-top:      var(--lrn-sp-4, 16px);
+	padding-top:     var(--lrn-sp-3, 12px);
+	border-top:      1px solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	flex-wrap:       wrap;
+}
+
+.lrn-courses-pager__status {
+	margin:    0;
+	color:     var(--lrn-text-secondary, #6b6b6b);
+	font-size: var(--lrn-text-sm, 13px);
+}
+
+.lrn-courses-pager__controls {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+}
+
+.lrn-courses-pager__manage {
+	margin-inline-start: var(--lrn-sp-2, 8px);
+	color:               var(--lrn-accent, #2383e2);
+	font-size:           var(--lrn-text-sm, 13px);
+	font-weight:         500;
+	text-decoration:     none;
+}
+
+.lrn-courses-pager__manage:hover,
+.lrn-courses-pager__manage:focus-visible {
+	text-decoration: underline;
+}
+
+[data-lrn-courses-tbody][aria-busy="true"] {
+	opacity:    0.55;
+	transition: opacity 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-lrn-courses-tbody][aria-busy="true"] {
+		transition: none;
+	}
+}
+
+@media (max-width: 640px) {
+	.lrn-courses-pager {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+}
+
+/* ── Instructor Reports (/instructor/reports/) ──────────────────────────────
+   Three drill levels off one route: courses -> lessons -> student. The filter
+   row grew from one select (period) to three (period, space, cohort), and the
+   originals stacked full-width because .lrn-input fills its container — three
+   stacked bars read as content, not as controls. Flex row with wrapping keeps
+   them a control cluster and collapses cleanly on a phone. */
+.lrn-reports-filter {
+	display:          flex;
+	flex-wrap:        wrap;
+	gap:              var(--lrn-sp-2);
+	align-items:      center;
+	margin-block-end: var(--lrn-sp-4);
+}
+.lrn-reports-filter .lrn-input {
+	inline-size: auto;
+	min-inline-size: 10rem;
+}
+
+/* The drop-off signal — the whole point of the report, so it should not read
+   like body text. */
+.lrn-reports-drop {
+	font-weight: 600;
+}
+
+/* Group-filter notice + the "large group truncated" note. Scoping must never
+   be silent: a number that covers one cohort has to say so, or the instructor
+   reads it as the whole course. */
+.lrn-reports-scope,
+.lrn-reports-note {
+	margin-block-end: var(--lrn-sp-3);
+	font-size:        var(--lrn-text-sm);
+	color:            var(--lrn-text-secondary);
+}
+
+.lrn-reports-back {
+	margin-block-end: var(--lrn-sp-3);
+	font-size:        var(--lrn-text-sm);
+}
+
+/* .lrn-muted is only declared scoped to billing and wp-admin, so it renders
+   unstyled here. Scope it to this page rather than inventing a global. */
+.lrn-instructor-reports .lrn-muted {
+	color: var(--lrn-text-secondary);
+}
+
+/* Student leaf facts. */
+.lrn-reports-facts {
+	display:          flex;
+	flex-wrap:        wrap;
+	gap:              var(--lrn-sp-4);
+	margin:           0 0 var(--lrn-sp-4);
+	padding:          0;
+	list-style:       none;
+	font-size:        var(--lrn-text-sm);
+}
+
+@media (max-width: 640px) {
+	.lrn-reports-filter .lrn-input {
+		inline-size: 100%;
+	}
+	.lrn-reports-facts {
+		gap: var(--lrn-sp-2);
+	}
+}
+
+/* ── Instructor Students roster (/instructor/students/) ─────────────────────
+   The drillable student list + per-student detail. Reuses .lrn-table; these
+   add the identity column, the search bar, and the detail header. */
+.lrn-table-search {
+	display:       flex;
+	gap:           var(--lrn-sp-2);
+	margin-bottom: var(--lrn-sp-4);
+	max-width:     420px;
+}
+.lrn-table-search .lrn-input {
+	flex: 1 1 auto;
+}
+
+.lrn-admin-identity {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-3);
+	text-decoration: none;
+	color:           inherit;
+}
+.lrn-admin-identity__avatar,
+.lrn-admin-identity img {
+	width:         40px;
+	height:        40px;
+	border-radius: 50%;
+	flex:          0 0 auto;
+}
+.lrn-admin-identity__text {
+	display:        flex;
+	flex-direction: column;
+	min-width:      0;
+}
+.lrn-admin-identity__name {
+	font-weight: 600;
+	color:       var(--lrn-text);
+}
+.lrn-admin-identity__sub {
+	font-size: var(--lrn-fs-sm, 0.85em);
+	color:     var(--lrn-text-secondary);
+}
+.lrn-admin-identity:hover .lrn-admin-identity__name {
+	color: var(--lrn-accent);
+}
+
+.lrn-section-title {
+	margin:      var(--lrn-sp-6) 0 var(--lrn-sp-3);
+	font-size:   var(--lrn-fs-lg, 1.1em);
+	font-weight: 700;
+	color:       var(--lrn-text);
+}
+
+.lrn-student-detail__header {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-4);
+	margin-bottom: var(--lrn-sp-4);
+}
+.lrn-student-detail__avatar,
+.lrn-student-detail__header img {
+	width:         72px;
+	height:        72px;
+	border-radius: 50%;
+	flex:          0 0 auto;
+}
+.lrn-student-detail__name {
+	margin:    0;
+	font-size: var(--lrn-fs-xl, 1.4em);
+}
+.lrn-student-detail__email {
+	margin: var(--lrn-sp-1) 0 0;
+	color:  var(--lrn-text-secondary);
+}
+.lrn-student-detail__meta {
+	margin:    var(--lrn-sp-2) 0 0;
+	font-size: var(--lrn-fs-sm, 0.85em);
+	color:     var(--lrn-text-secondary);
+}
+
+@media (max-width: 480px) {
+	.lrn-student-detail__header { flex-direction: column; text-align: center; }
+	.lrn-table-search { max-width: none; }
+}
+
+/* Tap floor (technique 1, see "Tap targets" in learnomy.css).
+
+   `.lrn-social-link` is a declared 36x36 on the instructor profile, and those
+   circles are the only outbound links on the page. Growing rather than
+   extending, because the host sits in normal flow with `position: static`:
+   that is precisely the shape that let a pseudo extender escape in Basecamp
+   #9927346859. At most four circles render, so 44px each plus the existing gap
+   still fits a 390px row.
+
+   `.lrn-broadcast-form__email-toggle` is a <label> wrapping the "Also send
+   email" checkbox on the instructor announcement composer, so the label is the
+   tap target and it renders ~20px. */
+@media (max-width: 640px) {
+	.lrn-social-link {
+		width:  var(--lrn-touch-min);
+		height: var(--lrn-touch-min);
+		flex:   0 0 auto;
+	}
+
+	.lrn-broadcast-form__email-toggle {
+		min-height: var(--lrn-touch-min);
+	}
+}

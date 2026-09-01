@@ -1,0 +1,116 @@
+/**
+ * Learnomy — drag-drop visual states.
+ *
+ * Scope: the curriculum tree in course-builder and the slot list in the
+ * quiz editor. All values reference `--lrn-*` tokens so the dark-mode
+ * reassignment in `learnomy.css` handles the dark theme automatically.
+ *
+ * The drop-zone indicator is a 2px bordered outline on the top or bottom
+ * edge of the hovered row — it surfaces where the drop will land without
+ * shifting sibling rows and causing layout thrash mid-drag.
+ *
+ * @package Learnomy
+ */
+
+/* ── Drag source ────────────────────────────────────────────────── */
+
+.lrn-builder__item.is-dragging,
+.lrn-quiz-slot.is-dragging,
+.lrn-lesson-item.is-dragging {
+	opacity: var( --lrn-drag-opacity, 0.5 );
+	transform: rotate( -2deg );
+	transition: transform 120ms ease;
+	cursor: grabbing;
+}
+
+/* ── Drag handle affordance ─────────────────────────────────────── */
+
+.lrn-builder__item-drag-handle,
+.lrn-quiz-slot__drag-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: var( --lrn-sp-5, 1.25rem );
+	color: var( --lrn-text-muted, color-mix( in srgb, var( --lrn-text ) 55%, transparent ) );
+	cursor: grab;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.lrn-builder__item-drag-handle:active,
+.lrn-quiz-slot__drag-handle:active {
+	cursor: grabbing;
+}
+
+.lrn-builder__item-drag-handle i[data-lucide],
+.lrn-quiz-slot__drag-handle i[data-lucide] {
+	width: 1rem;
+	height: 1rem;
+	stroke-width: 1.5;
+}
+
+/* Give draggable rows the grab cursor by default so the affordance is
+   obvious even when hovering outside the handle. */
+.lrn-lesson-item[draggable="true"],
+.lrn-quiz-slot[draggable="true"] {
+	cursor: grab;
+}
+
+.lrn-lesson-item[draggable="true"]:active,
+.lrn-quiz-slot[draggable="true"]:active {
+	cursor: grabbing;
+}
+
+/* ── Drop-zone indicators ───────────────────────────────────────── */
+
+.lrn-builder__item.drop-zone-active--before,
+.lrn-quiz-slot.drop-zone-active--before,
+.lrn-lesson-item.drop-zone-active--before {
+	box-shadow: inset 0 2px 0 0 var( --lrn-accent, var( --wp--preset--color--primary, var(--lrn-accent) ) );
+	background: color-mix( in srgb, var( --lrn-accent, var(--lrn-accent) ) 6%, transparent );
+}
+
+.lrn-builder__item.drop-zone-active--after,
+.lrn-quiz-slot.drop-zone-active--after,
+.lrn-lesson-item.drop-zone-active--after {
+	box-shadow: inset 0 -2px 0 0 var( --lrn-accent, var( --wp--preset--color--primary, var(--lrn-accent) ) );
+	background: color-mix( in srgb, var( --lrn-accent, var(--lrn-accent) ) 6%, transparent );
+}
+
+/* ── Drag-active section container (so empty sections show a drop target) ── */
+
+.lrn-builder__items:empty {
+	min-height: calc( var( --lrn-sp-8, 2rem ) * 1.5 );
+	border: 1px dashed var( --lrn-border, color-mix( in srgb, var( --lrn-text ) 20%, transparent ) );
+	border-radius: var( --lrn-radius, 4px );
+	padding: var( --lrn-sp-2, 0.5rem );
+}
+
+/* ── Toast used by quiz-editor slot DnD failures ───────────────── */
+
+.lrn-quiz-toast {
+	position: fixed;
+	bottom: var( --lrn-sp-8, 1.5rem );
+	inset-inline-end: var( --lrn-sp-8, 1.5rem );
+	z-index: 100000;
+	padding: var( --lrn-sp-2, 0.5rem ) var( --lrn-sp-5, 1rem );
+	border-radius: var( --lrn-radius, 4px );
+	background: var( --lrn-bg, var( --lrn-bg, var(--lrn-white) ) );
+	color: var( --lrn-text, #1e1e1e );
+	box-shadow: 0 2px 12px color-mix( in srgb, var( --lrn-text ) 20%, transparent );
+	opacity: 0;
+	transform: translateY( 8px );
+	transition: opacity 180ms ease, transform 180ms ease;
+	pointer-events: none;
+	max-width: 22rem;
+}
+
+.lrn-quiz-toast.is-visible {
+	opacity: 1;
+	transform: translateY( 0 );
+}
+
+.lrn-quiz-toast--error {
+	color: var( --lrn-danger, #b32d2e );
+	border-inline-start: 2px solid currentColor;
+}

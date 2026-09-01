@@ -1,0 +1,16 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/student-dashboard",
+    "version": "1.0.0",
+    "title": "Student Dashboard",
+    "category": "learnomy",
+    "icon": "dashboard",
+    "description": "Show a logged-in student's enrolled courses with progress at a glance.",
+    "textdomain": "learnomy",
+    "attributes": {},
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

@@ -1,0 +1,659 @@
+/**
+ * Learnomy checkout page styles.
+ *
+ * Uses --lrn-* tokens from learnomy.css. Never hardcode hex, px, or font
+ * values — everything references the token cascade.
+ *
+ * Local tokens (checkout-scoped only, never added to :root):
+ *   --lrn-checkout-max-w          max-width for the checkout container
+ *   --lrn-checkout-wc-max-w       max-width for the WooCommerce redirect block
+ *   --lrn-checkout-thumb-w        thumbnail width in the item row
+ *   --lrn-checkout-thumb-h        thumbnail height in the item row
+ *   --lrn-checkout-spinner-sm     small spinner size
+ *   --lrn-checkout-spinner-lg     large overlay spinner size
+ *   --lrn-checkout-spinner-bw-sm  small spinner border-width
+ *   --lrn-checkout-spinner-bw-lg  large spinner border-width
+ *   --lrn-checkout-icon-sm        lucide icon size used in test-notice
+ *   --lrn-checkout-icon-nudge     top offset to visually align icon with text baseline
+ *   --lrn-checkout-test-bg        test-mode notice background (color-mix result)
+ *   --lrn-checkout-test-border    test-mode notice border (color-mix result)
+ *   --lrn-checkout-overlay-bg     processing overlay scrim background
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Local tokens — scoped to .lrn-checkout so they never leak to :root
+   ========================================================================== */
+
+.lrn-checkout {
+	--lrn-checkout-spinner-sm:    var(--lrn-sp-5);   /* 20px */
+	--lrn-checkout-spinner-lg:    var(--lrn-sp-10);  /* 40px */
+	--lrn-checkout-icon-sm:       var(--lrn-sp-5);   /* 20px */
+	/* PayPal brand tokens — scoped here so we only reference tokens in rules.
+	   PayPal blue (#0070BA) is outside the --lrn-* palette but is a brand
+	   requirement for recognisable payment buttons (PayPal SDK guidelines). */
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+.lrn-checkout {
+	/* Width comes from the shared .lrn-container (the plugin's Container Width
+	   setting) — no per-page max-width that makes checkout jump narrower than
+	   the rest of the site. */
+	margin-inline: auto;
+	/* Mobile-first padding; desktop bumps to sp-8/sp-4 in the min-width: 1024px block. */
+	padding:       var(--lrn-sp-5) var(--lrn-sp-3);
+}
+
+.lrn-checkout__heading {
+	font-size:     var(--lrn-text-xl);
+	font-weight:   var(--lrn-weight-semibold);
+	line-height:   var(--lrn-leading-tight);
+	color:         var(--lrn-text);
+	margin-bottom: var(--lrn-sp-6);
+}
+
+.lrn-checkout__layout {
+	display:               grid;
+	/* Mobile-first: 1 column. Desktop (>= 1024px) restores 2 columns. */
+	grid-template-columns: 1fr;
+	gap:                   var(--lrn-sp-6);
+	align-items:           start;
+}
+
+/* ==========================================================================
+   Order Summary (left column)
+   ========================================================================== */
+
+.lrn-checkout__summary {
+	padding: var(--lrn-sp-6);
+}
+
+.lrn-checkout__section-title {
+	font-size: var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-checkout__item {
+	display: flex;
+	gap: var(--lrn-sp-4);
+	margin-bottom: var(--lrn-sp-5);
+	padding-bottom: var(--lrn-sp-5);
+	border-bottom: 1px solid var(--lrn-divider);
+}
+
+.lrn-checkout__thumbnail {
+	width: 80px;
+	height: 60px;
+	object-fit: cover;
+	border-radius: var(--lrn-radius-md);
+	flex-shrink: 0;
+	background: var(--lrn-bg-secondary);
+}
+
+.lrn-checkout__item-details {
+	min-width: 0;
+}
+
+.lrn-checkout__item-title {
+	font-size: var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+	margin: 0 0 var(--lrn-sp-1) 0;
+	line-height: var(--lrn-leading-tight);
+}
+
+.lrn-checkout__instructor {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+	margin: 0;
+}
+
+/* ==========================================================================
+   Price lines
+   ========================================================================== */
+
+.lrn-checkout__price-lines {
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-checkout__price-line {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: var(--lrn-sp-2) 0;
+	font-size: var(--lrn-text-base);
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-checkout__price-line--discount {
+	color: var(--lrn-success);
+}
+
+.lrn-checkout__price-line--coupon {
+	color: var(--lrn-success);
+}
+
+.lrn-checkout__price-line--total {
+	border-top: 1px solid var(--lrn-border);
+	margin-top: var(--lrn-sp-2);
+	padding-top: var(--lrn-sp-3);
+	font-size: var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+}
+
+/* ==========================================================================
+   Coupon input
+   ========================================================================== */
+
+.lrn-checkout__coupon {
+	padding-top: var(--lrn-sp-4);
+	border-top: 1px solid var(--lrn-divider);
+}
+
+.lrn-checkout__coupon-label {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-secondary);
+	display: block;
+	margin-bottom: var(--lrn-sp-2);
+}
+
+.lrn-checkout__coupon-row {
+	display: flex;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-checkout__coupon-row .lrn-input {
+	flex: 1;
+	min-height: var(--lrn-touch-min);
+}
+
+/* Applied-coupon chip. Replaces the input row once a code sticks and carries
+   the Remove control, so a buyer can take a coupon off before paying instead of
+   reloading the page (Basecamp 10134139671). */
+.lrn-checkout__coupon-chip {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-2) var(--lrn-sp-3);
+	border:          var(--lrn-border-width) solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	background:      var(--lrn-bg-secondary);
+}
+
+.lrn-checkout__coupon-chip-label {
+	font-size:     var(--lrn-text-sm);
+	color:         var(--lrn-text-secondary);
+	overflow-wrap: anywhere;
+}
+
+.lrn-checkout__coupon-chip #lrn-remove-coupon {
+	flex-shrink: 0;
+}
+
+/* Tap floor for a control that is not a `.lrn-btn`. Reads `--lrn-touch-min`,
+   the one floor token, rather than a spacing token that happens to be 40px:
+   `--lrn-sp-10` here meant this modifier LOWERED `.lrn-btn`'s own 44px floor to
+   40px, because checkout.css loads after learnomy.css and the two selectors tie
+   on specificity. A modifier named "tap" that shrinks the tap target is the
+   kind of thing that survives review precisely because the name reads right. */
+.lrn-btn--tap {
+	min-height: var(--lrn-touch-min);
+}
+
+.lrn-checkout__coupon-message {
+	font-size: var(--lrn-text-sm);
+	margin-top: var(--lrn-sp-2);
+	min-height: var(--lrn-text-sm);
+}
+
+.lrn-checkout__coupon-message--success {
+	color: var(--lrn-success);
+}
+
+.lrn-checkout__coupon-message--error {
+	color: var(--lrn-danger);
+}
+
+/* ==========================================================================
+   Payment panel (right column)
+   ========================================================================== */
+
+.lrn-checkout__payment {
+	padding: var(--lrn-sp-6);
+}
+
+/* Payment method selector fieldset — reset browser defaults. */
+
+.lrn-checkout__methods-fieldset {
+	border: none;
+	padding: 0;
+	margin: 0 0 var(--lrn-sp-5) 0;
+}
+
+.lrn-checkout__methods-legend {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-3);
+	padding: 0;
+}
+
+.lrn-checkout__methods {
+	display:   flex;
+	flex-wrap: wrap;
+	gap:       var(--lrn-sp-3);
+}
+
+.lrn-checkout__method-option {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	cursor: pointer;
+	flex: 1;
+	/* The tap target is this LABEL, not the radio inside it: a label that wraps
+	   its input activates it from anywhere in the box. That is why the audit's
+	   "13x13 radio" measurement does not describe what a thumb actually has to
+	   hit. Floor via `--lrn-touch-min` like every other control. */
+	min-height: var(--lrn-touch-min);
+	transition: border-color var(--lrn-dur) var(--lrn-ease),
+	            background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-checkout__method-option:hover {
+	border-color: var(--lrn-border-heavy);
+}
+
+.lrn-checkout__method-option:has(input:checked) {
+	border-color: var(--lrn-accent);
+	background: var(--lrn-accent-bg);
+}
+
+.lrn-checkout__method-option input[type="radio"] {
+	accent-color: var(--lrn-accent);
+}
+
+.lrn-checkout__method-label {
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color: var(--lrn-text);
+}
+
+/* Stripe hosted checkout container (no client-side Elements). */
+
+.lrn-checkout__stripe {
+	margin-bottom: var(--lrn-sp-5);
+}
+
+/* Stripe Payment Element mount — the card fields render on-page inside this
+   container, themed to the site's --lrn-* tokens (light/dark) via the
+   appearance API in checkout.js. Just the fields, no Stripe card chrome, so it
+   sits cleanly inside the Payment card with no box-in-box. */
+.lrn-checkout__stripe-element {
+	display: block;
+	width: 100%;
+	margin-top: var(--lrn-sp-4);
+	min-height: 44px;
+}
+
+.lrn-checkout__stripe-error {
+	margin-top: var(--lrn-sp-3);
+	color: var(--lrn-danger, #d63638);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-checkout__stripe-error[hidden] {
+	display: none;
+}
+
+/* Single-gateway sites: keep the radio in the DOM (the JS reads :checked to
+   pick the method) but hide the redundant one-option selector visually. */
+.lrn-checkout__methods-fieldset--hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* PayPal server-driven button — replaces the former Smart-Buttons iframe.
+   Uses PayPal brand blue as a local scoped token (defined in .lrn-checkout). */
+
+.lrn-btn--paypal {
+	background: #0070ba;
+	color: #fff;
+	border: none;
+}
+
+.lrn-btn--paypal:hover:not( :disabled ) {
+	background: color-mix(in srgb, #0070ba 85%, #000);
+}
+
+.lrn-btn--paypal:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.lrn-checkout__paypal {
+	margin-bottom: var(--lrn-sp-5);
+}
+
+/* Free enrollment */
+
+.lrn-checkout__free-note {
+	font-size: var(--lrn-text-base);
+	color: var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+/* No gateways message */
+
+.lrn-checkout__no-gateways {
+	font-size: var(--lrn-text-base);
+	color: var(--lrn-text-secondary);
+	text-align: center;
+	padding: var(--lrn-sp-6) 0;
+}
+
+/* Test gateway notice */
+
+.lrn-checkout__test-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--lrn-sp-3);
+	padding: var(--lrn-sp-4);
+	background: color-mix(in srgb, var(--lrn-accent) 8%, transparent);
+	border: 1px solid color-mix(in srgb, var(--lrn-accent) 25%, transparent);
+	border-radius: var(--lrn-radius-md);
+	margin-bottom: var(--lrn-sp-4);
+}
+
+.lrn-checkout__test-notice [data-lucide] {
+	flex-shrink: 0;
+	width: var(--lrn-checkout-icon-sm);
+	height: var(--lrn-checkout-icon-sm);
+	color: var(--lrn-accent);
+	margin-top: 2px;
+}
+
+.lrn-checkout__test-notice strong {
+	display: block;
+	font-size: var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+	margin-bottom: var(--lrn-sp-1);
+}
+
+.lrn-checkout__test-notice p {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-secondary);
+	margin: 0;
+	line-height: var(--lrn-leading-normal);
+}
+
+/* Security badge */
+
+.lrn-checkout__secure-badge {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-tertiary);
+	margin-top: var(--lrn-sp-5);
+	justify-content: center;
+}
+
+/* The template renders Lucide via <i data-lucide="lock">; size + color come
+   from the parent's font-size + currentColor. No Dashicons rule needed. */
+
+/* ==========================================================================
+   Error message
+   ========================================================================== */
+
+.lrn-checkout__message {
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border-radius: var(--lrn-radius-md);
+	font-size: var(--lrn-text-sm);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-checkout__message--error {
+	background: var(--lrn-danger-bg);
+	color: var(--lrn-danger);
+	border: 1px solid var(--lrn-danger);
+}
+
+/* ==========================================================================
+   Processing overlay
+   ========================================================================== */
+
+.lrn-checkout__overlay {
+	position: fixed;
+	inset: 0;
+	background: color-mix(in srgb, #000 40%, transparent);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 300;
+}
+
+.lrn-checkout__overlay-content {
+	background: var(--lrn-bg);
+	padding: var(--lrn-sp-8);
+	border-radius: var(--lrn-radius-xl);
+	text-align: center;
+	box-shadow: var(--lrn-shadow-lg);
+}
+
+.lrn-checkout__overlay-content p {
+	font-size: var(--lrn-text-md);
+	color: var(--lrn-text);
+	margin-top: var(--lrn-sp-4);
+}
+
+/* Spinner */
+
+.lrn-checkout__spinner {
+	display: inline-block;
+	width: var(--lrn-checkout-spinner-sm);
+	height: var(--lrn-checkout-spinner-sm);
+	border: 2px solid var(--lrn-border);
+	border-top-color: var(--lrn-accent);
+	border-radius: 50%;
+	animation: lrn-spin 600ms linear infinite;
+}
+
+.lrn-checkout__spinner--lg {
+	width: var(--lrn-checkout-spinner-lg);
+	height: var(--lrn-checkout-spinner-lg);
+	border-width: 3px;
+}
+
+@keyframes lrn-spin {
+	to { transform: rotate( 360deg ); }
+}
+
+/* ==========================================================================
+   Edge-case states
+   ========================================================================== */
+
+.lrn-checkout__error-page,
+.lrn-checkout__already-enrolled {
+	text-align: center;
+	padding: var(--lrn-sp-16) 0;
+}
+
+.lrn-checkout__error-page p,
+.lrn-checkout__already-enrolled p {
+	font-size: var(--lrn-text-md);
+	color: var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-checkout__already-enrolled h1 {
+	font-size: var(--lrn-text-xl);
+	color: var(--lrn-text);
+	margin-bottom: var(--lrn-sp-3);
+}
+
+/* WooCommerce redirect */
+
+.lrn-checkout__wc-redirect {
+	text-align: center;
+	max-width: 640px;
+	margin-inline: auto;
+}
+
+.lrn-checkout__wc-redirect .lrn-checkout__summary {
+	margin-bottom: var(--lrn-sp-5);
+}
+
+.lrn-checkout__wc-message {
+	font-size: var(--lrn-text-md);
+	color: var(--lrn-text-secondary);
+	margin-bottom: var(--lrn-sp-5);
+}
+
+/* ==========================================================================
+   Responsive
+   — Exactly two @media queries per the ux-foundation contract:
+     • max-width: 640px  — mobile collapse (single column, stacked rows,
+       smaller padding, smaller heading). Subsumes the former 1024px
+       intermediate width and the 360px smallest-viewport tweak.
+     • min-width: 1024px — desktop polish (2-col grid restored, comfortable
+       page padding). The base styles are mobile-first so this block adds
+       the wider-screen treatment instead of subtracting from it.
+   ========================================================================== */
+
+@media ( max-width: 640px ) {
+	.lrn-checkout {
+		padding: var(--lrn-sp-3) var(--lrn-sp-2);
+	}
+
+	.lrn-checkout__layout {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-checkout__heading {
+		font-size: var(--lrn-text-lg);
+	}
+
+	.lrn-checkout__item {
+		flex-direction: column;
+		align-items:    flex-start;
+	}
+
+	.lrn-checkout__thumbnail {
+		width:        100%;
+		height:       auto;
+		aspect-ratio: 16 / 9;
+	}
+
+	.lrn-checkout__coupon-row {
+		flex-direction: column;
+	}
+
+	/* The chip keeps its row: code left, Remove right, both still reachable at
+	   the tap floor. Stacking it would push Remove off the fold on a phone. */
+	.lrn-checkout__coupon-chip {
+		flex-wrap: wrap;
+	}
+
+	.lrn-checkout__methods {
+		flex-direction: column;
+	}
+
+	/* The radio glyph is not the tap target (the label is), so this is about
+	   legibility rather than reach: at the browser default of ~13px, a phone
+	   user reading "Credit Card" and "PayPal" one under the other has to look
+	   hard to tell which one is armed. Sizing the glyph up on phones makes the
+	   selected state readable at arm's length without touching the layout. */
+	.lrn-checkout__method-option input[type="radio"] {
+		inline-size: var(--lrn-icon-md);
+		block-size:  var(--lrn-icon-md);
+		flex:        0 0 auto;
+	}
+}
+
+@media ( min-width: 1024px ) {
+	.lrn-checkout {
+		padding: var(--lrn-sp-8) var(--lrn-sp-4);
+	}
+
+	.lrn-checkout__layout {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.lrn-checkout__heading {
+		font-size: var(--lrn-text-2xl);
+	}
+}
+
+/* ---------------------------------------------------------------------------
+ * Billing details
+ *
+ * OURS, not the gateway's. These fields used to be Stripe's Address Element,
+ * living inside the card box — so only card buyers ever supplied an address,
+ * it could not be prefilled, and it was discarded after every purchase. They
+ * sit in the summary column now, above the totals, in the order a person
+ * reads: who is buying, then what it costs.
+ * ------------------------------------------------------------------------- */
+
+.lrn-checkout__billing {
+	margin-bottom: var(--lrn-sp-5);
+	padding-top: var(--lrn-sp-4);
+	border-top: 1px solid var(--lrn-divider);
+}
+
+.lrn-checkout__billing-title {
+	margin: 0 0 var(--lrn-sp-4);
+	font-size: var(--lrn-text-md);
+	font-weight: var(--lrn-weight-semibold);
+	color: var(--lrn-text);
+}
+
+/* State and postcode share a line — they are short and read as one address
+ * line. Collapses under narrow widths so neither is squeezed. */
+
+.lrn-checkout__billing-note {
+	margin: var(--lrn-sp-2) 0 0;
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-tertiary);
+}
+
+@media (max-width: 640px) {
+	.lrn-checkout__billing-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/*
+ * A required billing field the buyer left blank.
+ *
+ * The billing block is not inside a <form>, so the browser's own :invalid
+ * styling never applies - constraint validation is a form API. This is the
+ * visible half of the fix for Basecamp 10167587258, where a paid order could
+ * be completed with every required field empty. Colour is token-driven so it
+ * follows the theme, and the state is also carried on aria-invalid so it
+ * reaches a screen reader rather than being colour-only.
+ */
+.lrn-checkout .lrn-field--invalid,
+.lrn-checkout [aria-invalid="true"] {
+	border-color: var(--lrn-danger);
+	box-shadow: 0 0 0 1px var(--lrn-danger);
+}

@@ -1,0 +1,840 @@
+/**
+ * Learnomy — membership pages (pricing + manage) stylesheet.
+ *
+ * Scoped to `.lrn-app` so the tokens cascade from the master stylesheet.
+ * All values reference `--lrn-*` tokens. No raw hex / px / font values.
+ *
+ * @package Learnomy
+ */
+
+/* ==========================================================================
+   Pricing page
+   ========================================================================== */
+
+.lrn-pricing-page {
+	/* Width comes from the shared .lrn-container (the plugin's container-width
+	   setting) so the pricing page matches the catalog + account hub — no
+	   wider per-page max-width that makes the layout jump when navigating in. */
+	margin:  0 auto;
+	padding: var(--lrn-sp-8) var(--lrn-sp-4);
+}
+
+.lrn-pricing-page__intro {
+	text-align:    center;
+	margin-bottom: var(--lrn-sp-8);
+}
+
+.lrn-pricing-page__title {
+	font-size:   var(--lrn-text-3xl);
+	font-weight: var(--lrn-weight-semibold);
+	margin:      0 0 var(--lrn-sp-3);
+}
+
+.lrn-pricing-page__subtitle {
+	color:      var(--lrn-text-secondary);
+	font-size:  var(--lrn-text-lg);
+	max-width: 640px;
+	margin:     0 auto;
+}
+
+/* Monthly / Yearly toggle ------------------------------------------------ */
+
+.lrn-pricing-toggle {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	background:      var(--lrn-bg-tertiary);
+	border-radius:   var(--lrn-radius-lg);
+	padding:         3px;
+	margin:          var(--lrn-sp-5) auto 0;
+}
+
+.lrn-pricing-toggle__btn {
+	padding:         var(--lrn-sp-2) var(--lrn-sp-5);
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-medium);
+	font-family:     var(--lrn-font);
+	border:          none;
+	background:      transparent;
+	color:           var(--lrn-text-secondary);
+	border-radius:   var(--lrn-radius-md);
+	cursor:          pointer;
+	transition:      background var(--lrn-dur) var(--lrn-ease),
+	                 color var(--lrn-dur) var(--lrn-ease);
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+}
+
+.lrn-pricing-toggle__btn.is-active {
+	background:  var(--lrn-bg);
+	color:       var(--lrn-text);
+	box-shadow:  var(--lrn-shadow-sm);
+}
+
+.lrn-pricing-toggle__save {
+	font-size:     var(--lrn-text-xs);
+	font-weight:   var(--lrn-weight-semibold);
+	background:    var(--lrn-success-bg);
+	color:         var(--lrn-success);
+	padding:       2px var(--lrn-sp-2);
+	border-radius: var(--lrn-radius-sm);
+}
+
+/* Plan grid + cards ------------------------------------------------------ */
+
+.lrn-pricing-grid {
+	/* <ul role="list"> — reset browser list chrome. */
+	list-style:            none;
+	margin:                var(--lrn-sp-6) 0 var(--lrn-sp-8);
+	padding:               0;
+
+	display:               grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap:                   var(--lrn-sp-6);
+	align-items:           stretch;
+}
+
+.lrn-pricing-card {
+	position:        relative;
+	display:         flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-4);
+	padding:         var(--lrn-sp-6);
+	background:      var(--lrn-bg);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-lg);
+	box-shadow:      var(--lrn-shadow-sm);
+	transition:      transform var(--lrn-dur) var(--lrn-ease),
+	                 box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-pricing-card:hover {
+	transform:       translateY(-2px);
+	box-shadow:      var(--lrn-shadow-md);
+}
+
+.lrn-pricing-card--featured {
+	border-color:    var(--lrn-accent);
+	box-shadow:      0 0 0 2px var(--lrn-accent), var(--lrn-shadow-md);
+}
+
+.lrn-pricing-card--current {
+	border-color:    var(--lrn-success);
+}
+
+.lrn-pricing-card__badge {
+	position:        absolute;
+	top:             calc(var(--lrn-sp-3) * -1);
+	left:            50%;
+	transform:       translateX(-50%);
+	background:      var(--lrn-accent);
+	color:           var(--lrn-white);
+	font-size:       var(--lrn-text-xs);
+	font-weight:     var(--lrn-weight-semibold);
+	letter-spacing:  0.04em;
+	text-transform:  uppercase;
+	padding:         var(--lrn-sp-1) var(--lrn-sp-3);
+	border-radius:   var(--lrn-radius-sm);
+	box-shadow:      var(--lrn-shadow-sm);
+}
+
+.lrn-pricing-card__header {
+	display:         flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-2);
+	padding-bottom:  var(--lrn-sp-3);
+	border-bottom:   1px solid var(--lrn-divider);
+}
+
+.lrn-pricing-card__name {
+	font-size:       var(--lrn-text-xl);
+	font-weight:     var(--lrn-weight-semibold);
+	margin:          0;
+	color:           var(--lrn-text);
+}
+
+.lrn-pricing-card__description {
+	font-size:       var(--lrn-text-sm);
+	color:           var(--lrn-text-secondary);
+	margin:          0;
+	min-height:      calc(var(--lrn-text-sm) * 2.4);
+}
+
+.lrn-pricing-card__price {
+	display:         flex;
+	align-items:     baseline;
+	gap:             var(--lrn-sp-2);
+	margin:          var(--lrn-sp-2) 0;
+	color:           var(--lrn-text);
+}
+
+.lrn-pricing-card__amount {
+	font-size:       var(--lrn-text-3xl);
+	font-weight:     var(--lrn-weight-semibold);
+	line-height:     1;
+}
+
+.lrn-pricing-card__amount--hidden {
+	display:         none;
+}
+
+.lrn-pricing-card__period {
+	font-size:       var(--lrn-text-sm);
+	color:           var(--lrn-text-tertiary);
+}
+
+.lrn-pricing-card__period--hidden {
+	display:         none;
+}
+
+.lrn-pricing-card__trial-note {
+	font-size:       var(--lrn-text-xs);
+	color:           var(--lrn-text-secondary);
+	margin:          0;
+}
+
+.lrn-pricing-card__limit {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-2);
+	font-size:       var(--lrn-text-sm);
+	color:           var(--lrn-text-secondary);
+	background:      var(--lrn-bg-tertiary);
+	padding:         var(--lrn-sp-2) var(--lrn-sp-3);
+	border-radius:   var(--lrn-radius-md);
+}
+
+.lrn-pricing-card__limit svg {
+	width:           16px;
+	height:          16px;
+	color:           var(--lrn-accent);
+}
+
+.lrn-pricing-card__features {
+	list-style:      none;
+	margin:          0;
+	padding:         0;
+	display:         flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-2);
+	flex-grow:       1;
+}
+
+.lrn-pricing-card__features li {
+	display:         flex;
+	align-items:     flex-start;
+	gap:             var(--lrn-sp-2);
+	font-size:       var(--lrn-text-sm);
+	color:           var(--lrn-text-secondary);
+}
+
+.lrn-pricing-card__features svg {
+	width:           16px;
+	height:          16px;
+	margin-top:      2px;
+	color:           var(--lrn-success);
+	flex-shrink:     0;
+}
+
+.lrn-pricing-card__cta {
+	margin-top:      var(--lrn-sp-2);
+}
+
+.lrn-pricing-card__cta .lrn-btn {
+	width:           100%;
+	justify-content: center;
+}
+
+.lrn-pricing-card__status {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	gap:             var(--lrn-sp-2);
+	width:           100%;
+	padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+	background:      var(--lrn-success-bg);
+	color:           var(--lrn-success);
+	border-radius:   var(--lrn-radius-md);
+	font-size:       var(--lrn-text-sm);
+	font-weight:     var(--lrn-weight-medium);
+}
+
+/* Coupon input ----------------------------------------------------------- */
+
+.lrn-pricing-coupon {
+	max-width: 420px;
+	margin:          var(--lrn-sp-6) auto 0;
+	padding:         var(--lrn-sp-4);
+	background:      var(--lrn-bg-secondary);
+	border-radius:   var(--lrn-radius-md);
+	border:          1px dashed var(--lrn-border-heavy);
+}
+
+.lrn-pricing-coupon__label {
+	display:         block;
+	font-size:       var(--lrn-text-xs);
+	color:           var(--lrn-text-secondary);
+	margin-bottom:   var(--lrn-sp-2);
+}
+
+.lrn-pricing-coupon__row {
+	display:         flex;
+	gap:             var(--lrn-sp-2);
+}
+
+.lrn-pricing-coupon__row input {
+	flex:            1;
+	min-width:       0; /* allow shrinking inside flex; without this the input's intrinsic min-content stays ~200px and the row overflows the card on narrow viewports */
+	padding:         var(--lrn-sp-2) var(--lrn-sp-3);
+	background:      var(--lrn-bg);
+	color:           var(--lrn-text);
+	border:          1px solid var(--lrn-border-heavy);
+	border-radius:   var(--lrn-radius-md);
+	font-size:       var(--lrn-text-sm);
+	font-family:     var(--lrn-font);
+	text-transform:  uppercase;
+}
+
+/*
+ * Coupon row mobile stack — moved into the single canonical max-width: 640px
+ * @media block at the bottom of the file so this stylesheet uses only the
+ * two breakpoints required by the ux-foundation responsive contract.
+ */
+
+/* Social proof ----------------------------------------------------------- */
+
+.lrn-pricing-social-proof {
+	margin-top:      var(--lrn-sp-8);
+}
+
+.lrn-pricing-social-proof:empty {
+	display:         none;
+}
+
+/* FAQ -------------------------------------------------------------------- */
+
+.lrn-pricing-faq {
+	margin-top:      var(--lrn-sp-10);
+	max-width: 768px;
+	margin-inline:   auto;
+}
+
+.lrn-pricing-faq__title {
+	text-align:      center;
+	font-size:       var(--lrn-text-2xl);
+	font-weight:     var(--lrn-weight-semibold);
+	margin:          0 0 var(--lrn-sp-5);
+}
+
+.lrn-pricing-faq__item {
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	margin-bottom:   var(--lrn-sp-3);
+	background:      var(--lrn-bg);
+	overflow:        hidden;
+}
+
+.lrn-pricing-faq__item summary {
+	list-style:      none;
+	cursor:          pointer;
+	padding:         var(--lrn-sp-4) var(--lrn-sp-5);
+	font-weight:     var(--lrn-weight-medium);
+	color:           var(--lrn-text);
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	transition:      background var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-pricing-faq__item summary::-webkit-details-marker {
+	display:         none;
+}
+
+.lrn-pricing-faq__item summary::after {
+	content:         "+";
+	font-size:       var(--lrn-text-xl);
+	color:           var(--lrn-text-tertiary);
+	line-height:     1;
+	transition:      transform var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-pricing-faq__item[open] summary::after {
+	content:         "\2212"; /* Unicode minus sign. */
+	color:           var(--lrn-accent);
+}
+
+.lrn-pricing-faq__item summary:hover {
+	background:      var(--lrn-bg-hover);
+}
+
+.lrn-pricing-faq__answer {
+	padding:         0 var(--lrn-sp-5) var(--lrn-sp-4);
+	color:           var(--lrn-text-secondary);
+	font-size:       var(--lrn-text-sm);
+	line-height:     1.6;
+}
+
+/* ==========================================================================
+   Manage page
+   ========================================================================== */
+
+.lrn-membership-manage {
+	/* Width comes from the shared .lrn-container (the plugin's container-width
+	   setting) so this account tab matches My Courses / Order history — no
+	   per-page max-width that makes the layout jump between tabs. */
+	margin:  0 auto;
+	padding: var(--lrn-sp-8) var(--lrn-sp-4);
+}
+
+.lrn-membership-manage__title {
+	font-size:       var(--lrn-text-2xl);
+	font-weight:     var(--lrn-weight-semibold);
+	margin:          0 0 var(--lrn-sp-6);
+}
+
+/* Hero / current plan card ---------------------------------------------- */
+
+.lrn-membership-hero {
+	display:         grid;
+	grid-template-columns: 1fr auto;
+	gap:             var(--lrn-sp-5);
+	align-items:     start;
+	padding:         var(--lrn-sp-6);
+	background:      var(--lrn-bg);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-lg);
+	box-shadow:      var(--lrn-shadow-sm);
+	margin-bottom:   var(--lrn-sp-6);
+}
+
+.lrn-membership-hero__plan {
+	display:         flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-3);
+}
+
+.lrn-membership-hero__plan-name {
+	display:         flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-3);
+	margin:          0;
+	font-size:       var(--lrn-text-xl);
+	font-weight:     var(--lrn-weight-semibold);
+}
+
+.lrn-membership-hero__meta {
+	display:         grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap:             var(--lrn-sp-4);
+	margin:          0;
+	padding:         0;
+}
+
+.lrn-membership-hero__meta-item {
+	display:         flex;
+	flex-direction:  column;
+	gap:             2px;
+}
+
+.lrn-membership-hero__meta-label {
+	font-size:       var(--lrn-text-xs);
+	text-transform:  uppercase;
+	letter-spacing:  0.06em;
+	color:           var(--lrn-text-tertiary);
+}
+
+.lrn-membership-hero__meta-value {
+	font-size:       var(--lrn-text-base);
+	color:           var(--lrn-text);
+	font-weight:     var(--lrn-weight-medium);
+	margin:          0;
+}
+
+.lrn-membership-hero__amount {
+	font-variant-numeric: tabular-nums;
+}
+
+/* Status banners -------------------------------------------------------- */
+
+.lrn-membership-banner {
+	display:         flex;
+	align-items:     flex-start;
+	gap:             var(--lrn-sp-3);
+	padding:         var(--lrn-sp-4) var(--lrn-sp-5);
+	border-radius:   var(--lrn-radius-md);
+	margin-bottom:   var(--lrn-sp-5);
+	font-size:       var(--lrn-text-sm);
+}
+
+.lrn-membership-banner svg {
+	width:           20px;
+	height:          20px;
+	flex-shrink:     0;
+	margin-top:      2px;
+}
+
+.lrn-membership-banner__body {
+	flex:            1;
+	display:         flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-2);
+}
+
+.lrn-membership-banner__body p {
+	margin:          0;
+}
+
+.lrn-membership-banner--info {
+	background:      var(--lrn-accent-bg);
+	color:           var(--lrn-accent);
+	/* Hex fallback first; modern browsers use color-mix(). */
+	border:          1px solid rgba(35, 131, 226, 0.25);
+	border:          1px solid color-mix(in srgb, var(--lrn-accent) 25%, transparent);
+}
+
+.lrn-membership-banner--warning {
+	background:      var(--lrn-warn-bg);
+	color:           var(--lrn-warn);
+	border:          1px solid rgba(251, 160, 38, 0.25);
+	border:          1px solid color-mix(in srgb, var(--lrn-warn) 25%, transparent);
+}
+
+.lrn-membership-banner--danger {
+	background:      var(--lrn-danger-bg);
+	color:           var(--lrn-danger);
+	border:          1px solid rgba(235, 87, 87, 0.25);
+	border:          1px solid color-mix(in srgb, var(--lrn-danger) 25%, transparent);
+}
+
+/* Manage action buttons ------------------------------------------------- */
+
+.lrn-membership-actions {
+	display:         flex;
+	flex-wrap:       wrap;
+	gap:             var(--lrn-sp-3);
+	margin:          var(--lrn-sp-4) 0 var(--lrn-sp-6);
+	align-items:     flex-start;
+}
+
+/* J-02.12 — disabled Pro-gated actions render their hint as a visible
+   sibling caption instead of relying on a hover-only title tooltip. */
+.lrn-membership-actions__disabled {
+	display:         inline-flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-1);
+}
+
+.lrn-membership-actions__hint {
+	color:           var(--lrn-text-secondary);
+	font-size:       var(--lrn-text-xs);
+	line-height:     1.4;
+	max-width:       18rem;
+}
+
+/* Invoices table -------------------------------------------------------- */
+
+.lrn-membership-section {
+	margin-top:      var(--lrn-sp-8);
+}
+
+.lrn-membership-section__title {
+	font-size:       var(--lrn-text-lg);
+	font-weight:     var(--lrn-weight-semibold);
+	margin:          0 0 var(--lrn-sp-4);
+}
+
+.lrn-invoice-table-wrap {
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	overflow-x:      auto;
+	background:      var(--lrn-bg);
+}
+
+.lrn-invoice-table {
+	width:           100%;
+	border-collapse: collapse;
+	font-size:       var(--lrn-text-sm);
+}
+
+.lrn-invoice-table th,
+.lrn-invoice-table td {
+	padding:         var(--lrn-sp-3) var(--lrn-sp-4);
+	text-align:      start;
+	border-bottom:   1px solid var(--lrn-divider);
+	color:           var(--lrn-text);
+}
+
+.lrn-invoice-table thead th {
+	background:      var(--lrn-bg-secondary);
+	color:           var(--lrn-text-secondary);
+	font-weight:     var(--lrn-weight-medium);
+	font-size:       var(--lrn-text-xs);
+	text-transform:  uppercase;
+	letter-spacing:  0.04em;
+}
+
+.lrn-invoice-table tbody tr:last-child td {
+	border-bottom:   none;
+}
+
+.lrn-invoice-table__amount {
+	font-variant-numeric: tabular-nums;
+	white-space:     nowrap;
+}
+
+.lrn-invoice-table__download a {
+	display:         inline-flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-1);
+	color:           var(--lrn-accent);
+	text-decoration: none;
+}
+
+.lrn-invoice-table__download a:hover {
+	text-decoration: underline;
+}
+
+.lrn-invoice-table__empty {
+	padding:         var(--lrn-sp-5);
+	text-align:      center;
+	color:           var(--lrn-text-secondary);
+}
+
+/* Courses included grid ------------------------------------------------- */
+
+.lrn-membership-courses {
+	display:               grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap:                   var(--lrn-sp-4);
+}
+
+.lrn-membership-course {
+	display:         flex;
+	flex-direction:  column;
+	gap:             var(--lrn-sp-2);
+	padding:         var(--lrn-sp-4);
+	background:      var(--lrn-bg);
+	border:          1px solid var(--lrn-border);
+	border-radius:   var(--lrn-radius-md);
+	transition:      transform var(--lrn-dur) var(--lrn-ease),
+	                 box-shadow var(--lrn-dur) var(--lrn-ease);
+}
+
+.lrn-membership-course:hover {
+	transform:       translateY(-2px);
+	box-shadow:      var(--lrn-shadow-sm);
+}
+
+.lrn-membership-course__thumb {
+	width:           100%;
+	aspect-ratio:    16 / 9;
+	background:      var(--lrn-bg-tertiary);
+	border-radius:   var(--lrn-radius-sm);
+	background-size: cover;
+	background-position: center;
+}
+
+.lrn-membership-course__title {
+	font-size:       var(--lrn-text-base);
+	font-weight:     var(--lrn-weight-medium);
+	margin:          0;
+	color:           var(--lrn-text);
+}
+
+/* Upgrade options (re-uses .lrn-pricing-card partial) ------------------- */
+
+.lrn-membership-upgrade {
+	margin-top:      var(--lrn-sp-8);
+}
+
+/* Empty state ----------------------------------------------------------- */
+
+.lrn-membership-manage .lrn-empty-state {
+	margin:          var(--lrn-sp-6) 0;
+}
+
+/* ==========================================================================
+   Tap-target enforcement — every interactive element on this surface
+   must meet the 40 px minimum. The base .lrn-btn only guarantees ~33 px
+   via padding alone; we add an explicit min-height here so membership
+   CTAs (Subscribe, Cancel, Pause, Resume, Update Card, Download Invoice)
+   are comfortably tappable on mobile.
+   ========================================================================== */
+
+.lrn-pricing-card__cta .lrn-btn,
+.lrn-membership-actions .lrn-btn,
+.lrn-membership-banner .lrn-btn {
+	min-height: var(--lrn-touch-min); /* 44 px token from learnomy.css */
+}
+
+/*
+ * .lrn-btn--sm is used for "Go to course" and the Resume button inside the
+ * warning banner. Override the global small-size padding so the block-size
+ * stays touchable. Text shrinks but height doesn't.
+ */
+.lrn-pricing-card__cta .lrn-btn--sm,
+.lrn-membership-actions .lrn-btn--sm,
+.lrn-membership-banner .lrn-btn--sm {
+	min-height:  var(--lrn-touch-min);
+	padding-top: var(--lrn-sp-2);
+	padding-bottom: var(--lrn-sp-2);
+}
+
+/* Invoice download link — inline anchor must also be tappable. */
+.lrn-invoice-table__download a {
+	min-height:    var(--lrn-touch-min);
+	padding:       0 var(--lrn-sp-3);
+	border-radius: var(--lrn-radius-md);
+}
+
+/* Toggle buttons — ensure the billing-period switcher is reachable. */
+.lrn-pricing-toggle__btn {
+	min-height: var(--lrn-touch-min);
+}
+
+/* ==========================================================================
+   Loading / busy state — applied by membership-view.js via IAPI.
+   ========================================================================== */
+
+/*
+ * When an action button is executing (cancel / resume), the JS adds
+ * `is-busy` and sets `aria-busy="true"`. We reduce opacity and show a
+ * CSS-only spinner via ::after so no extra DOM node is needed.
+ */
+.lrn-btn.is-busy {
+	opacity:        0.7;
+	pointer-events: none;
+	position:       relative;
+}
+
+.lrn-btn.is-busy::after {
+	content:       "";
+	position:      absolute;
+	inset-inline-end: var(--lrn-sp-3);
+	top:           50%;
+	transform:     translateY(-50%);
+	width:         14px;
+	height:        14px;
+	border:        2px solid currentcolor;
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation:     lrn-spin 0.7s linear infinite;
+}
+
+@keyframes lrn-spin {
+	to { transform: translateY(-50%) rotate(360deg); }
+}
+
+/*
+ * Subscribe-redirect notice — shown inside the plan-card CTA area after
+ * the user clicks Subscribe, before the browser navigates to checkout.
+ * Rendered by JS; hidden by default.
+ */
+.lrn-pricing-card__redirect-notice {
+	display:     none;
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+	text-align:  center;
+	padding:     var(--lrn-sp-2) 0 0;
+}
+
+.lrn-pricing-card__redirect-notice.is-visible {
+	display: block;
+}
+
+/* --------------------------------------------------------------------------
+   Legacy membership pricing + manage rules — moved from learnomy.css so the
+   membership slice owns every selector it ships. None of the rules below are
+   referenced by the current pricing / manage templates (which use the
+   `.lrn-pricing-*` and `.lrn-membership-hero/__*` vocabulary above); they
+   remain here as a graceful fallback for older template overrides that may
+   still ship the previous markup, so the rules now live alongside the rest
+   of the membership surface instead of in the always-loaded master sheet.
+   -------------------------------------------------------------------------- */
+
+.lrn-membership-manage h1 {
+	font-size:     var(--lrn-text-2xl);
+	font-weight:   var(--lrn-weight-semibold);
+	margin-bottom: var(--lrn-sp-6);
+}
+
+/* ==========================================================================
+   Responsive
+   — Exactly two @media queries per the ux-foundation contract:
+     • max-width: 640px  — mobile collapse (single-column grids, stacked actions)
+     • min-width: 1024px — desktop polish (centered grid, wider padding)
+   Tablet widths fall through to base styles, where auto-fit pricing-grid
+   naturally adapts. The previous 641-1024 and 1440 breakpoints have been
+   merged into this pair.
+   ========================================================================== */
+
+@media (max-width: 640px) {
+
+	.lrn-pricing-page {
+		padding: var(--lrn-sp-6) var(--lrn-sp-3);
+	}
+
+	.lrn-pricing-page__title {
+		font-size: var(--lrn-text-2xl);
+	}
+
+	.lrn-pricing-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-pricing-coupon__row {
+		flex-direction: column;
+		align-items:    stretch;
+	}
+
+	.lrn-pricing-coupon__row .lrn-btn {
+		width: 100%;
+	}
+
+	.lrn-membership-hero {
+		grid-template-columns: 1fr;
+		padding:               var(--lrn-sp-4);
+	}
+
+	.lrn-membership-hero__meta {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.lrn-membership-actions {
+		flex-direction: column;
+	}
+
+	.lrn-membership-actions .lrn-btn {
+		width:           100%;
+		justify-content: center;
+	}
+
+	.lrn-membership-courses {
+		grid-template-columns: 1fr;
+	}
+
+	/* Legacy plan card price — smaller on mobile. */
+	
+}
+
+@media (min-width: 1024px) {
+
+	.lrn-pricing-page {
+		padding: var(--lrn-sp-10) var(--lrn-sp-6);
+	}
+
+	.lrn-pricing-grid {
+		grid-template-columns: repeat(auto-fit, minmax(280px, 360px));
+		gap:                   var(--lrn-sp-8);
+		justify-content:       center;
+	}
+
+	/* No desktop padding override on the Manage tab — it must inherit the shared
+	   .lrn-container padding so the account panel sits at the EXACT same width +
+	   position as every other account tab (Details, Order history, …). A
+	   per-page padding here shifted the panel 8px and narrowed it 16px, so it
+	   visibly jumped when switching tabs. (The standalone pricing page above
+	   keeps its own wider padding — it is not an account tab.) */
+}

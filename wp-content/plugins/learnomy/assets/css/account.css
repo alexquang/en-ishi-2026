@@ -1,0 +1,648 @@
+/**
+ * "My Account" area — vertical navigation + two-column layout.
+ *
+ * Shared by every account surface (My Courses, Order history, Memberships,
+ * Spaces, …) so the customer's pages read as one connected hub instead of
+ * disconnected screens. Token-driven, RTL-safe (logical properties), and it
+ * lives inside the content area so it works on the website and in the app
+ * WebView alike.
+ */
+
+.lrn-account-layout {
+	display:               grid;
+	/* minmax(0, 1fr) (not a bare 1fr) so the content track's floor is 0, never
+	   its children's min-content. A bare 1fr is minmax(auto, 1fr): a wide child
+	   (orders table, a non-wrapping nav strip) drags the track past the grid
+	   width and the whole column overflows the viewport. */
+	grid-template-columns: 15rem minmax(0, 1fr);
+	gap:                   var(--lrn-sp-6);
+	align-items:           start;
+	margin-block-start:    var(--lrn-sp-5);
+}
+
+/* min-width:0 stops a wide child (e.g. the orders table) from blowing out
+   the grid track. Paired with the minmax(0, …) tracks above/below. */
+.lrn-account-layout__content {
+	min-width: 0;
+}
+
+/* Shared account header — the page-level .lrn-page-header carries a large
+   full-page top padding; inside the account column we pull it flush so every
+   tab's title aligns with the top of the nav (uniform across tabs). */
+.lrn-account-layout__content > .lrn-account-page-header:first-child {
+	padding-block-start: 0;
+	margin-block-start:  0;
+}
+
+.lrn-account-page-header {
+	display:         flex;
+	align-items:     flex-start;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-4);
+	flex-wrap:       wrap;
+}
+
+.lrn-account-page-header__actions {
+	display:     flex;
+	gap:         var(--lrn-sp-2);
+	flex-wrap:   wrap;
+	align-items: center;
+}
+
+.lrn-account-nav {
+	position:           sticky;
+	inset-block-start:  var(--lrn-sp-5);
+	/* No cap, and deliberately NO internal scroll (Basecamp 10171664943).
+	 *
+	 * A first attempt capped the rail to the viewport and let it scroll inside
+	 * itself. That fixed the page height and broke the presentation: the last
+	 * link clipped mid-word, and the fade added to explain the clip just made
+	 * it look disabled. A sidebar that scrolls separately from the page is its
+	 * own usability cost, and the owner rejected it twice.
+	 *
+	 * The rail is shortened instead, below. Fewer pixels per row is a real fix
+	 * for a rail that was too tall; hiding the overflow was only a way of not
+	 * showing it.
+	 */
+	/* Panel treatment so the rail reads as a contained app-shell sidebar
+	   instead of links floating on the page (the "naked" look). A crisper
+	   border (heavy, not the faint 9% one) is what actually defines the panel
+	   here, because the theme bridge collapses --lrn-bg to the body colour — so
+	   bg contrast alone can't separate the panel from the page. */
+	background:         var(--lrn-bg);
+	border:             1px solid var(--lrn-border-heavy);
+	border-radius:      var(--lrn-radius-xl);
+	box-shadow:         var(--lrn-shadow-md);
+	padding:            var(--lrn-sp-3);
+}
+
+.lrn-account-nav__list {
+	list-style:     none;
+	margin:         0;
+	padding:        0;
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-1);
+}
+
+/* Group heading — small, quiet, uppercase. Turns one flat list into scannable
+   "Learning / Account / Teaching" sections. */
+.lrn-account-nav__section-label {
+	/* Same tightening as the links: the group headings were paying 12px above
+	   each of three sections for separation that 8px already gives. */
+	padding:        var(--lrn-sp-2) var(--lrn-sp-4) var(--lrn-sp-1);
+	font-size:      var(--lrn-text-xs);
+	font-weight:    var(--lrn-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color:          var(--lrn-text-tertiary);
+}
+
+/* No top padding on the very first label so the rail doesn't open with a gap. */
+.lrn-account-nav__section-label:first-child {
+	padding-block-start: var(--lrn-sp-1);
+}
+
+.lrn-account-nav__link {
+	display:         flex;
+	align-items:     center;
+	gap:             var(--lrn-sp-3);
+	/* Tightened from sp-3 to sp-2 (Basecamp 10171664943). At 12px block padding
+	   each row was ~50px and seventeen of them made the rail ~956px — taller
+	   than most viewports, which is what made every short account page as long
+	   as the menu. At 8px the rail lands near 850px and fits without scrolling
+	   inside itself, which is the outcome the owner asked for: shorter, not
+	   hidden.
+	   min-block-size holds the row at a real target size, so the density comes
+	   out of dead padding rather than out of how easy the link is to hit. */
+	padding:         var(--lrn-sp-2) var(--lrn-sp-4);
+	box-sizing:      border-box;
+	border-radius:   var(--lrn-radius-md);
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+	font-weight:     var(--lrn-weight-medium);
+	line-height:     1.4;
+}
+
+.lrn-account-nav__link i,
+.lrn-account-nav__link svg {
+	width:  1.125rem;
+	height: 1.125rem;
+	flex:   none;
+}
+
+/* Density is for pointers, not for fingers.
+ *
+ * A flat min-height defeated the point: it put back nearly every pixel the
+ * tighter padding removed (rail 930 vs 812) to guarantee a touch target on
+ * machines that have no touch. Gating on the input device keeps the rail
+ * short where it is driven by a mouse and full-size where it is tapped, so
+ * neither case pays for the other. Below 768px the rail collapses to a
+ * disclosure that sets its own target size, so this covers the band in
+ * between — tablets showing the rail. */
+@media (pointer: coarse) {
+	.lrn-account-nav__link {
+		min-block-size: var(--lrn-touch-min);
+	}
+}
+
+.lrn-account-nav__link:hover {
+	background: var(--lrn-bg-secondary);
+	color:      var(--lrn-text);
+}
+
+.lrn-account-nav__link.is-active {
+	background:   var(--lrn-accent-bg);
+	color:        var(--lrn-accent);
+	font-weight:  var(--lrn-weight-semibold);
+	/* Active is signalled by the tinted background + accent text + weight only;
+	   no left accent bar (owner dislikes the "AI marker" edge rule). Covers
+	   account, instructor and space-owner navs, which all share
+	   .lrn-account-nav. */
+}
+
+.lrn-account-nav__link:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+/* The disclosure trigger belongs to the compact layout only. At rail width the
+   panel is always on screen and the <details> stays open (see shell-nav.php:
+   it ships open so a non-painting closed <details> can never blank the rail). */
+.lrn-shell-nav__trigger {
+	display: none;
+}
+
+/* COMPACT (<=767px): the rail collapses behind a disclosure that names where
+   you are. Content gets the full width; the rail returns at 768px.
+
+   HISTORY, because this has now moved three times and the reasons matter:
+
+   1. A horizontal strip that CLIPPED — destinations past the fold were simply
+      unreachable.
+   2. Replaced by a 5rem vertical icon+label rail, which fixed the clipping.
+   3. The rail did not survive 13 destinations (Basecamp 10146577423): labels
+      wrapped, items fell below the fold, content squeezed to ~270px, and the
+      rail scrolled INDEPENDENTLY — two scroll surfaces on a phone.
+   4. So the strip returned, scrolling instead of clipping. Measured at 390px
+      (Basecamp 10157412715) it hid most of itself with no affordance: 70% of
+      the instructor nav and 86% of the learner nav off-screen, computed
+      mask-image and background-image both none, no arrows, no scroll cue, and
+      a label sliced mid-word ("My Cou", "Qui") that reads as a layout bug
+      rather than something swipeable.
+
+   A fade would only signal "there is more" without reducing the swipe-and-hunt
+   cost; at 18 items it is still a wall. A bottom bar caps at 3-5 destinations
+   (Material, iOS HIG) and cannot express 18. A drawer collides with the theme's
+   own hamburger. So: a disclosure whose trigger always states the current
+   destination, is one tap to anywhere, and is indifferent to item count — the
+   account nav grows by one with every Pro extension, so that last property is
+   what stops this block being rewritten a fifth time.
+
+   The breakpoint is 767 and not 640 because 641-767 was left running the rail
+   against a collapsed content column: at 641px the 255px rail took 46% of the
+   layout and content got 300px. That is the same squeeze 0417e077 removed at
+   phone width - it was never removed from this band, only moved into it. */
+@media (max-width: 767px) {
+	.lrn-shell-nav__trigger {
+		/* The whole trigger is the tap target: icon, current destination, and a
+		   chevron pinned to the far end. list-style:none + ::-webkit-details-marker
+		   removes the UA disclosure triangle in every engine. */
+		display:         flex;
+		align-items:     center;
+		gap:             var(--lrn-sp-3);
+		min-height:      var(--lrn-touch-min);
+		padding:         var(--lrn-sp-2) var(--lrn-sp-4);
+		background:      var(--lrn-bg);
+		border:          1px solid var(--lrn-border-heavy);
+		border-radius:   var(--lrn-radius-lg);
+		box-shadow:      var(--lrn-shadow-md);
+		color:           var(--lrn-text);
+		font-weight:     var(--lrn-weight-semibold);
+		cursor:          pointer;
+		list-style:      none;
+	}
+
+	.lrn-shell-nav__trigger::-webkit-details-marker {
+		display: none;
+	}
+
+	.lrn-shell-nav__trigger:focus-visible {
+		outline:        3px solid color-mix( in srgb, var(--lrn-accent) 30%, transparent );
+		outline-offset: 0;
+	}
+
+	.lrn-shell-nav__trigger i,
+	.lrn-shell-nav__trigger svg {
+		width:  1.125rem;
+		height: 1.125rem;
+		flex:   none;
+	}
+
+	/* Pushes the chevron to the far end in both LTR and RTL. */
+	.lrn-shell-nav__chevron {
+		margin-inline-start: auto;
+		color:               var(--lrn-text-tertiary);
+	}
+
+	.lrn-shell-nav[ open ] .lrn-shell-nav__chevron {
+		transform: rotate( 180deg );
+	}
+
+	.lrn-account-layout {
+		/* One column: disclosure on top, content beneath, both full width. */
+		grid-template-columns: minmax( 0, 1fr );
+		gap:                   var(--lrn-sp-3);
+	}
+
+	.lrn-shell-nav[ open ] > .lrn-account-nav {
+		margin-block-start: var(--lrn-sp-2);
+	}
+
+	.lrn-account-nav {
+		/* Not sticky: the panel opens in flow and pushes content down, so a
+		   second fixed surface on a small screen never appears. */
+		position:       static;
+		max-height:     none;
+		/* Logical twin of the desktop cap, reset here too — the panel opens in
+		   flow on a small screen and must scroll with the page, never inside
+		   itself. */
+		max-block-size: none;
+		overflow-y:     visible;
+		/* No cap here, so nothing to signal — an unconditional fade would
+		   just wash out the last link on a phone. */
+		mask-image:     none;
+		border-radius:  var(--lrn-radius-lg);
+	}
+
+	/* The panel is a vertical list at every width now, so the section headings
+	   and the divider keep doing their job instead of being hidden as
+	   single-row furniture. */
+	.lrn-account-nav__link {
+		min-height: var(--lrn-touch-min);
+	}
+}
+
+/* ── Account details edit form ─────────────────────────────────────────── */
+/* Every account-details section shares the same card padding + rhythm so the
+   Profile/Email/Password, Notifications and Delete-account blocks line up
+   (Basecamp #9980831632: the Delete-account + Notifications sections used an
+   unstyled `.lrn-account-card` class and rendered with no card chrome). */
+.lrn-account-form__section,
+.lrn-account-notifications,
+.lrn-account-delete-zone {
+	padding:            var(--lrn-sp-5);
+	margin-block-end:   var(--lrn-sp-4);
+}
+.lrn-account-form__legend {
+	margin:      0 0 var(--lrn-sp-4);
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+.lrn-account-form__row {
+	display:               grid;
+	grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+	gap:                   var(--lrn-sp-4);
+}
+.lrn-account-form__status {
+	margin-block-end: var(--lrn-sp-4);
+	padding:          var(--lrn-sp-3) var(--lrn-sp-4);
+	border-radius:    var(--lrn-radius-md);
+	border:           1px solid var(--lrn-danger);
+	background:       color-mix(in srgb, var(--lrn-danger) 6%, var(--lrn-bg));
+	color:            var(--lrn-text);
+}
+.lrn-account-form__status.is-success {
+	border-color: var(--lrn-success);
+	background:   color-mix(in srgb, var(--lrn-success) 6%, var(--lrn-bg));
+}
+.lrn-account-form__actions {
+	display:            flex;
+	justify-content:    flex-end;
+	margin-block-start: var(--lrn-sp-2);
+}
+
+.lrn-field {
+	display:          flex;
+	flex-direction:   column;
+	gap:              var(--lrn-sp-2);
+	margin-block-end: var(--lrn-sp-4);
+}
+.lrn-field:last-child {
+	margin-block-end: 0;
+}
+.lrn-field__label {
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-text);
+}
+.lrn-field__input {
+	width:         100%;
+	padding:       var(--lrn-sp-3) var(--lrn-sp-4);
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	background:    var(--lrn-bg);
+	color:         var(--lrn-text);
+	font-size:     var(--lrn-text-base);
+}
+.lrn-field__input:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+	border-color:   var(--lrn-accent);
+}
+.lrn-field__hint {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+/* Divider between the in-account links, the "leads outside" group (e.g. Gift),
+   and Log out. */
+.lrn-account-nav__sep {
+	list-style:       none;
+	height:           1px;
+	margin-block:     var(--lrn-sp-2);
+	margin-inline:    var(--lrn-sp-4);
+	background:       var(--lrn-border);
+}
+/* Tracks the shell breakpoint above: inside the compact disclosure panel the
+   divider keeps tighter side margins so it reads as a group separator rather
+   than a full-width rule. */
+@media (max-width: 767px) {
+	.lrn-account-nav__sep {
+		margin-inline: var(--lrn-sp-2);
+	}
+}
+
+/* ==========================================================================
+   Dashboard-home course preview + "Load more"
+   ========================================================================== */
+
+/* Compact course strip on the account home, with a "View all" link to the
+   dedicated My Courses section. */
+.lrn-courses-preview {
+	margin-block-start: var(--lrn-sp-4);
+}
+
+.lrn-section-head {
+	display:         flex;
+	align-items:     baseline;
+	justify-content: space-between;
+	gap:             var(--lrn-sp-3);
+	margin-block-end: var(--lrn-sp-3);
+}
+
+.lrn-section-head__title {
+	margin:      0;
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+}
+
+.lrn-section-head__link {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-1);
+	flex:        none;
+	font-size:   var(--lrn-text-sm);
+	font-weight: var(--lrn-weight-medium);
+	color:       var(--lrn-accent);
+	white-space: nowrap;
+}
+
+.lrn-section-head__link i {
+	width:  1em;
+	height: 1em;
+}
+
+/* "Load more" sits centred under each tab's grid. */
+.lrn-load-more-wrap {
+	display:            flex;
+	justify-content:    center;
+	margin-block-start: var(--lrn-sp-5);
+}
+
+/* Notification preferences card on /account/details/. Learner email opt-outs;
+   each toggle saves on change via /auth/me/notifications. */
+.lrn-account-notifications {
+	/* Card chrome (bg/border/radius) comes from .lrn-card and the shared
+	   section padding from the rule above, so this section matches the
+	   Profile/Email/Password + Delete-account cards exactly (#9980831632). */
+	margin-block-start: var(--lrn-sp-6);
+}
+.lrn-account-notifications__title {
+	margin:      0 0 var(--lrn-sp-1);
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+}
+.lrn-account-notifications__desc {
+	margin:    0 0 var(--lrn-sp-4);
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+.lrn-account-notifications__row {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3);
+	padding-block: var(--lrn-sp-2);
+}
+.lrn-account-notifications__row input {
+	flex-shrink: 0;
+}
+.lrn-account-notifications__status {
+	margin-block-start: var(--lrn-sp-3);
+	font-size:          var(--lrn-text-sm);
+	color:              var(--lrn-text-secondary);
+}
+.lrn-account-notifications__status.is-success {
+	color: var(--lrn-success);
+}
+
+/* ==========================================================================
+   Avatar field + square cropper (account details Profile section)
+   Basecamp #9985419603 — members upload + crop a square profile photo.
+   ========================================================================== */
+.lrn-avatar-field {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-4);
+	margin-bottom: var(--lrn-sp-5);
+	flex-wrap:     wrap;
+}
+
+.lrn-avatar-field__preview {
+	flex: 0 0 auto;
+}
+
+.lrn-avatar-field__img {
+	width:         96px;
+	height:        96px;
+	border-radius: 50%;
+	object-fit:    cover;
+	border:        1px solid var(--lrn-border);
+	background:    var(--lrn-bg-subtle, var(--lrn-bg));
+	display:       block;
+}
+
+.lrn-avatar-field__controls {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2);
+	min-width:      0;
+}
+
+.lrn-avatar-field__buttons {
+	display:     flex;
+	gap:         var(--lrn-sp-2);
+	flex-wrap:   wrap;
+}
+
+.lrn-avatar-field__status {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-avatar-field__status.is-error {
+	color: var(--lrn-danger, #c0392b);
+}
+
+/* Crop modal */
+.lrn-avatar-cropper {
+	position:        fixed;
+	inset:           0;
+	z-index:         100000;
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	padding:         var(--lrn-sp-4);
+	background:      color-mix(in srgb, #000 60%, transparent);
+}
+
+.lrn-avatar-cropper__dialog {
+	background:     var(--lrn-bg);
+	color:         var(--lrn-text);
+	border-radius: var(--lrn-radius-lg, 12px);
+	border:        1px solid var(--lrn-border);
+	box-shadow:    0 20px 60px rgba( 0, 0, 0, 0.35 );
+	padding:       var(--lrn-sp-5);
+	width:         100%;
+	max-width:     360px;
+	display:       flex;
+	flex-direction: column;
+	gap:           var(--lrn-sp-4);
+}
+
+.lrn-avatar-cropper__title {
+	margin:      0;
+	font-size:   var(--lrn-text-lg);
+	font-weight: var(--lrn-weight-semibold);
+}
+
+.lrn-avatar-cropper__stage {
+	position:      relative;
+	width:         300px;
+	height:        300px;
+	max-width:     100%;
+	margin:        0 auto;
+	border-radius: var(--lrn-radius, 8px);
+	overflow:      hidden;
+	background:    #111;
+	cursor:        grab;
+	touch-action:  none;
+}
+
+.lrn-avatar-cropper__stage:active {
+	cursor: grabbing;
+}
+
+.lrn-avatar-cropper__canvas {
+	display:        block;
+	width:          100%;
+	height:         100%;
+}
+
+/* Round mask overlay so the crop reads as a circular avatar. */
+.lrn-avatar-cropper__ring {
+	position:       absolute;
+	inset:          0;
+	pointer-events: none;
+	border-radius:  50%;
+	box-shadow:     0 0 0 9999px color-mix(in srgb, #000 45%, transparent);
+}
+
+.lrn-avatar-cropper__zoom {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-secondary);
+}
+
+.lrn-avatar-cropper__zoom input[type="range"] {
+	flex: 1 1 auto;
+}
+
+.lrn-avatar-cropper__actions {
+	display:         flex;
+	justify-content: flex-end;
+	gap:             var(--lrn-sp-2);
+}
+
+@media (max-width: 480px) {
+	.lrn-avatar-cropper__stage {
+		width:  240px;
+		height: 240px;
+	}
+}
+
+/* Blocked members (account details) — a simple avatar + name + Unblock row.
+   Token-driven; mirrors the muted list style used elsewhere on the account. */
+.lrn-account-blocked__desc {
+	color: var(--lrn-text-secondary, #6b6b6b);
+	margin-bottom: var(--lrn-sp-3, 0.75rem);
+}
+.lrn-account-blocked__list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2, 0.5rem);
+}
+.lrn-account-blocked__row {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-3, 0.75rem);
+	padding: var(--lrn-sp-2, 0.5rem) 0;
+	border-bottom: 1px solid var(--lrn-border, #e5e5e5);
+}
+.lrn-account-blocked__row:last-child {
+	border-bottom: 0;
+}
+.lrn-account-blocked__avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	flex-shrink: 0;
+}
+.lrn-account-blocked__name {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-weight: 500;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* Tap floor (technique 1, see "Tap targets" in learnomy.css). "View all (15) →"
+   is 13px text with no padding, so it renders ~20px tall at the end of a
+   section-header row. It is the only way into the full list from the account
+   home, which makes it a primary navigation link wearing a secondary link's
+   size. Placed at the end of the file so it wins on source order against the
+   component rule above. */
+@media (max-width: 640px) {
+	.lrn-section-head__link {
+		display:     inline-flex;
+		align-items: center;
+		min-height:  var(--lrn-touch-min);
+	}
+}

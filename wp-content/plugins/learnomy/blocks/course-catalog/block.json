@@ -1,0 +1,29 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/course-catalog",
+    "version": "1.0.0",
+    "title": "Course Catalog",
+    "category": "learnomy",
+    "icon": "grid-view",
+    "description": "Browse all published courses in a filterable grid.",
+    "textdomain": "learnomy",
+    "attributes": {
+        "limit": {
+            "type": "integer",
+            "default": 12
+        },
+        "category": {
+            "type": "string",
+            "default": ""
+        },
+        "columns": {
+            "type": "integer",
+            "default": 3
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}

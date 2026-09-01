@@ -1,0 +1,235 @@
+/**
+ * Course form — scoped styles for the 6-section collapsible settings layout.
+ *
+ * Designed to match the Pro frontend builder's `.lrn-settings-section`
+ * component so instructors get a consistent UI whether they edit a course
+ * in wp-admin or at `/instructor/edit-course/:id/`. Every value uses a
+ * `--lrn-*` token (with a sensible fallback) — no hex/px hardcodes.
+ *
+ * @package Learnomy
+ */
+
+/* ── Collapsible settings section ─────────────────────────────────────── */
+
+.lrn-settings-section {
+	border:        var(--lrn-border-width, 1px) solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-lg, 8px);
+	background:    var(--lrn-bg, var(--lrn-white));
+	overflow:      hidden;
+	margin-bottom: var(--lrn-sp-4, 16px);
+	transition:    border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.lrn-settings-section.is-open {
+	border-color: var(--lrn-border-heavy, rgba(55, 53, 47, 0.16));
+	box-shadow:   var(--lrn-shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+}
+
+.lrn-settings-section__header {
+	display:         flex;
+	align-items:     center;
+	justify-content: space-between;
+	width:           100%;
+	padding:         var(--lrn-sp-4, 16px) var(--lrn-sp-5, 20px);
+	background:      transparent;
+	border:          0;
+	font:            inherit;
+	color:           var(--lrn-text, var(--lrn-text));
+	cursor:          pointer;
+	text-align:      start;
+	transition:      background-color 150ms ease;
+}
+
+.lrn-settings-section__header:hover,
+.lrn-settings-section__header:focus-visible {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+}
+
+.lrn-settings-section__header:focus-visible {
+	outline:        3px solid color-mix(in srgb, var(--lrn-accent) 30%, transparent);
+	outline-offset: 0;
+}
+
+.lrn-settings-section__header:focus:not(:focus-visible) {
+	outline: none;
+}
+
+.lrn-settings-section__heading {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3, 12px);
+	font-size:   var(--lrn-text-md, 15px);
+	font-weight: 600;
+	color:       var(--lrn-text, var(--lrn-text));
+}
+
+.lrn-settings-section__heading svg {
+	color:       var(--lrn-accent, var(--lrn-accent));
+	flex-shrink: 0;
+	width:       var(--lrn-icon-md, 18px);
+	height:      var(--lrn-icon-md, 18px);
+}
+
+.lrn-settings-section__chevron {
+	color:      var(--lrn-text-tertiary, var(--lrn-text-tertiary));
+	transition: transform 150ms ease;
+	flex-shrink: 0;
+}
+
+.lrn-settings-section.is-open .lrn-settings-section__chevron {
+	transform: rotate(180deg);
+}
+
+.lrn-settings-section__body {
+	display:     none;
+	padding:     var(--lrn-sp-4, 16px) var(--lrn-sp-5, 20px) var(--lrn-sp-5, 20px);
+	border-top:  var(--lrn-border-width, 1px) solid var(--lrn-divider, rgba(55, 53, 47, 0.06));
+}
+
+.lrn-settings-section.is-open .lrn-settings-section__body {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-4, 16px);
+}
+
+/* Tighten the inner gap on inline option rows (checkbox + label sitting on
+ * one line) so the section reads as grouped options, not isolated rows.
+ * The outer flex-gap above provides the breathing room between fields;
+ * inside a single field the label stays close to its control. */
+.lrn-settings-section__body .lrn-form-field .lrn-checkbox-label {
+	margin: 0;
+}
+
+.lrn-settings-section__help {
+	margin:      0 0 var(--lrn-sp-4, 16px);
+	color:       var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:   var(--lrn-text-sm, 13px);
+	line-height: 1.5;
+}
+
+/* Conditional fields fade in when their controlling toggle switches on. */
+.lrn-settings-section [data-lrn-conditional] {
+	transition: opacity 150ms ease;
+}
+
+.lrn-settings-section [data-lrn-conditional][hidden] {
+	display: none !important;
+}
+
+/* ── Range slider inline value ───────────────────────────────────────── */
+
+.lrn-range-row {
+	display:     flex;
+	align-items: center;
+	gap:         var(--lrn-sp-3, 12px);
+}
+
+.lrn-range-row input[type="range"] {
+	flex: 1;
+}
+
+.lrn-range-row__value {
+	min-width:   var(--lrn-sp-10, 48px);
+	text-align:  end;
+	font-weight: 600;
+	color:       var(--lrn-text, var(--lrn-text));
+	font-variant-numeric: tabular-nums;
+}
+
+/* ── Duration hours + minutes paired inputs ───────────────────────────── */
+
+.lrn-duration-row {
+	display:     flex;
+	gap:         var(--lrn-sp-3, 12px);
+	align-items: center;
+}
+
+.lrn-duration-row .lrn-duration-row__unit {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2, 8px);
+}
+
+.lrn-duration-row .lrn-duration-row__unit label {
+	color:     var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size: var(--lrn-text-sm, 13px);
+}
+
+.lrn-duration-row input[type="number"] {
+	width: var(--lrn-sp-15, 80px);
+}
+
+/* ── Searchable select (certificate template, prerequisites) ────────── */
+
+.lrn-searchable-select {
+	position: relative;
+}
+
+.lrn-searchable-select__search {
+	margin-bottom: var(--lrn-sp-2, 8px);
+	width: 100%;
+}
+
+.lrn-searchable-select__list {
+	max-height:    var(--lrn-sp-40, 240px);
+	overflow-y:    auto;
+	border:        var(--lrn-border-width, 1px) solid var(--lrn-border, rgba(55, 53, 47, 0.09));
+	border-radius: var(--lrn-radius-md, 6px);
+	padding:       var(--lrn-sp-2, 8px);
+	background:    var(--lrn-bg, var(--lrn-white));
+}
+
+.lrn-searchable-select__list label {
+	display:       block;
+	padding:       var(--lrn-sp-2, 8px);
+	border-radius: var(--lrn-radius-sm, 4px);
+	cursor:        pointer;
+	color:         var(--lrn-text, var(--lrn-text));
+	transition:    background-color 120ms ease;
+}
+
+.lrn-searchable-select__list label:hover {
+	background: var(--lrn-bg-hover, rgba(55, 53, 47, 0.04));
+}
+
+.lrn-searchable-select__empty {
+	padding:    var(--lrn-sp-3, 12px);
+	text-align: center;
+	color:      var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:  var(--lrn-text-sm, 13px);
+}
+
+/* ── Empty-state CTA (no certificate templates) ───────────────────────── */
+
+.lrn-empty-cta {
+	display:        flex;
+	flex-direction: column;
+	align-items:    flex-start;
+	gap:            var(--lrn-sp-2, 8px);
+	padding:        var(--lrn-sp-4, 16px);
+	background:     var(--lrn-bg-subtle, rgba(55, 53, 47, 0.03));
+	border:         var(--lrn-border-width, 1px) dashed var(--lrn-border, rgba(55, 53, 47, 0.12));
+	border-radius:  var(--lrn-radius-md, 6px);
+	color:          var(--lrn-text-secondary, var(--lrn-text-secondary));
+	font-size:      var(--lrn-text-sm, 13px);
+}
+
+/* ── Disabled wrapper — greys out controls when their parent toggle is off */
+
+[data-lrn-disable-when-off][aria-disabled="true"] {
+	opacity:        0.45;
+	pointer-events: none;
+}
+
+/* ==========================================================================
+   Pricing & Access section — token-driven (was carrying inline hex/px). The
+   banners + radio list live in course-form.css so they're styled on the edit
+   screen (the shared .lrn-radio-label lives in memberships.css, not loaded
+   here).
+   ========================================================================== */
+.lrn-pricing-locked-banner,
+.lrn-pricing-gateway-warning {
+	margin-block: var(--lrn-sp-3);
+}
+
+

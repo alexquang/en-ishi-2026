@@ -1,0 +1,78 @@
+/**
+ * Email Log — filter bar + delivery-status / resend affordances.
+ *
+ * Token-driven only (dark mode + RTL inherit from the --lrn-* roots). Scoped to
+ * the Email Log page so it never leaks into the shared admin list-page styles.
+ *
+ * @package Learnomy
+ */
+
+/* Filter bar — recipient search + date range + status, wraps on narrow screens. */
+.lrn-email-log-filters {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+}
+
+.lrn-email-log-filters__field {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-1);
+}
+
+.lrn-email-log-filters__sep {
+	color: var(--lrn-text-tertiary);
+}
+
+/* Status cell: badge stacked over the (live) failure reason / hint. */
+.lrn-email-log-status {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-1);
+	align-items: flex-start;
+}
+
+.lrn-email-log-status__hint {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-secondary);
+	line-height: 1.35;
+	max-width: 22rem;
+}
+
+/* A later manual resend, listed UNDER the original attempt's badge rather than
+   replacing it — the row has to show both events, not just the newest one. */
+.lrn-email-log-status__resend {
+	font-size: var(--lrn-text-xs);
+	color: var(--lrn-text-secondary);
+	line-height: 1.35;
+	max-width: 22rem;
+}
+
+/* Resend button busy state while the REST call is in flight. */
+.lrn-email-log-resend.is-busy {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.lrn-admin-table__actions-col {
+	white-space: nowrap;
+	text-align: end;
+}
+
+@media (max-width: 640px) {
+	.lrn-email-log-filters,
+	.lrn-email-log-filters__field {
+		width: 100%;
+	}
+
+	.lrn-email-log-filters__field .regular-text,
+	.lrn-email-log-filters__field input[type="date"] {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.lrn-admin-table__actions-col {
+		text-align: start;
+	}
+}

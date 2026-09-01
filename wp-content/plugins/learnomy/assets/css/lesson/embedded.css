@@ -1,0 +1,337 @@
+/**
+ * Learnomy — lesson EMBEDDED variant: two-column sidebar layout.
+ *
+ * Layered on top of lesson-player.css (handle dep `learnomy-lesson-player`),
+ * but this variant does NOT use the collapsible player markup — it is a
+ * purpose-built grid: a wide main reading column + a PERSISTENT right rail
+ * (course-lessons nav, never collapses). Renders inside the active theme.
+ *
+ * Token-driven only (--lrn-*); dark mode + RTL inherit from root tokens and
+ * logical properties. Responsive: the rail stacks below the main column under
+ * ~900px. Variant root class `.lrn-lesson--embedded`.
+ *
+ * @package Learnomy
+ */
+
+.lrn-lesson--embedded {
+	margin-block: var(--lrn-sp-8);
+}
+
+/* ── Two-column grid ──────────────────────────────────────────────────── */
+.lrn-lesson--embedded .lrn-lesson-layout {
+	display:               grid;
+	grid-template-columns: 1fr 20rem;
+	gap:                   var(--lrn-sp-8);
+	align-items:           start;
+}
+
+.lrn-lesson--embedded .lrn-lesson-main {
+	min-width: 0; /* let the column shrink instead of overflowing the grid */
+}
+
+/* ── Quiet placeholder surfaces (preroll / below-video / completion / ad) ──
+   The wrapper div is only emitted when a listener produced content (the
+   buffered partials/surface.php), so an unhooked surface leaves no trace.
+   When present, the slot reads as an intentional, bordered region. */
+.lrn-lesson--embedded .lrn-lesson-preroll-surface,
+.lrn-lesson--embedded .lrn-lesson-below-video-surface,
+.lrn-lesson--embedded .lrn-lesson-completion-surface {
+	margin-block: var(--lrn-sp-4);
+	padding:      var(--lrn-sp-4);
+	border:       1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	background:   var(--lrn-bg-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-sidebar-ad-surface {
+	margin-block-end: var(--lrn-sp-4);
+	padding:          var(--lrn-sp-4);
+	border:           1px solid var(--lrn-border);
+	border-radius:    var(--lrn-radius-md);
+	background:       var(--lrn-bg-muted);
+}
+
+/* The hidden pause surface never paints; [hidden] is enough but we belt-and-
+   brace so an injected child can't force it visible before the JS reveal. */
+.lrn-lesson--embedded .lrn-lesson-pause-surface[hidden] {
+	display: none;
+}
+
+/* ── Media block ──────────────────────────────────────────────────────── */
+.lrn-lesson--embedded .lrn-player-content__video,
+.lrn-lesson--embedded .lrn-player-content__audio,
+.lrn-lesson--embedded .lrn-player-content__pdf,
+.lrn-lesson--embedded .lrn-player-content__embed {
+	margin-block-end: var(--lrn-sp-6);
+	border-radius:    var(--lrn-radius-lg);
+	overflow:         hidden;
+}
+
+/* Cap media so a tall PDF / embed doesn't dominate the in-theme page. */
+.lrn-lesson--embedded .lrn-player-content__pdf .lrn-lesson-pdf,
+.lrn-lesson--embedded .lrn-player-content__embed .lrn-lesson-embed {
+	height: clamp(24rem, 60vh, 44rem);
+	width:  100%;
+	border: 0;
+}
+
+/* ── Lesson meta header ───────────────────────────────────────────────── */
+.lrn-lesson--embedded .lrn-lesson-meta {
+	margin-block-end: var(--lrn-sp-6);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__breadcrumb {
+	display:          flex;
+	flex-wrap:        wrap;
+	align-items:      center;
+	gap:              var(--lrn-sp-2);
+	margin-block-end: var(--lrn-sp-2);
+	font-size:        var(--lrn-text-sm);
+	color:            var(--lrn-text-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__breadcrumb a {
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__breadcrumb a:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__title {
+	margin:      0 0 var(--lrn-sp-4);
+	font-size:   var(--lrn-text-2xl);
+	font-weight: var(--lrn-weight-semibold);
+	color:       var(--lrn-text);
+	line-height: 1.2;
+}
+
+/* Single-line byline — instructor + facts share one row, wrapping only when
+   the viewport is too narrow to hold them. */
+.lrn-lesson--embedded .lrn-lesson-meta__byline {
+	display:          flex;
+	align-items:      center;
+	flex-wrap:        wrap;
+	gap:              var(--lrn-sp-2) var(--lrn-sp-4);
+	margin-block-end: var(--lrn-sp-4);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__instructor {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__avatar {
+	border-radius: 50%;
+	flex:          0 0 auto;
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__instructor-text {
+	font-size: var(--lrn-text-sm);
+	color:     var(--lrn-text-secondary);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__instructor-name {
+	color:           var(--lrn-text);
+	font-weight:     var(--lrn-weight-medium);
+	text-decoration: none;
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__instructor-name:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__fact {
+	display:     inline-flex;
+	align-items: center;
+	gap:         var(--lrn-sp-2);
+	font-size:   var(--lrn-text-sm);
+	color:       var(--lrn-text-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-meta__fact svg {
+	width:  1rem;
+	height: 1rem;
+}
+
+/* ── Persistent right rail ────────────────────────────────────────────── */
+.lrn-lesson--embedded .lrn-lesson-side {
+	position:      sticky;
+	top:           var(--lrn-sp-6);
+	display:       block;
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__nav {
+	border:        1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg);
+	background:    var(--lrn-bg);
+	overflow:      hidden;
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__header {
+	display:          flex;
+	flex-wrap:        wrap;
+	align-items:      baseline;
+	justify-content:  space-between;
+	gap:              var(--lrn-sp-2);
+	padding:          var(--lrn-sp-4) var(--lrn-sp-5);
+	border-block-end: 1px solid var(--lrn-border);
+	background:       var(--lrn-bg-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__title {
+	font-size:       var(--lrn-text-md);
+	font-weight:     var(--lrn-weight-semibold);
+	color:           var(--lrn-text);
+	text-decoration: none;
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__title:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__progress {
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__list {
+	max-height: clamp(20rem, 60vh, 40rem);
+	overflow-y: auto;
+	padding:    var(--lrn-sp-2) 0;
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__section {
+	padding-block: var(--lrn-sp-2);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__section-name {
+	margin:         0;
+	padding:        var(--lrn-sp-2) var(--lrn-sp-5);
+	font-size:      var(--lrn-text-xs);
+	font-weight:    var(--lrn-weight-semibold);
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color:          var(--lrn-text-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__items {
+	margin:     0;
+	padding:    0;
+	list-style: none;
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__item {
+	display:        flex;
+	align-items:    center;
+	gap:            var(--lrn-sp-3);
+	padding:        var(--lrn-sp-2) var(--lrn-sp-5);
+	font-size:      var(--lrn-text-sm);
+	border-inline-start: 2px solid transparent;
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__item--sub {
+	padding-inline-start: var(--lrn-sp-8);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__item--current {
+	background:          var(--lrn-bg-muted);
+	border-inline-start-color: var(--lrn-accent);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__marker {
+	display:         inline-flex;
+	align-items:     center;
+	justify-content: center;
+	flex:            0 0 auto;
+	width:           1.5rem;
+	height:          1.5rem;
+	border-radius:   50%;
+	border:          1px solid var(--lrn-border);
+	font-size:       var(--lrn-text-xs);
+	color:           var(--lrn-text-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__marker svg {
+	width:  0.875rem;
+	height: 0.875rem;
+}
+
+/* A row can be current AND done at once (the lesson you just marked complete).
+   The marker draws the check for a done row either way, so `--done` has to win
+   the colour or the check renders in the current-row accent and reads as
+   "in progress". Same-specificity selectors, so the order here IS the rule:
+   `--current` first, `--done` after it. */
+.lrn-lesson--embedded .lrn-lesson-side__item--current .lrn-lesson-side__marker {
+	color:        var(--lrn-accent);
+	border-color: var(--lrn-accent);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__item--done .lrn-lesson-side__marker {
+	color:        var(--lrn-success);
+	border-color: var(--lrn-success);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__label {
+	flex:            1 1 auto;
+	min-width:       0;
+	color:           var(--lrn-text-secondary);
+	text-decoration: none;
+	overflow:        hidden;
+	text-overflow:   ellipsis;
+}
+
+.lrn-lesson--embedded a.lrn-lesson-side__label:hover {
+	color: var(--lrn-accent);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__item--current .lrn-lesson-side__label {
+	color:       var(--lrn-text);
+	font-weight: var(--lrn-weight-medium);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__label.is-locked {
+	color:  var(--lrn-text-muted);
+	cursor: not-allowed;
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__duration {
+	flex:      0 0 auto;
+	font-size: var(--lrn-text-xs);
+	color:     var(--lrn-text-muted);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__footer {
+	padding:           var(--lrn-sp-4) var(--lrn-sp-5);
+	border-block-start: 1px solid var(--lrn-border);
+}
+
+.lrn-lesson--embedded .lrn-lesson-side__footer-text {
+	display:    block;
+	margin-block-start: var(--lrn-sp-2);
+	font-size:  var(--lrn-text-xs);
+	color:      var(--lrn-text-muted);
+}
+
+/* ── In-theme access gate ─────────────────────────────────────────────── */
+.lrn-lesson--embedded.lrn-access-gate {
+	min-height:    0;
+	padding-block: var(--lrn-sp-12);
+}
+
+/* ── Responsive: stack the rail below the main column ─────────────────── */
+@media (max-width: 1024px) {
+	.lrn-lesson--embedded .lrn-lesson-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-lesson--embedded .lrn-lesson-side {
+		position: static;
+	}
+
+	.lrn-lesson--embedded .lrn-lesson-side__list {
+		max-height: none;
+	}
+}

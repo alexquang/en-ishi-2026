@@ -1,0 +1,296 @@
+/*
+ * Post-purchase thank-you + cancelled pages.
+ *
+ * Token-driven — no hex, no px, no @media literals. Inherits the
+ * .lrn-card pattern from learnomy.css.
+ */
+
+.lrn-thank-you {
+	max-width: 640px;
+	margin: var(--lrn-sp-8, 32px) auto;
+	padding-inline: var(--lrn-sp-4, 16px);
+}
+
+.lrn-thank-you__card {
+	padding: var(--lrn-sp-8, 32px);
+	text-align: center;
+	border-radius: var(--lrn-radius-xl, 12px);
+}
+
+.lrn-thank-you__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	inline-size: var(--lrn-sp-12, 48px);
+	block-size: var(--lrn-sp-12, 48px);
+	border-radius: 50%;
+	margin: 0 auto var(--lrn-sp-4, 16px);
+}
+
+.lrn-thank-you__icon i,
+.lrn-thank-you__icon svg {
+	inline-size: var(--lrn-sp-7, 28px);
+	block-size: var(--lrn-sp-7, 28px);
+}
+
+.lrn-thank-you__icon--success {
+	background: var(--lrn-success-bg);
+	color: var(--lrn-success);
+}
+
+.lrn-thank-you__icon--pending {
+	background: var(--lrn-warn-bg, rgba(217, 119, 6, 0.08));
+	color: var(--lrn-warn, #d97706);
+}
+
+.lrn-thank-you__icon--failed {
+	background: var(--lrn-danger-bg);
+	color: var(--lrn-danger);
+}
+
+.lrn-thank-you__icon--cancelled {
+	background: var(--lrn-bg-tertiary);
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-thank-you__heading {
+	font-size: var(--lrn-text-xl, 24px);
+	font-weight: 600;
+	margin: 0 0 var(--lrn-sp-2, 8px);
+	color: var(--lrn-text);
+}
+
+.lrn-thank-you__lede {
+	font-size: var(--lrn-text-md, 16px);
+	color: var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-6, 24px);
+	line-height: 1.5;
+}
+
+.lrn-thank-you__summary {
+	text-align: start;
+	background: var(--lrn-bg-secondary);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-lg, 8px);
+	padding: var(--lrn-sp-5, 20px);
+	margin-block: var(--lrn-sp-4, 16px) var(--lrn-sp-6, 24px);
+}
+
+.lrn-thank-you__summary-title {
+	font-size: var(--lrn-text-sm, 13px);
+	font-weight: 600;
+	color: var(--lrn-text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin: 0 0 var(--lrn-sp-3, 12px);
+}
+
+.lrn-thank-you__details {
+	margin: 0;
+}
+
+.lrn-thank-you__detail {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--lrn-sp-3, 12px);
+	padding-block: var(--lrn-sp-2, 8px);
+	border-block-start: 1px solid var(--lrn-divider);
+}
+
+.lrn-thank-you__detail:first-child {
+	border-block-start: 0;
+	padding-block-start: 0;
+}
+
+.lrn-thank-you__detail dt {
+	font-size: var(--lrn-text-sm, 13px);
+	color: var(--lrn-text-secondary);
+}
+
+.lrn-thank-you__detail dd {
+	margin: 0;
+	font-size: var(--lrn-text-sm, 13px);
+	color: var(--lrn-text);
+	font-weight: 500;
+	text-align: end;
+}
+
+.lrn-thank-you__amount {
+	font-size: var(--lrn-text-md, 16px);
+	font-weight: 700;
+}
+
+.lrn-thank-you__detail dd code {
+	background: var(--lrn-bg-tertiary);
+	padding: var(--lrn-sp-1, 4px) var(--lrn-sp-2, 8px);
+	border-radius: var(--lrn-radius-sm, 3px);
+	font-size: var(--lrn-text-xs, 12px);
+}
+
+.lrn-thank-you__receipt-note,
+.lrn-thank-you__pending-note {
+	display: flex;
+	gap: var(--lrn-sp-2, 8px);
+	align-items: flex-start;
+	font-size: var(--lrn-text-sm, 13px);
+	color: var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-6, 24px);
+	padding: var(--lrn-sp-3, 12px) var(--lrn-sp-4, 16px);
+	background: var(--lrn-bg-secondary);
+	border-radius: var(--lrn-radius-md, 6px);
+	text-align: start;
+}
+
+/* The sentence, as a SINGLE flex item.
+   Basecamp 10143929129. The note is a flex row, and the markup was
+   `<i>` + text + `<strong>email</strong>` + text. In flex layout every child
+   ELEMENT becomes its own flex item and each run of loose text becomes an
+   anonymous one — so that sentence was laid out as three side-by-side columns
+   with the email as a column of its own. On a phone the result was ~90px columns
+   breaking words mid-syllable ("confir / matio / n will"), and the tail of the
+   sentence pushed past the card and clipped.
+   Wrapping the sentence in one <span> is the actual fix: it is one flex item, so
+   it flows as a paragraph. Fixing only the overflow (with overflow-wrap on the
+   container) stopped the clipping but left the three unreadable columns — the
+   metrics looked clean while the page still looked broken. */
+.lrn-thank-you__note-text {
+	/* Shrink below the email's width instead of forcing the row wider. */
+	min-inline-size: 0;
+	/* break-word suffices now that this is a real element with min-inline-size: 0
+	   — the intrinsic-size problem that would need `anywhere` is already solved. */
+	overflow-wrap: break-word;
+}
+
+.lrn-thank-you__receipt-note i,
+.lrn-thank-you__pending-note i,
+.lrn-thank-you__receipt-note svg,
+.lrn-thank-you__pending-note svg {
+	flex-shrink: 0;
+	inline-size: var(--lrn-sp-4, 16px);
+	block-size: var(--lrn-sp-4, 16px);
+	margin-block-start: 2px;
+}
+
+.lrn-thank-you__pending-item,
+.lrn-thank-you__failed-item,
+.lrn-thank-you__cancelled-item {
+	font-size: var(--lrn-text-sm, 13px);
+	color: var(--lrn-text-secondary);
+	margin: 0 0 var(--lrn-sp-4, 16px);
+}
+
+.lrn-thank-you__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--lrn-sp-3, 12px);
+	justify-content: center;
+	margin-block-start: var(--lrn-sp-4, 16px);
+}
+
+.lrn-thank-you__actions .lrn-btn {
+	min-width: 11rem;
+}
+
+
+/* ── Courses included in the plan the buyer just subscribed to ──────────────
+ * A membership buyer's first question is "what did I just get?", so the
+ * bundle is listed here with a direct link into each course rather than left
+ * behind a Manage Membership click. Sits between the receipt note and the
+ * CTAs: read what you bought, then act. */
+.lrn-thank-you__included {
+	margin-block-start: var(--lrn-sp-5, 20px);
+	padding-block-start: var(--lrn-sp-4, 16px);
+	border-block-start: 1px solid var(--lrn-border);
+	text-align: start;
+}
+
+.lrn-thank-you__included-title {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2, 8px);
+	margin: 0 0 var(--lrn-sp-3, 12px);
+	color: var(--lrn-text);
+	font-size: var(--lrn-text-base, 15px);
+	font-weight: var(--lrn-weight-semibold, 600);
+}
+
+.lrn-thank-you__included-title [data-lucide],
+.lrn-thank-you__included-title svg {
+	inline-size: 18px;
+	block-size: 18px;
+	flex-shrink: 0;
+}
+
+.lrn-thank-you__included-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2, 8px);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.lrn-thank-you__included-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--lrn-sp-3, 12px);
+	padding: var(--lrn-sp-2, 8px) var(--lrn-sp-3, 12px);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-sm);
+	background: var(--lrn-bg-subtle, transparent);
+}
+
+.lrn-thank-you__included-name {
+	color: var(--lrn-text);
+	font-size: var(--lrn-text-sm, 13px);
+	font-weight: var(--lrn-weight-medium, 500);
+	min-inline-size: 0;
+}
+
+.lrn-thank-you__included-item .lrn-btn {
+	flex-shrink: 0;
+}
+
+.lrn-thank-you__included-more {
+	margin: var(--lrn-sp-3, 12px) 0 0;
+	font-size: var(--lrn-text-sm, 13px);
+}
+
+/* Pending-state spinner — uses the existing animation pattern.
+ * Defined inline because the existing .lrn-spin keyframes live in
+ * learnomy.css; we just attach the class to the lucide icon. */
+.lrn-thank-you__icon .lrn-spin {
+	animation: lrn-spin 1s linear infinite;
+}
+
+@keyframes lrn-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* Mobile stack — actions full-width below 480px. */
+@media (max-width: 640px) {
+	.lrn-thank-you {
+		margin-block: var(--lrn-sp-4, 16px);
+	}
+	.lrn-thank-you__card {
+		padding: var(--lrn-sp-5, 20px);
+	}
+	.lrn-thank-you__actions {
+		flex-direction: column;
+	}
+	.lrn-thank-you__actions .lrn-btn {
+		inline-size: 100%;
+	}
+	/* Title above the Start button so neither is squeezed at 390px, and the
+	   button spans the row like every other mobile action on this page. */
+	.lrn-thank-you__included-item {
+		flex-direction: column;
+		align-items: stretch;
+		gap: var(--lrn-sp-2, 8px);
+	}
+	.lrn-thank-you__included-item .lrn-btn {
+		inline-size: 100%;
+		justify-content: center;
+	}
+}

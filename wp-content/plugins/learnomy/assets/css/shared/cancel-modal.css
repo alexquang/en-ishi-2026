@@ -1,0 +1,199 @@
+/**
+ * Save-the-customer cancel modal — extends the .lrn-modal base.
+ *
+ * Mounts on <body> outside both .lrn-app and .learnomy-admin scopes, so
+ * the rules target .lrn-cancel-modal directly and reference --lrn-*
+ * tokens with hex fallbacks for the design-token safety net.
+ *
+ * @package Learnomy
+ */
+
+/* Positioning identical to confirm-modal — covers full viewport. */
+.lrn-cancel-modal {
+	position:        fixed;
+	top:             0;
+	left:            0;
+	right:           0;
+	bottom:          0;
+	/* No `width: 100vw` — the insets define the box; a width overrides `right`
+	   and made the overlay a scrollbar wider than the viewport. Same rule as
+	   confirm-modal.css (Basecamp 10184327445). */
+	height:          100vh;
+	height:          100dvh;
+	max-width:       none;
+	max-height:      none;
+	z-index:         100001;
+	display:         flex;
+	align-items:     center;
+	justify-content: center;
+	padding:         var(--lrn-sp-5, 20px);
+	box-sizing:      border-box;
+}
+
+.lrn-cancel-modal.lrn-modal--hidden {
+	display: none;
+}
+
+.lrn-cancel-modal .lrn-modal__backdrop {
+	position:   fixed;
+	inset:      0;
+	background: color-mix(in srgb, var(--lrn-text, #37352f) 50%, transparent);
+	z-index:    -1;
+}
+
+/* Dialog shell. */
+.lrn-cancel-modal__dialog {
+	position:       relative;
+	background:     var(--lrn-card, #ffffff);
+	color:          var(--lrn-text, #37352f);
+	border-radius:  var(--lrn-radius-lg, 16px);
+	box-shadow:     var(--lrn-shadow-xl, 0 24px 48px rgba(0, 0, 0, 0.18));
+	padding:        var(--lrn-sp-7, 32px);
+	max-width: 560px;
+	width:          100%;
+	max-height:     calc(100dvh - 40px);
+	overflow-y:     auto;
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-5, 20px);
+}
+
+.lrn-cancel-modal__title {
+	margin: 0;
+	font-size:   var(--lrn-text-xl, 22px);
+	font-weight: 700;
+	color:       var(--lrn-text, #37352f);
+}
+
+.lrn-cancel-modal__lede {
+	margin:    0;
+	font-size: var(--lrn-text-base, 15px);
+	color:     var(--lrn-text-muted, #6b6b6b);
+	line-height: 1.5;
+}
+
+/* Retention offers — render as cards stacked above the reason fieldset. */
+.lrn-cancel-modal__offers {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-3, 12px);
+}
+
+.lrn-cancel-modal__offer {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2, 8px);
+	padding:        var(--lrn-sp-4, 16px);
+	border:         1px solid var(--lrn-border, #e5e5e5);
+	border-radius:  var(--lrn-radius-md, 12px);
+	background:     var(--lrn-accent-light, #e8f1fc);
+}
+
+.lrn-cancel-modal__offer-label {
+	font-weight: 600;
+	color:       var(--lrn-text, #37352f);
+}
+
+.lrn-cancel-modal__offer-desc {
+	margin: 0;
+	font-size:   var(--lrn-text-sm, 13px);
+	color:       var(--lrn-text-muted, #6b6b6b);
+	line-height: 1.5;
+}
+
+/* Reason radio list. */
+.lrn-cancel-modal__reasons {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2, 8px);
+}
+
+.lrn-cancel-modal__reasons-legend {
+	font-weight: 600;
+	margin-bottom: var(--lrn-sp-2, 8px);
+	color: var(--lrn-text, #37352f);
+}
+
+.lrn-cancel-modal__reason {
+	display:       flex;
+	align-items:   center;
+	gap:           var(--lrn-sp-3, 12px);
+	padding:       var(--lrn-sp-3, 12px);
+	border:        1px solid var(--lrn-border, #e5e5e5);
+	border-radius: var(--lrn-radius-md, 12px);
+	cursor:        pointer;
+	transition:    border-color 0.18s ease, background 0.18s ease;
+}
+
+.lrn-cancel-modal__reason:hover,
+.lrn-cancel-modal__reason:has(input:checked) {
+	border-color: var(--lrn-accent, #2383e2);
+	background:   var(--lrn-accent-light, #e8f1fc);
+}
+
+.lrn-cancel-modal__reason-input {
+	accent-color: var(--lrn-accent, #2383e2);
+	width:  18px;
+	height: 18px;
+	flex:   none;
+}
+
+.lrn-cancel-modal__reason-label {
+	font-size: var(--lrn-text-base, 15px);
+	color:     var(--lrn-text, #37352f);
+}
+
+/* Feedback textarea. */
+.lrn-cancel-modal__feedback {
+	display:        flex;
+	flex-direction: column;
+	gap:            var(--lrn-sp-2, 8px);
+}
+
+.lrn-cancel-modal__feedback-label {
+	font-weight: 600;
+	color: var(--lrn-text, #37352f);
+}
+
+.lrn-cancel-modal__feedback-input {
+	width: 100%;
+	padding: var(--lrn-sp-3, 12px);
+	border: 1px solid var(--lrn-border, #e5e5e5);
+	border-radius: var(--lrn-radius-md, 12px);
+	font-family: inherit;
+	font-size:   var(--lrn-text-base, 15px);
+	color:       var(--lrn-text, #37352f);
+	background:  var(--lrn-card, #ffffff);
+	resize: vertical;
+	min-height: 80px;
+	box-sizing: border-box;
+}
+
+.lrn-cancel-modal__feedback-input:focus-visible {
+	outline: 3px solid color-mix(in srgb, var(--lrn-accent, #2383e2) 30%, transparent);
+	outline-offset: 1px;
+	border-color: var(--lrn-accent, #2383e2);
+}
+
+/* Action row. */
+.lrn-cancel-modal__actions {
+	display:         flex;
+	justify-content: flex-end;
+	gap:             var(--lrn-sp-3, 12px);
+	flex-wrap:       wrap;
+}
+
+@media (max-width: 640px) {
+	.lrn-cancel-modal__dialog {
+		padding: var(--lrn-sp-5, 20px);
+	}
+	.lrn-cancel-modal__actions {
+		flex-direction: column-reverse;
+	}
+	.lrn-cancel-modal__actions .lrn-btn {
+		width: 100%;
+	}
+}

@@ -26,6 +26,13 @@ wp_localize_script(
     ]
 );
 
+// add_action('template_redirect', function () {
+//     if (is_front_page() && !is_admin()) {
+//         wp_safe_redirect(home_url('/maps/'), 301);
+//         exit;
+//     }
+// });
+
 add_action('http_api_curl', function ($handle) {
 
     curl_setopt(
@@ -33,23 +40,22 @@ add_action('http_api_curl', function ($handle) {
         CURLOPT_IPRESOLVE,
         CURL_IPRESOLVE_V4
     );
-
 });
 
 add_action('wp_footer', function () {
 ?>
     <script>
-    window.gtranslateSettings = {
-        default_language: "en",
-        native_language_names: true,
-        flag_style: "2d",
-        wrapper_selector: ".gtranslate_wrapper"
-    };
+        window.gtranslateSettings = {
+            default_language: "en",
+            native_language_names: true,
+            flag_style: "2d",
+            wrapper_selector: ".gtranslate_wrapper"
+        };
     </script>
-<script
-    src="<?php echo get_stylesheet_directory_uri(); ?>/assets-enishi/js/dropdown.js"
-    defer>
-</script>
+    <script
+        src="<?php echo get_stylesheet_directory_uri(); ?>/assets-enishi/js/dropdown.js"
+        defer>
+    </script>
 <?php
 });
 
@@ -88,7 +94,7 @@ add_action('wp_enqueue_scripts', function () {
 
     wp_enqueue_script(
         'google-maps',
-        'https://maps.googleapis.com/maps/api/js?key='. GOOGLE_MAPS_API_KEY . '&libraries=places&callback=initMap',
+        'https://maps.googleapis.com/maps/api/js?key=' . GOOGLE_MAPS_API_KEY . '&libraries=places&callback=initMap',
         [],
         null,
         true
@@ -96,16 +102,36 @@ add_action('wp_enqueue_scripts', function () {
 
 
 
-        wp_localize_script(
-            $handle,
-            'ptMap',
-            [
-                'isLoggedIn' => is_user_logged_in(),
-                'ajax_url'   => admin_url('admin-ajax.php'),
-                'ai_nonce'   => wp_create_nonce('pt_ai_search_nonce')
-            ]
-        );
+    wp_localize_script(
+        $handle,
+        'ptMap',
+        [
+            'isLoggedIn' => is_user_logged_in(),
+            'ajax_url'   => admin_url('admin-ajax.php'),
+            'ai_nonce'   => wp_create_nonce('pt_ai_search_nonce')
+        ]
+    );
 }, 20);
+
+add_action('wp_enqueue_scripts', function () {
+    if (is_page_template('page-live-ranking.php')) {
+
+        wp_enqueue_style(
+            'pt-live-ranking',
+            get_stylesheet_directory_uri() . '/assets-enishi/css/live-ranking.css',
+            [],
+            '1.0.0'
+        );
+
+        wp_enqueue_script(
+            'pt-live-ranking',
+            get_stylesheet_directory_uri() . '/assets-enishi/js/live-ranking.js',
+            [],
+            '1.0.0',
+            true
+        );
+    }
+});
 
 function buddyx_child_enqueue_styles()
 {
@@ -144,538 +170,442 @@ add_filter('show_admin_bar', '__return_false');
 
 add_action('wp_footer', function () {
 ?>
-<script>
-(function () {
+    <script>
+        (function() {
 
-    'use strict';
-
-    /*
-     * ==========================================
-     * CONFIG
-     * ==========================================
-     */
-
-    const STORAGE_KEY =
-        'pt_gtranslate_selected_lang';
-
-    const DEFAULT_LANG =
-        'en';
-
-    const AJAX_URL =
-        '<?php echo esc_url(admin_url('admin-ajax.php')); ?>';
-
-
-    /*
-     * ==========================================
-     * SUPPORTED LANGUAGES
-     * ==========================================
-     */
-
-    const supported = [
-        'vi', 'en', 'ja', 'ko', 'zh', 'fr', 'de', 'es', 'it', 'pt',
-        'ru', 'ar', 'th', 'id', 'ms', 'hi', 'nl', 'pl', 'tr',
-        'cs', 'da', 'fi', 'el', 'he', 'hu', 'no', 'ro', 'sv', 'uk'
-    ];
-
-
-    /*
-     * ==========================================
-     * COUNTRY -> LANGUAGE
-     * ==========================================
-     */
-
-    const countryLanguage = {
-
-        'VN': 'vi',
-
-        'KR': 'ko',
-
-        'JP': 'ja',
-
-        'CN': 'zh',
-        'TW': 'zh',
-        'HK': 'zh',
-        'MO': 'zh',
-
-        'TH': 'th',
-
-        'ID': 'id',
-
-        'MY': 'ms',
-
-        'IN': 'hi',
-
-        'FR': 'fr',
-
-        'DE': 'de',
-        'AT': 'de',
-        'CH': 'de',
-
-        'ES': 'es',
-
-        'IT': 'it',
-
-        'PT': 'pt',
-        'BR': 'pt',
-
-        'RU': 'ru',
-
-        'NL': 'nl',
-
-        'PL': 'pl',
-
-        'TR': 'tr',
-
-        'GR': 'el',
-
-        'IL': 'he',
-
-        'CZ': 'cs',
-
-        'DK': 'da',
-
-        'FI': 'fi',
-
-        'HU': 'hu',
-
-        'NO': 'no',
-
-        'RO': 'ro',
-
-        'SE': 'sv',
-
-        'UA': 'uk',
-
-        'SA': 'ar',
-        'AE': 'ar',
-        'QA': 'ar',
-        'KW': 'ar',
-        'BH': 'ar',
-        'OM': 'ar',
-        'JO': 'ar',
-        'LB': 'ar',
-        'EG': 'ar',
-        'MA': 'ar',
-        'DZ': 'ar',
-        'TN': 'ar'
-
-    };
-
-
-    /*
-     * ==========================================
-     * GET GTRANSLATE COOKIE
-     * ==========================================
-     */
-
-    function getGoogleLanguage() {
-
-        const match =
-            document.cookie.match(
-                /(?:^|;\s*)googtrans=([^;]+)/
-            );
-
-        if (!match) {
-            return null;
-        }
-
-        try {
-
-            const value =
-                decodeURIComponent(
-                    match[1]
-                );
+            'use strict';
 
             /*
-             * /en/vi
+             * ==========================================
+             * CONFIG
+             * ==========================================
              */
 
-            const parts =
-                value.split('/');
+            const STORAGE_KEY =
+                'pt_gtranslate_selected_lang';
 
-            if (parts.length >= 3) {
+            const DEFAULT_LANG =
+                'en';
 
-                const lang =
-                    parts[2]
-                        .toLowerCase();
+            const AJAX_URL =
+                '<?php echo esc_url(admin_url('admin-ajax.php')); ?>';
+
+
+            /*
+             * ==========================================
+             * SUPPORTED LANGUAGES
+             * ==========================================
+             */
+
+            const supported = [
+                'vi', 'en', 'ja', 'ko', 'zh', 'fr', 'de', 'es', 'it', 'pt',
+                'ru', 'ar', 'th', 'id', 'ms', 'hi', 'nl', 'pl', 'tr',
+                'cs', 'da', 'fi', 'el', 'he', 'hu', 'no', 'ro', 'sv', 'uk'
+            ];
+
+
+            /*
+             * ==========================================
+             * COUNTRY -> LANGUAGE
+             * ==========================================
+             */
+
+            const countryLanguage = {
+
+                'VN': 'vi',
+
+                'KR': 'ko',
+
+                'JP': 'ja',
+
+                'CN': 'zh',
+                'TW': 'zh',
+                'HK': 'zh',
+                'MO': 'zh',
+
+                'TH': 'th',
+
+                'ID': 'id',
+
+                'MY': 'ms',
+
+                'IN': 'hi',
+
+                'FR': 'fr',
+
+                'DE': 'de',
+                'AT': 'de',
+                'CH': 'de',
+
+                'ES': 'es',
+
+                'IT': 'it',
+
+                'PT': 'pt',
+                'BR': 'pt',
+
+                'RU': 'ru',
+
+                'NL': 'nl',
+
+                'PL': 'pl',
+
+                'TR': 'tr',
+
+                'GR': 'el',
+
+                'IL': 'he',
+
+                'CZ': 'cs',
+
+                'DK': 'da',
+
+                'FI': 'fi',
+
+                'HU': 'hu',
+
+                'NO': 'no',
+
+                'RO': 'ro',
+
+                'SE': 'sv',
+
+                'UA': 'uk',
+
+                'SA': 'ar',
+                'AE': 'ar',
+                'QA': 'ar',
+                'KW': 'ar',
+                'BH': 'ar',
+                'OM': 'ar',
+                'JO': 'ar',
+                'LB': 'ar',
+                'EG': 'ar',
+                'MA': 'ar',
+                'DZ': 'ar',
+                'TN': 'ar'
+
+            };
+
+
+            /*
+             * ==========================================
+             * GET GTRANSLATE COOKIE
+             * ==========================================
+             */
+
+            function getGoogleLanguage() {
+
+                const match =
+                    document.cookie.match(
+                        /(?:^|;\s*)googtrans=([^;]+)/
+                    );
+
+                if (!match) {
+                    return null;
+                }
+
+                try {
+
+                    const value =
+                        decodeURIComponent(
+                            match[1]
+                        );
+
+                    /*
+                     * /en/vi
+                     */
+
+                    const parts =
+                        value.split('/');
+
+                    if (parts.length >= 3) {
+
+                        const lang =
+                            parts[2]
+                            .toLowerCase();
+
+                        if (
+                            supported.includes(lang)
+                        ) {
+                            return lang;
+                        }
+                    }
+
+                } catch (error) {
+
+                    console.log(
+                        '[GTranslate] Cookie error:',
+                        error
+                    );
+
+                }
+
+                return null;
+            }
+
+
+            /*
+             * ==========================================
+             * GET USER SELECTED LANGUAGE
+             * ==========================================
+             *
+             * Nếu user đã chọn trước đó
+             * thì luôn ưu tiên ngôn ngữ này.
+             */
+
+            function getUserSelectedLanguage() {
+
+                try {
+
+                    const lang =
+                        localStorage.getItem(
+                            STORAGE_KEY
+                        );
+
+                    if (
+                        lang &&
+                        supported.includes(lang)
+                    ) {
+                        return lang;
+                    }
+
+                } catch (error) {
+
+                    console.log(
+                        '[GTranslate] LocalStorage error:',
+                        error
+                    );
+
+                }
+
+                return null;
+            }
+
+
+            /*
+             * ==========================================
+             * SAVE USER LANGUAGE
+             * ==========================================
+             */
+
+            function saveUserLanguage(lang) {
 
                 if (
-                    supported.includes(lang)
+                    !lang ||
+                    !supported.includes(lang)
                 ) {
-                    return lang;
+                    return;
+                }
+
+                try {
+
+                    localStorage.setItem(
+                        STORAGE_KEY,
+                        lang
+                    );
+
+                } catch (error) {
+
+                    console.log(
+                        '[GTranslate] Cannot save language:',
+                        error
+                    );
+
                 }
             }
 
-        } catch (error) {
 
-            console.log(
-                '[GTranslate] Cookie error:',
-                error
-            );
+            /*
+             * ==========================================
+             * SET GTRANSLATE COOKIE
+             * ==========================================
+             */
 
-        }
+            function setGoogleLanguage(lang) {
 
-        return null;
-    }
+                if (
+                    !lang ||
+                    !supported.includes(lang)
+                ) {
+                    lang = DEFAULT_LANG;
+                }
 
-
-    /*
-     * ==========================================
-     * GET USER SELECTED LANGUAGE
-     * ==========================================
-     *
-     * Nếu user đã chọn trước đó
-     * thì luôn ưu tiên ngôn ngữ này.
-     */
-
-    function getUserSelectedLanguage() {
-
-        try {
-
-            const lang =
-                localStorage.getItem(
-                    STORAGE_KEY
-                );
-
-            if (
-                lang &&
-                supported.includes(lang)
-            ) {
-                return lang;
-            }
-
-        } catch (error) {
-
-            console.log(
-                '[GTranslate] LocalStorage error:',
-                error
-            );
-
-        }
-
-        return null;
-    }
+                const value =
+                    '/en/' + lang;
 
 
-    /*
-     * ==========================================
-     * SAVE USER LANGUAGE
-     * ==========================================
-     */
-
-    function saveUserLanguage(lang) {
-
-        if (
-            !lang ||
-            !supported.includes(lang)
-        ) {
-            return;
-        }
-
-        try {
-
-            localStorage.setItem(
-                STORAGE_KEY,
-                lang
-            );
-
-        } catch (error) {
-
-            console.log(
-                '[GTranslate] Cannot save language:',
-                error
-            );
-
-        }
-    }
+                document.cookie =
+                    'googtrans=' +
+                    encodeURIComponent(value) +
+                    '; path=/';
 
 
-    /*
-     * ==========================================
-     * SET GTRANSLATE COOKIE
-     * ==========================================
-     */
+                /*
+                 * Domain cookie
+                 */
 
-    function setGoogleLanguage(lang) {
+                try {
 
-        if (
-            !lang ||
-            !supported.includes(lang)
-        ) {
-            lang = DEFAULT_LANG;
-        }
+                    document.cookie =
+                        'googtrans=' +
+                        encodeURIComponent(value) +
+                        '; path=/; domain=' +
+                        window.location.hostname;
 
-        const value =
-            '/en/' + lang;
+                } catch (error) {
 
+                    // Ignore
 
-        document.cookie =
-            'googtrans=' +
-            encodeURIComponent(value) +
-            '; path=/';
-
-
-        /*
-         * Domain cookie
-         */
-
-        try {
-
-            document.cookie =
-                'googtrans=' +
-                encodeURIComponent(value) +
-                '; path=/; domain=' +
-                window.location.hostname;
-
-        } catch (error) {
-
-            // Ignore
-
-        }
-    }
-
-
-    /*
-     * ==========================================
-     * COUNTRY -> LANGUAGE
-     * ==========================================
-     */
-
-    function countryToLanguage(country) {
-
-        country =
-            String(country || '')
-                .toUpperCase()
-                .trim();
-
-
-        if (
-            countryLanguage[country]
-        ) {
-
-            return countryLanguage[country];
-
-        }
-
-
-        /*
-         * Quốc gia không nằm trong mapping
-         * => English
-         */
-
-        return DEFAULT_LANG;
-    }
-
-
-    /*
-     * ==========================================
-     * GET COUNTRY BY IP
-     * ==========================================
-     *
-     * WordPress server sẽ gọi:
-     *
-     * https://ipwho.is/IP
-     *
-     * ==========================================
-     */
-
-    async function detectCountry() {
-
-        try {
-
-            const response =
-                await fetch(
-                    AJAX_URL +
-                    '?action=pt_detect_country',
-                    {
-                        method: 'GET',
-
-                        credentials:
-                            'same-origin',
-
-                        cache:
-                            'no-store'
-                    }
-                );
-
-
-            if (
-                !response.ok
-            ) {
-
-                throw new Error(
-                    'HTTP ' +
-                    response.status
-                );
-
+                }
             }
 
 
-            const result =
-                await response.json();
+            /*
+             * ==========================================
+             * COUNTRY -> LANGUAGE
+             * ==========================================
+             */
 
+            function countryToLanguage(country) {
 
-            if (
-                !result ||
-                !result.success ||
-                !result.data
-            ) {
-
-                return null;
-
-            }
-
-
-            console.log(
-                '[GTranslate] IP:',
-                result.data.ip
-            );
-
-
-            console.log(
-                '[GTranslate] Country:',
-                result.data.country
-            );
-
-
-            return result.data.country;
-
-        }
-
-        catch (error) {
-
-            console.error(
-                '[GTranslate] Country detection error:',
-                error
-            );
-
-
-            return null;
-
-        }
-    }
-
-
-    /*
-     * ==========================================
-     * APPLY LANGUAGE
-     * ==========================================
-     */
-
-    function applyLanguage(lang) {
-
-        if (
-            !lang ||
-            !supported.includes(lang)
-        ) {
-
-            lang =
-                DEFAULT_LANG;
-        }
-
-
-        const current =
-            getGoogleLanguage();
-
-
-        /*
-         * Đã đúng ngôn ngữ
-         * => không reload
-         */
-
-        if (
-            current === lang
-        ) {
-
-            return;
-
-        }
-
-
-        console.log(
-            '[GTranslate] Change:',
-            current,
-            '→',
-            lang
-        );
-
-
-        setGoogleLanguage(
-            lang
-        );
-
-
-        /*
-         * Reload để GTranslate
-         * áp dụng ngôn ngữ.
-         */
-
-        window.location.reload();
-
-    }
-
-
-    /*
-     * ==========================================
-     * WATCH GTRANSLATE SELECT
-     * ==========================================
-     *
-     * Khi user chọn ngôn ngữ:
-     *
-     * Korean
-     * Japanese
-     * Vietnamese
-     * ...
-     *
-     * => lưu lại.
-     *
-     * Lần sau IP không ghi đè.
-     *
-     * ==========================================
-     */
-
-    function watchGTranslate() {
-
-        const select =
-            document.querySelector(
-                '.goog-te-combo'
-            );
-
-
-        if (!select) {
-
-            return false;
-
-        }
-
-
-        if (
-            select.dataset.ptLanguageWatch
-        ) {
-
-            return true;
-
-        }
-
-
-        select.dataset.ptLanguageWatch =
-            '1';
-
-
-        select.addEventListener(
-            'change',
-            function () {
-
-                const lang =
-                    String(
-                        this.value || ''
-                    )
-                    .toLowerCase()
+                country =
+                    String(country || '')
+                    .toUpperCase()
                     .trim();
 
 
                 if (
+                    countryLanguage[country]
+                ) {
+
+                    return countryLanguage[country];
+
+                }
+
+
+                /*
+                 * Quốc gia không nằm trong mapping
+                 * => English
+                 */
+
+                return DEFAULT_LANG;
+            }
+
+
+            /*
+             * ==========================================
+             * GET COUNTRY BY IP
+             * ==========================================
+             *
+             * WordPress server sẽ gọi:
+             *
+             * https://ipwho.is/IP
+             *
+             * ==========================================
+             */
+
+            async function detectCountry() {
+
+                try {
+
+                    const response =
+                        await fetch(
+                            AJAX_URL +
+                            '?action=pt_detect_country', {
+                                method: 'GET',
+
+                                credentials: 'same-origin',
+
+                                cache: 'no-store'
+                            }
+                        );
+
+
+                    if (
+                        !response.ok
+                    ) {
+
+                        throw new Error(
+                            'HTTP ' +
+                            response.status
+                        );
+
+                    }
+
+
+                    const result =
+                        await response.json();
+
+
+                    if (
+                        !result ||
+                        !result.success ||
+                        !result.data
+                    ) {
+
+                        return null;
+
+                    }
+
+
+                    console.log(
+                        '[GTranslate] IP:',
+                        result.data.ip
+                    );
+
+
+                    console.log(
+                        '[GTranslate] Country:',
+                        result.data.country
+                    );
+
+
+                    return result.data.country;
+
+                } catch (error) {
+
+                    console.error(
+                        '[GTranslate] Country detection error:',
+                        error
+                    );
+
+
+                    return null;
+
+                }
+            }
+
+
+            /*
+             * ==========================================
+             * APPLY LANGUAGE
+             * ==========================================
+             */
+
+            function applyLanguage(lang) {
+
+                if (
+                    !lang ||
                     !supported.includes(lang)
+                ) {
+
+                    lang =
+                        DEFAULT_LANG;
+                }
+
+
+                const current =
+                    getGoogleLanguage();
+
+
+                /*
+                 * Đã đúng ngôn ngữ
+                 * => không reload
+                 */
+
+                if (
+                    current === lang
                 ) {
 
                     return;
@@ -684,194 +614,285 @@ add_action('wp_footer', function () {
 
 
                 console.log(
-                    '[GTranslate] USER SELECTED:',
+                    '[GTranslate] Change:',
+                    current,
+                    '→',
+                    lang
+                );
+
+
+                setGoogleLanguage(
                     lang
                 );
 
 
                 /*
-                 * Lưu lựa chọn thật của user.
+                 * Reload để GTranslate
+                 * áp dụng ngôn ngữ.
                  */
 
-                saveUserLanguage(
-                    lang
-                );
+                window.location.reload();
 
             }
-        );
-
-
-        return true;
-
-    }
-
-
-    /*
-     * ==========================================
-     * WAIT GTRANSLATE
-     * ==========================================
-     */
-
-    function waitForGTranslate() {
-
-        let attempts = 0;
-
-
-        const timer =
-            setInterval(
-                function () {
-
-                    attempts++;
-
-
-                    if (
-                        watchGTranslate() ||
-                        attempts >= 30
-                    ) {
-
-                        clearInterval(
-                            timer
-                        );
-
-                    }
-
-                },
-                500
-            );
-
-    }
-
-
-    /*
-     * ==========================================
-     * INITIALIZE
-     * ==========================================
-     */
-
-    async function initialize() {
-
-        /*
-         * ======================================
-         * PRIORITY 1
-         *
-         * USER ĐÃ CHỌN
-         * ======================================
-         */
-
-        const userLanguage =
-            getUserSelectedLanguage();
-
-
-        if (userLanguage) {
-
-            console.log(
-                '[GTranslate] User language:',
-                userLanguage
-            );
-
-
-            applyLanguage(
-                userLanguage
-            );
-
-
-            return;
-
-        }
-
-
-        /*
-         * ======================================
-         * PRIORITY 2
-         *
-         * IP COUNTRY
-         * ======================================
-         */
-
-        const country =
-            await detectCountry();
-
-
-        if (!country) {
-
-            console.log(
-                '[GTranslate] Cannot detect country.'
-            );
 
 
             /*
-             * Không xác định được IP
-             * => English
+             * ==========================================
+             * WATCH GTRANSLATE SELECT
+             * ==========================================
+             *
+             * Khi user chọn ngôn ngữ:
+             *
+             * Korean
+             * Japanese
+             * Vietnamese
+             * ...
+             *
+             * => lưu lại.
+             *
+             * Lần sau IP không ghi đè.
+             *
+             * ==========================================
              */
 
-            applyLanguage(
-                'en'
+            function watchGTranslate() {
+
+                const select =
+                    document.querySelector(
+                        '.goog-te-combo'
+                    );
+
+
+                if (!select) {
+
+                    return false;
+
+                }
+
+
+                if (
+                    select.dataset.ptLanguageWatch
+                ) {
+
+                    return true;
+
+                }
+
+
+                select.dataset.ptLanguageWatch =
+                    '1';
+
+
+                select.addEventListener(
+                    'change',
+                    function() {
+
+                        const lang =
+                            String(
+                                this.value || ''
+                            )
+                            .toLowerCase()
+                            .trim();
+
+
+                        if (
+                            !supported.includes(lang)
+                        ) {
+
+                            return;
+
+                        }
+
+
+                        console.log(
+                            '[GTranslate] USER SELECTED:',
+                            lang
+                        );
+
+
+                        /*
+                         * Lưu lựa chọn thật của user.
+                         */
+
+                        saveUserLanguage(
+                            lang
+                        );
+
+                    }
+                );
+
+
+                return true;
+
+            }
+
+
+            /*
+             * ==========================================
+             * WAIT GTRANSLATE
+             * ==========================================
+             */
+
+            function waitForGTranslate() {
+
+                let attempts = 0;
+
+
+                const timer =
+                    setInterval(
+                        function() {
+
+                            attempts++;
+
+
+                            if (
+                                watchGTranslate() ||
+                                attempts >= 30
+                            ) {
+
+                                clearInterval(
+                                    timer
+                                );
+
+                            }
+
+                        },
+                        500
+                    );
+
+            }
+
+
+            /*
+             * ==========================================
+             * INITIALIZE
+             * ==========================================
+             */
+
+            async function initialize() {
+
+                /*
+                 * ======================================
+                 * PRIORITY 1
+                 *
+                 * USER ĐÃ CHỌN
+                 * ======================================
+                 */
+
+                const userLanguage =
+                    getUserSelectedLanguage();
+
+
+                if (userLanguage) {
+
+                    console.log(
+                        '[GTranslate] User language:',
+                        userLanguage
+                    );
+
+
+                    applyLanguage(
+                        userLanguage
+                    );
+
+
+                    return;
+
+                }
+
+
+                /*
+                 * ======================================
+                 * PRIORITY 2
+                 *
+                 * IP COUNTRY
+                 * ======================================
+                 */
+
+                const country =
+                    await detectCountry();
+
+
+                if (!country) {
+
+                    console.log(
+                        '[GTranslate] Cannot detect country.'
+                    );
+
+
+                    /*
+                     * Không xác định được IP
+                     * => English
+                     */
+
+                    applyLanguage(
+                        'en'
+                    );
+
+
+                    return;
+
+                }
+
+
+                /*
+                 * Country -> Language
+                 */
+
+                const language =
+                    countryToLanguage(
+                        country
+                    );
+
+
+                console.log(
+                    '[GTranslate] Country:',
+                    country
+                );
+
+
+                console.log(
+                    '[GTranslate] Language:',
+                    language
+                );
+
+
+                /*
+                 * Apply
+                 */
+
+                applyLanguage(
+                    language
+                );
+
+            }
+
+
+            /*
+             * ==========================================
+             * START
+             * ==========================================
+             */
+
+            waitForGTranslate();
+
+
+            /*
+             * Đợi GTranslate load
+             */
+
+            setTimeout(
+                function() {
+
+                    initialize();
+
+                },
+                700
             );
 
 
-            return;
-
-        }
-
-
-        /*
-         * Country -> Language
-         */
-
-        const language =
-            countryToLanguage(
-                country
-            );
-
-
-        console.log(
-            '[GTranslate] Country:',
-            country
-        );
-
-
-        console.log(
-            '[GTranslate] Language:',
-            language
-        );
-
-
-        /*
-         * Apply
-         */
-
-        applyLanguage(
-            language
-        );
-
-    }
-
-
-    /*
-     * ==========================================
-     * START
-     * ==========================================
-     */
-
-    waitForGTranslate();
-
-
-    /*
-     * Đợi GTranslate load
-     */
-
-    setTimeout(
-        function () {
-
-            initialize();
-
-        },
-        700
-    );
-
-
-})();
-</script>
+        })();
+    </script>
 <?php
 });
 
@@ -1047,7 +1068,6 @@ function upload_place_photo()
         wp_send_json_error(
             $attachment_id->get_error_message()
         );
-
     }
 
     update_post_meta(
@@ -1097,6 +1117,57 @@ function get_place_uploads()
     wp_send_json_success($data);
 }
 
+// upload Video
+add_action(
+    'wp_ajax_get_place_uploads_videos',
+    'get_place_uploads_videos'
+);
+
+add_action(
+    'wp_ajax_nopriv_get_place_uploads_videos',
+    'get_place_uploads_videos'
+);
+
+function get_place_uploads_videos()
+{
+    $place_id = isset($_GET['place_id'])
+        ? sanitize_text_field(wp_unslash($_GET['place_id']))
+        : '';
+
+    if (empty($place_id)) {
+        wp_send_json_error([
+            'message' => 'Missing place_id'
+        ], 400);
+    }
+
+    $videos = get_posts([
+        'post_type'      => 'attachment',
+        'post_status'    => 'inherit',
+        'posts_per_page' => -1,
+        'post_mime_type' => 'video',
+        'meta_key'       => 'place_id',
+        'meta_value'     => $place_id,
+    ]);
+
+    $data = [];
+
+    foreach ($videos as $video) {
+        $url = wp_get_attachment_url($video->ID);
+
+        if (!$url) {
+            continue;
+        }
+
+        $data[] = [
+            'id'        => $video->ID,
+            'url'       => $url,
+            'mime_type' => get_post_mime_type($video->ID),
+        ];
+    }
+
+    wp_send_json_success($data);
+}
+
 // Search GEMINI
 add_action(
     'wp_ajax_pt_ai_search',
@@ -1109,7 +1180,8 @@ add_action(
 );
 
 
-function pt_ai_search() {
+function pt_ai_search()
+{
 
     /*
      * =====================================================
@@ -1129,7 +1201,6 @@ function pt_ai_search() {
         wp_send_json_error([
             'message' => 'Search content is empty.'
         ], 400);
-
     }
 
 
@@ -1149,7 +1220,6 @@ function pt_ai_search() {
         wp_send_json_error([
             'message' => 'Gemini API key is empty.'
         ], 500);
-
     }
 
 
@@ -1275,11 +1345,10 @@ PROMPT;
         wp_send_json_error([
 
             'message' =>
-                'Unable to connect to Gemini: '
+            'Unable to connect to Gemini: '
                 . $response->get_error_message()
 
         ], 500);
-
     }
 
 
@@ -1325,10 +1394,9 @@ PROMPT;
         wp_send_json_error([
 
             'message' =>
-                'Invalid response from Gemini.'
+            'Invalid response from Gemini.'
 
         ], 502);
-
     }
 
 
@@ -1353,7 +1421,6 @@ PROMPT;
             'message' => $error_message
 
         ], $status ?: 500);
-
     }
 
 
@@ -1387,11 +1454,8 @@ PROMPT;
             ) {
 
                 $text .= $part['text'];
-
             }
-
         }
-
     }
 
 
@@ -1406,10 +1470,9 @@ PROMPT;
         wp_send_json_error([
 
             'message' =>
-                'Gemini returned no content.'
+            'Gemini returned no content.'
 
         ], 502);
-
     }
 
 
@@ -1494,7 +1557,6 @@ PROMPT;
         'query' => $query
 
     ]);
-
 }
 // End Search GEMINI
 
@@ -1574,16 +1636,17 @@ PROMPT;
 // }
 
 
-function pt_get_member_level_name( $user_id = 0 ) {
+function pt_get_member_level_name($user_id = 0)
+{
 
     global $wpdb;
 
-    if ( ! $user_id ) {
+    if (! $user_id) {
         $user_id = get_current_user_id();
     }
 
     // Chưa đăng nhập
-    if ( ! $user_id ) {
+    if (! $user_id) {
         return false;
     }
 
@@ -1601,51 +1664,55 @@ function pt_get_member_level_name( $user_id = 0 ) {
         )
     );
 
-    return ! empty( $level_name ) ? $level_name : 'Free';
+    return ! empty($level_name) ? $level_name : 'Free';
 }
 
-add_filter( 'gettext', 'pt_rename_buddymeet', 20, 3 );
+add_filter('gettext', 'pt_rename_buddymeet', 20, 3);
 
-function pt_rename_buddymeet( $translated, $text, $domain ) {
+function pt_rename_buddymeet($translated, $text, $domain)
+{
 
-    if ( $translated === 'BuddyMeet' ) {
+    if ($translated === 'BuddyMeet') {
         return 'Meet';
     }
 
-    if ( $text === 'BuddyMeet' ) {
-        return 'Meet';
-    }
-
-    return $translated;
-}
-
-add_filter( 'gettext_with_context', 'pt_rename_buddymeet_context', 20, 4 );
-
-function pt_rename_buddymeet_context( $translated, $text, $context, $domain ) {
-
-    if ( $translated === 'BuddyMeet' || $text === 'BuddyMeet' ) {
+    if ($text === 'BuddyMeet') {
         return 'Meet';
     }
 
     return $translated;
 }
 
-add_filter( 'bp_nouveau_get_nav_link_text', function( $link_text, $nav_item, $displayed_nav ) {
+add_filter('gettext_with_context', 'pt_rename_buddymeet_context', 20, 4);
 
-    if ( $displayed_nav === 'groups'
-         && isset( $nav_item->slug )
-         && $nav_item->slug === 'admin' ) {
+function pt_rename_buddymeet_context($translated, $text, $context, $domain)
+{
+
+    if ($translated === 'BuddyMeet' || $text === 'BuddyMeet') {
+        return 'Meet';
+    }
+
+    return $translated;
+}
+
+add_filter('bp_nouveau_get_nav_link_text', function ($link_text, $nav_item, $displayed_nav) {
+
+    if (
+        $displayed_nav === 'groups'
+        && isset($nav_item->slug)
+        && $nav_item->slug === 'admin'
+    ) {
 
         return 'Settings';
     }
 
     return $link_text;
-
-}, 10, 3 );
+}, 10, 3);
 
 add_action('wp_ajax_pt_join_meeting', 'pt_join_meeting');
 
-function pt_join_meeting(){
+function pt_join_meeting()
+{
 
     global $wpdb;
 
@@ -1663,18 +1730,17 @@ function pt_join_meeting(){
         $user_id
     ));
 
-    if(!$exists){
+    if (!$exists) {
 
         $wpdb->insert(
             "{$wpdb->prefix}group_live_status",
             [
-                'group_id'=>$group_id,
-                'user_id'=>$user_id,
-                'status'=>1,
-                'started_at'=>current_time('mysql')
+                'group_id' => $group_id,
+                'user_id' => $user_id,
+                'status' => 1,
+                'started_at' => current_time('mysql')
             ]
         );
-
     }
 
     wp_send_json_success();
@@ -1682,7 +1748,8 @@ function pt_join_meeting(){
 
 add_action('wp_ajax_pt_leave_meeting', 'pt_leave_meeting');
 
-function pt_leave_meeting(){
+function pt_leave_meeting()
+{
 
     global $wpdb;
 
@@ -1710,18 +1777,18 @@ add_filter('logout_redirect', function ($redirect_to, $requested_redirect_to, $u
     return home_url('/maps');
 }, 10, 3);
 
-add_action('template_redirect', function () {
+// add_action('template_redirect', function () {
 
-    if (
-        !is_admin() &&
-        !is_user_logged_in() &&
-        $_SERVER['REQUEST_URI'] === '/'
-    ) {
-        wp_safe_redirect(home_url('/maps/'));
-        exit;
-    }
+//     if (
+//         !is_admin() &&
+//         !is_user_logged_in() &&
+//         $_SERVER['REQUEST_URI'] === '/'
+//     ) {
+//         wp_safe_redirect(home_url('/maps/'));
+//         exit;
+//     }
 
-});
+// });
 
 add_filter('nsl_login_redirect', function ($url, $provider) {
 
@@ -1730,7 +1797,6 @@ add_filter('nsl_login_redirect', function ($url, $provider) {
     }
 
     return $url;
-
 }, 10, 2);
 
 /**
@@ -1750,7 +1816,8 @@ add_action(
 );
 
 
-function pt_detect_country() {
+function pt_detect_country()
+{
 
     /*
      * ==========================================
@@ -1766,9 +1833,7 @@ function pt_detect_country() {
      */
 
     if (
-        !empty(
-            $_SERVER['HTTP_CF_CONNECTING_IP']
-        )
+        !empty($_SERVER['HTTP_CF_CONNECTING_IP'])
     ) {
 
         $ip =
@@ -1777,18 +1842,13 @@ function pt_detect_country() {
                     $_SERVER['HTTP_CF_CONNECTING_IP']
                 )
             );
-
     }
 
 
     /*
      * Normal server
-     */
-
-    elseif (
-        !empty(
-            $_SERVER['REMOTE_ADDR']
-        )
+     */ elseif (
+        !empty($_SERVER['REMOTE_ADDR'])
     ) {
 
         $ip =
@@ -1797,7 +1857,6 @@ function pt_detect_country() {
                     $_SERVER['REMOTE_ADDR']
                 )
             );
-
     }
 
 
@@ -1811,9 +1870,7 @@ function pt_detect_country() {
      */
 
     if (
-        !empty(
-            $_SERVER['HTTP_CF_IPCOUNTRY']
-        )
+        !empty($_SERVER['HTTP_CF_IPCOUNTRY'])
     ) {
 
         $country =
@@ -1837,9 +1894,7 @@ function pt_detect_country() {
                 'ip'      => $ip,
                 'country' => $country
             ]);
-
         }
-
     }
 
 
@@ -1867,7 +1922,6 @@ function pt_detect_country() {
             'ip'      => $ip,
             'country' => 'VN'
         ]);
-
     }
 
 
@@ -1880,13 +1934,13 @@ function pt_detect_country() {
     $response =
         wp_remote_get(
             'https://ipwho.is/' .
-            rawurlencode($ip),
+                rawurlencode($ip),
             [
                 'timeout' => 8,
 
                 'headers' => [
                     'Accept' =>
-                        'application/json'
+                    'application/json'
                 ]
             ]
         );
@@ -1913,7 +1967,6 @@ function pt_detect_country() {
             'ip'      => $ip,
             'country' => 'US'
         ]);
-
     }
 
 
@@ -1938,7 +1991,6 @@ function pt_detect_country() {
             'ip'      => $ip,
             'country' => 'US'
         ]);
-
     }
 
 
@@ -1976,7 +2028,6 @@ function pt_detect_country() {
             'ip'      => $ip,
             'country' => 'US'
         ]);
-
     }
 
 
@@ -1987,15 +2038,13 @@ function pt_detect_country() {
      */
 
     $country =
-        !empty(
-            $data['country_code']
-        )
-            ? strtoupper(
-                sanitize_text_field(
-                    $data['country_code']
-                )
+        !empty($data['country_code'])
+        ? strtoupper(
+            sanitize_text_field(
+                $data['country_code']
             )
-            : '';
+        )
+        : '';
 
 
     /*
@@ -2012,7 +2061,6 @@ function pt_detect_country() {
     ) {
 
         $country = 'US';
-
     }
 
 
@@ -2026,5 +2074,96 @@ function pt_detect_country() {
         'ip'      => $ip,
         'country' => $country
     ]);
-
 }
+
+/* UPLOAD VIDEO */
+function upload_place_video()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(
+            'You must be logged in.',
+            403
+        );
+    }
+
+    $place_id = isset($_POST['place_id'])
+        ? sanitize_text_field(
+            wp_unslash($_POST['place_id'])
+        )
+        : '';
+
+    if (empty($place_id)) {
+        wp_send_json_error(
+            'Missing place ID.',
+            400
+        );
+    }
+
+    if (empty($_FILES['video'])) {
+        wp_send_json_error(
+            'No video selected.',
+            400
+        );
+    }
+
+    $file = $_FILES['video'];
+
+    // Chỉ cho phép video
+    if (strpos($file['type'], 'video/') !== 0) {
+        wp_send_json_error(
+            'Invalid video file.',
+            400
+        );
+    }
+
+    require_once ABSPATH . 'wp-admin/includes/file.php';
+    require_once ABSPATH . 'wp-admin/includes/media.php';
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+
+    // Upload Media Library
+    $attachment_id = media_handle_upload(
+        'video',
+        0
+    );
+
+    if (is_wp_error($attachment_id)) {
+        wp_send_json_error(
+            $attachment_id->get_error_message(),
+            500
+        );
+    }
+
+    // Lưu Google Place ID
+    update_post_meta(
+        $attachment_id,
+        'place_id',
+        $place_id
+    );
+
+    wp_send_json_success([
+        'id' => $attachment_id,
+        'url' => wp_get_attachment_url(
+            $attachment_id
+        ),
+        'mime_type' => get_post_mime_type(
+            $attachment_id
+        )
+    ]);
+}
+
+add_action(
+    'wp_ajax_upload_place_video',
+    'upload_place_video'
+);
+
+add_filter('body_class', function ($classes) {
+    if (is_page('my-wallet')) {
+        $classes[] = 'my-wallet-page';
+    }
+
+    if (is_page('membership-account')) {
+        $classes[] = 'membership-account-page';
+    }
+
+    return $classes;
+});

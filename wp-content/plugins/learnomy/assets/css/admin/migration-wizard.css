@@ -1,0 +1,247 @@
+/**
+ * Learnomy — LMS Import wizard.
+ * Token-driven only (colors + spacing via --lrn-*); dark mode inherits from the
+ * root token reassignment. Mobile breakpoint at 640px.
+ */
+
+.lrn-migration-app {
+	max-width: 880px;
+	margin-top: var(--lrn-sp-4);
+}
+
+.lrn-migration-loading {
+	color: var(--lrn-text-secondary);
+	font-style: italic;
+}
+
+/* Step rail */
+.lrn-migration-steps {
+	display: flex;
+	gap: var(--lrn-sp-2);
+	list-style: none;
+	margin: 0 0 var(--lrn-sp-5);
+	padding: 0;
+}
+
+.lrn-migration-step {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-2);
+	flex: 1;
+	padding: var(--lrn-sp-2) var(--lrn-sp-3);
+	border-radius: var(--lrn-radius-md);
+	background: var(--lrn-bg-secondary);
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+.lrn-migration-step.is-active {
+	background: var(--lrn-accent-bg);
+	color: var(--lrn-accent);
+	font-weight: 600;
+}
+
+.lrn-migration-step.is-done {
+	color: var(--lrn-text);
+}
+
+.lrn-migration-step__num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--lrn-bg);
+	border: 1px solid var(--lrn-border);
+	font-size: var(--lrn-text-xs);
+	font-weight: 600;
+}
+
+.lrn-migration-step.is-active .lrn-migration-step__num {
+	background: var(--lrn-accent);
+	border-color: var(--lrn-accent);
+	color: var(--lrn-accent-contrast);
+}
+
+/* Source picker */
+.lrn-migration-sources {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+	gap: var(--lrn-sp-3);
+	margin-top: var(--lrn-sp-3);
+}
+
+.lrn-migration-source {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-1);
+	padding: var(--lrn-sp-4);
+	text-align: start;
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	background: var(--lrn-bg);
+	cursor: pointer;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.lrn-migration-source:hover:not(.is-disabled) {
+	border-color: var(--lrn-accent);
+}
+
+.lrn-migration-source.is-selected {
+	border-color: var(--lrn-accent);
+	box-shadow: 0 0 0 1px var(--lrn-accent);
+}
+
+.lrn-migration-source.is-disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.lrn-migration-source__name {
+	font-size: var(--lrn-text-lg);
+	font-weight: 600;
+	color: var(--lrn-text);
+}
+
+.lrn-migration-source__meta {
+	font-size: var(--lrn-text-sm);
+	color: var(--lrn-text-secondary);
+}
+
+/* Entity checklist */
+.lrn-migration-entities {
+	display: flex;
+	flex-direction: column;
+	gap: var(--lrn-sp-2);
+	margin-top: var(--lrn-sp-3);
+}
+
+.lrn-migration-entity {
+	display: flex;
+	align-items: center;
+	gap: var(--lrn-sp-3);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border: 1px solid var(--lrn-border);
+	border-radius: var(--lrn-radius-md);
+	cursor: pointer;
+}
+
+.lrn-migration-entity__label {
+	flex: 1;
+	color: var(--lrn-text);
+}
+
+.lrn-migration-entity__count {
+	font-variant-numeric: tabular-nums;
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+}
+
+/* Actions row */
+.lrn-migration-actions {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--lrn-sp-3);
+	margin-top: var(--lrn-sp-4);
+}
+
+/* Review + warnings */
+.lrn-migration-num {
+	text-align: end;
+	font-variant-numeric: tabular-nums;
+}
+
+.lrn-migration-warnings {
+	margin-top: var(--lrn-sp-4);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border: 1px solid var(--lrn-warning-border);
+	background: var(--lrn-warning-bg);
+	color: var(--lrn-warning-text);
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-migration-warnings__head {
+	margin: 0 0 var(--lrn-sp-2);
+	font-weight: 600;
+}
+
+.lrn-migration-warnings ul {
+	margin: 0;
+	padding-inline-start: var(--lrn-sp-5);
+	list-style: disc;
+}
+
+/* "Not migrated" — neutral, informational (not a warning). */
+.lrn-migration-notmigrated {
+	margin-top: var(--lrn-sp-4);
+	padding: var(--lrn-sp-3) var(--lrn-sp-4);
+	border: 1px solid var(--lrn-border);
+	background: var(--lrn-bg-secondary);
+	color: var(--lrn-text-secondary);
+	border-radius: var(--lrn-radius-md);
+}
+
+.lrn-migration-notmigrated__head {
+	margin: 0 0 var(--lrn-sp-2);
+	font-weight: 600;
+	color: var(--lrn-text);
+}
+
+.lrn-migration-notmigrated ul {
+	margin: 0;
+	padding-inline-start: var(--lrn-sp-5);
+	list-style: disc;
+}
+
+/* Progress bar */
+.lrn-migration-bar {
+	height: 12px;
+	border-radius: var(--lrn-radius-sm);
+	background: var(--lrn-bg-secondary);
+	overflow: hidden;
+	margin: var(--lrn-sp-3) 0 var(--lrn-sp-2);
+}
+
+.lrn-migration-bar__fill {
+	height: 100%;
+	background: var(--lrn-accent);
+	transition: width 0.4s ease;
+}
+
+.lrn-migration-bar.is-failed .lrn-migration-bar__fill {
+	background: var(--lrn-danger);
+}
+
+.lrn-migration-progress-text {
+	color: var(--lrn-text-secondary);
+	font-size: var(--lrn-text-sm);
+	margin: 0 0 var(--lrn-sp-4);
+}
+
+.lrn-migration-recent {
+	margin-top: var(--lrn-sp-5);
+}
+
+@media (max-width: 640px) {
+	.lrn-migration-steps {
+		flex-wrap: wrap;
+	}
+
+	.lrn-migration-step__label {
+		display: none;
+	}
+
+	.lrn-migration-sources {
+		grid-template-columns: 1fr;
+	}
+
+	.lrn-migration-actions {
+		flex-direction: column-reverse;
+	}
+
+	.lrn-migration-actions .lrn-admin-btn {
+		width: 100%;
+	}
+}

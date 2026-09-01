@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "learnomy/progress-bar",
+    "version": "1.0.0",
+    "title": "Course Progress Bar",
+    "category": "learnomy",
+    "icon": "chart-bar",
+    "description": "Show a student's completion progress for a specific course.",
+    "textdomain": "learnomy",
+    "attributes": {
+        "courseId": {
+            "type": "integer"
+        },
+        "userId": {
+            "type": "integer",
+            "default": 0
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "render": "file:./render.php"
+}
