@@ -11,14 +11,6 @@ let layerControlsInitialized = false;
 let service;
 let photoCarouselPlaces = [];
 
-function getBrowserCountry() {
-  const locale = navigator.language || navigator.userLanguage || "en-US";
-
-  const parts = locale.split("-");
-
-  return parts.length > 1 ? parts[1].toLowerCase() : "us";
-}
-
 function showRestaurantMarkers(results) {
   clearMarkers();
 
@@ -174,218 +166,231 @@ const majorCities = {
 };
 
 document.addEventListener("DOMContentLoaded", function () {
+
+  const countryLanguageMap = {
+    VN: "vi",
+    JP: "ja",
+    KR: "ko",
+    CN: "zh-CN",
+    TW: "zh-TW",
+    HK: "zh-TW",
+    TH: "th",
+    KH: "km",
+    LA: "lo",
+    ID: "id",
+    MY: "ms",
+
+    US: "en",
+    GB: "en",
+    CA: "en",
+    AU: "en",
+    NZ: "en",
+
+    FR: "fr",
+    DE: "de",
+    ES: "es",
+    IT: "it",
+    PT: "pt",
+    NL: "nl",
+    RU: "ru"
+  };
+
+
+  // =====================================
+  // COUNTRY -> LANGUAGE
+  // =====================================
+
+  function getLanguageByCountry(countryCode) {
+
+    countryCode = String(countryCode || "").toUpperCase();
+
+    return countryLanguageMap[countryCode] || "en";
+  }
+
+
+  // =====================================
+  // CHANGE GTRANSLATE
+  // =====================================
+
+  function changeGTranslateLanguage(language) {
+
+    const select = document.querySelector(".goog-te-combo");
+
+    if (!select) {
+      console.log("GTranslate chưa load");
+      return;
+    }
+
+    console.log("Change language:", language);
+
+    if (select.value === language) {
+      return;
+    }
+
+    select.value = language;
+
+    select.dispatchEvent(
+      new Event("change", {
+        bubbles: true
+      })
+    );
+  }
+
+
+  // =====================================
+  // CHECK GPS
+  // =====================================
+
   navigator.geolocation.getCurrentPosition(
-    // =====================================
-    // GPS SUCCESS
-    // =====================================
 
     function (position) {
-      const lat = position.coords.latitude;
 
+      const lat = position.coords.latitude;
       const lng = position.coords.longitude;
 
       console.log("GPS:", lat, lng);
 
-      const geocoder = new google.maps.Geocoder();
 
-      // =====================================
+      // ===================================
       // REVERSE GEOCODE
-      // =====================================
+      // ===================================
+
+      const geocoder = new google.maps.Geocoder();
 
       geocoder.geocode(
         {
           location: {
             lat: lat,
-            lng: lng,
-          },
+            lng: lng
+          }
         },
 
         function (results, status) {
-          if (status !== "OK" || !results || !results.length) {
-            // ==========================
-            // FALLBACK VIỆT NAM
-            // ==========================
 
-            initMapByCountry(35.6762, 139.6503, "JP");
+          if (
+            status !== "OK" ||
+            !results ||
+            !results.length
+          ) {
+
+            console.log(
+              "Không xác định được quốc gia:",
+              status
+            );
 
             return;
           }
 
+
           // =================================
-          // TÌM COUNTRY
+          // FIND COUNTRY
           // =================================
 
-          const countryResult = results.find(function (result) {
-            return result.types && result.types.includes("country");
-          });
+          const countryResult = results.find(
+            function (result) {
+
+              return (
+                result.types &&
+                result.types.includes("country")
+              );
+
+            }
+          );
+
 
           if (!countryResult) {
-            initMapByCountry(35.6762, 139.6503, "JP");
+
+            console.log(
+              "Không tìm thấy country"
+            );
 
             return;
           }
 
-          // =================================
-          // COUNTRY NAME + CODE
-          // =================================
 
-          let countryName = "";
+          // =================================
+          // GET COUNTRY CODE
+          // =================================
 
           let countryCode = "";
 
-          countryResult.address_components.forEach(function (component) {
-            if (component.types && component.types.includes("country")) {
-              countryName = component.long_name;
+          countryResult.address_components.forEach(
+            function (component) {
 
-              countryCode = component.short_name;
+              if (
+                component.types &&
+                component.types.includes("country")
+              ) {
+
+                countryCode =
+                  component.short_name.toUpperCase();
+
+              }
+
             }
-          });
-
-          // =================================
-          // COUNTRY LOCATION
-          // =================================
-
-          const location = countryResult.geometry.location;
-
-          const countryLat = location.lat();
-
-          const countryLng = location.lng();
-
-          // =================================
-          // INIT MAP
-          // =================================
-
-          initMapByCountry(
-            countryLat,
-
-            countryLng,
-
-            countryCode,
           );
-        },
+
+
+          console.log(
+            "COUNTRY:",
+            countryCode
+          );
+
+
+          // =================================
+          // COUNTRY -> LANGUAGE
+          // =================================
+
+          const language =
+            getLanguageByCountry(countryCode);
+
+
+          console.log(
+            "LANGUAGE:",
+            language
+          );
+
+
+          // =================================
+          // CHANGE GTRANSLATE
+          // =================================
+
+          changeGTranslateLanguage(language);
+
+        }
+
       );
+
     },
 
-    // =====================================
-    // GPS ERROR
-    // =====================================
 
     function (error) {
-      console.log("Không lấy được GPS:", error.message);
 
-      // =================================
-      // FALLBACK VIỆT NAM
-      // =================================
+      console.log(
+        "Không lấy được GPS:",
+        error.message
+      );
 
-      initMapByCountry(35.6762, 139.6503, "JP");
     },
 
-    // =====================================
-    // GPS OPTIONS
-    // =====================================
 
     {
       enableHighAccuracy: false,
-
       timeout: 10000,
+      maximumAge: 300000
+    }
 
-      maximumAge: 300000,
-    },
   );
+
 });
 
-async function initMapByCountry(countryLat, countryLng, countryCode) {
-  let center = {
-    lat: Number(countryLat),
-    lng: Number(countryLng),
-  };
-
-  let zoom = 7;
-
-  // Thành phố lớn/đại diện của quốc gia
-  const city = majorCities[countryCode];
-
-  if (city) {
-    center = {
-      lat: city.lat,
-      lng: city.lng,
-    };
-
-    zoom = city.zoom;
-
-    console.log("Major city:", city.name);
-  }
-
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: center,
-
-    zoom: zoom,
-
-    mapTypeControl: false,
-
-    gestureHandling: "greedy",
-
-    scrollwheel: true,
-
-    draggable: true,
-
-    streetViewControl: false,
-
-    fullscreenControl: false,
-  });
-
-  service = new google.maps.places.PlacesService(map);
-
-  // Không tạo GPS marker
-  marker = null;
-
-  trafficLayer = new google.maps.TrafficLayer();
-
-  transitLayer = new google.maps.TransitLayer();
-
-  bikeLayer = new google.maps.BicyclingLayer();
-
-  if (!layerControlsInitialized) {
-    initLayerControls();
-
-    layerControlsInitialized = true;
-  }
-}
-
 // async function initMapByCountry(countryLat, countryLng, countryCode) {
-//   // =========================
-//   // MẶC ĐỊNH
-//   // =========================
-
 //   let center = {
 //     lat: Number(countryLat),
 //     lng: Number(countryLng),
 //   };
 
-//   let zoom = 6;
-
-//   // =========================
-//   // TÌM THÀNH PHỐ MẶC ĐỊNH
-//   // =========================
-
-//   const city = majorCities[countryCode];
-
-//   if (city) {
-//     center = {
-//       lat: city.lat,
-//       lng: city.lng,
-//     };
-
-//     zoom = city.zoom;
-
-//     console.log("Default city:", city.name);
-//   } else {
-//     console.log("Không có thành phố mặc định cho:", countryCode);
-//   }
-
-//   // =========================
-//   // CREATE MAP
-//   // =========================
+//   let zoom = 7;
 
 //   map = new google.maps.Map(document.getElementById("map"), {
 //     center: center,
@@ -405,21 +410,10 @@ async function initMapByCountry(countryLat, countryLng, countryCode) {
 //     fullscreenControl: false,
 //   });
 
-//   // =========================
-//   // PLACES SERVICE
-//   // =========================
-
 //   service = new google.maps.places.PlacesService(map);
 
-//   // =========================
-//   // KHÔNG TẠO GPS MARKER
-//   // =========================
-
+//   // Không tạo GPS marker
 //   marker = null;
-
-//   // =========================
-//   // LAYERS
-//   // =========================
 
 //   trafficLayer = new google.maps.TrafficLayer();
 
@@ -427,18 +421,100 @@ async function initMapByCountry(countryLat, countryLng, countryCode) {
 
 //   bikeLayer = new google.maps.BicyclingLayer();
 
-//   // =========================
-//   // LAYER CONTROL
-//   // =========================
-
 //   if (!layerControlsInitialized) {
 //     initLayerControls();
 
 //     layerControlsInitialized = true;
 //   }
-
-//   console.log("Map initialized:", countryCode, center, zoom);
 // }
+
+async function initMapByCountry(countryLat, countryLng, countryCode) {
+  // =========================
+  // MẶC ĐỊNH
+  // =========================
+
+  let center = {
+    lat: Number(countryLat),
+    lng: Number(countryLng),
+  };
+
+  let zoom = 6;
+
+  // =========================
+  // TÌM THÀNH PHỐ MẶC ĐỊNH
+  // =========================
+
+  const city = majorCities[countryCode];
+
+  if (city) {
+    center = {
+      lat: city.lat,
+      lng: city.lng,
+    };
+
+    zoom = city.zoom;
+
+    console.log("Default city:", city.name);
+  } else {
+    console.log("Không có thành phố mặc định cho:", countryCode);
+  }
+
+  // =========================
+  // CREATE MAP
+  // =========================
+
+  map = new google.maps.Map(document.getElementById("map"), {
+    center: center,
+
+    zoom: zoom,
+
+    mapTypeControl: false,
+
+    gestureHandling: "greedy",
+
+    scrollwheel: true,
+
+    draggable: true,
+
+    streetViewControl: false,
+
+    fullscreenControl: false,
+  });
+
+  // =========================
+  // PLACES SERVICE
+  // =========================
+
+  service = new google.maps.places.PlacesService(map);
+
+  // =========================
+  // KHÔNG TẠO GPS MARKER
+  // =========================
+
+  marker = null;
+
+  // =========================
+  // LAYERS
+  // =========================
+
+  trafficLayer = new google.maps.TrafficLayer();
+
+  transitLayer = new google.maps.TransitLayer();
+
+  bikeLayer = new google.maps.BicyclingLayer();
+
+  // =========================
+  // LAYER CONTROL
+  // =========================
+
+  if (!layerControlsInitialized) {
+    initLayerControls();
+
+    layerControlsInitialized = true;
+  }
+
+  console.log("Map initialized:", countryCode, center, zoom);
+}
 
 async function initMap(userLat, userLng) {
   const center = {
@@ -539,72 +615,136 @@ async function initMap(userLat, userLng) {
 
 window.initMap = initMap;
 
-document.getElementById("find-btn").addEventListener("click", function () {
-  const keyword = document.getElementById("pac-input").value.trim();
-  const aiPanel = document.getElementById("ai-result-panel");
-  // const googleMode = document.getElementById("googleSearchMode").checked;
+document
+  .getElementById("find-btn")
+  .addEventListener("click", async function () {
+    const keyword = document.getElementById("pac-input").value.trim();
 
-  if (!keyword) {
-    alert("Enter a keyword.");
-    return;
+    const aiPanel = document.getElementById("ai-result-panel");
+
+    if (!keyword) {
+      alert("Enter a keyword.");
+      return;
+    }
+
+    // Hiện loading
+    await showSearchLoading();
+
+    document.getElementById("search-wrapper").style.display = "block";
+
+    const resultWrapper = document.querySelector(".result-wrapper");
+
+    if (resultWrapper) {
+      resultWrapper.style.display = "block";
+    }
+
+    if (aiPanel) {
+      aiPanel.style.display = "none";
+    }
+
+    try {
+      // Search ngay sau khi click
+      await searchPlaces(keyword);
+
+      // Search xong mới chờ 5 giây
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    } finally {
+      hideSearchLoading();
+    }
+  });
+
+function showSearchLoading() {
+  let dialog = document.getElementById("search-loading-dialog");
+
+  if (!dialog) {
+    dialog = document.createElement("div");
+    dialog.id = "search-loading-dialog";
+
+    dialog.innerHTML = `
+            <div class="search-loading-content">
+                <span class="search-loading"></span>
+                <span>Please wait, searching...</span>
+            </div>
+        `;
+
+    document.body.appendChild(dialog);
+
+    const style = document.createElement("style");
+    style.id = "search-loading-style";
+
+    style.textContent = `
+            #search-loading-dialog {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+
+                width: 100vw !important;
+                height: 100vh !important;
+
+                z-index: 2147483647 !important;
+
+                background: rgba(0, 0, 0, 0.35);
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #search-loading-dialog .search-loading-content {
+                position: relative;
+                z-index: 2147483647 !important;
+
+                background: #fff;
+                padding: 20px 28px;
+                border-radius: 10px;
+
+                display: flex;
+                align-items: center;
+                gap: 12px;
+
+                font-size: 15px;
+                color: #333;
+
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+            }
+
+            #search-loading-dialog .search-loading {
+                width: 18px;
+                height: 18px;
+
+                border: 2px solid #ddd;
+                border-top-color: #333;
+                border-radius: 50%;
+
+                animation: searchLoadingSpin 0.7s linear infinite;
+            }
+
+            @keyframes searchLoadingSpin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+        `;
+
+    document.head.appendChild(style);
   }
 
-  // if (googleMode) {
+  // Hiện dialog
+  dialog.style.display = "flex";
 
-  //     document.getElementById("search-wrapper").style.display = "none";
+  // Đảm bảo luôn nằm trên Google Maps
+  document.body.appendChild(dialog);
+}
 
-  //     document.getElementById("ai-result-panel").style.display = "block";
+function hideSearchLoading() {
+  const dialog = document.getElementById("search-loading-dialog");
 
-  //     document.getElementById("ai-loading").style.display = "flex";
-
-  //     document.getElementById("ai-result-content").innerHTML = "";
-
-  //     fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-  //         method: "POST",
-  //         headers: {
-  //             "Content-Type": "application/x-www-form-urlencoded"
-  //         },
-  //         body: new URLSearchParams({
-  //             action: "pt_ai_search",
-  //             question: keyword
-  //         })
-  //     })
-  //     .then(r => r.json())
-  //     .then(res => {
-
-  //         document.getElementById("ai-loading").style.display = "none";
-
-  //         document.getElementById("ai-result-content").innerHTML =
-  //             res.data.answer;
-
-  //     })
-  //     .catch(err => {
-
-  //         document.getElementById("ai-loading").style.display = "none";
-
-  //         document.getElementById("ai-result-content").innerHTML =
-  //             "❌ Không thể kết nối Gemini";
-
-  //         console.error(err);
-  //     });
-
-  //     return;
-  // }
-  document.getElementById("search-wrapper").style.display = "block";
-  // document.getElementById("ai-result-panel").style.display = "none";
-
-  const resultWrapper = document.querySelector(".result-wrapper");
-
-  if (resultWrapper) {
-    resultWrapper.style.display = "block";
+  if (dialog) {
+    dialog.style.display = "none";
   }
-
-  if (aiPanel) {
-    aiPanel.style.display = "none";
-  }
-
-  searchPlaces(keyword);
-});
+}
 
 function initLayerControls() {
   const toggleBtn = document.getElementById("layers-toggle");
@@ -659,61 +799,181 @@ function searchPlaces() {
     return;
   }
 
-  const service = new google.maps.places.PlacesService(map);
+  if (!navigator.geolocation) {
+    alert("Trình duyệt không hỗ trợ định vị.");
+    return;
+  }
 
-  service.textSearch(
-    {
-      query: keyword,
+  navigator.geolocation.getCurrentPosition(
+    function (position) {
+      const userLat = position.coords.latitude;
+      const userLng = position.coords.longitude;
+
+      const userLocation = new google.maps.LatLng(userLat, userLng);
+
+      console.log("User GPS:", userLat, userLng);
+
+      const service = new google.maps.places.PlacesService(map);
+
+      service.textSearch(
+        {
+          query: keyword,
+          location: userLocation,
+          radius: 5000,
+        },
+
+        function (results, status) {
+          if (status !== google.maps.places.PlacesServiceStatus.OK) {
+            console.error("Places Error:", status);
+            renderResults([]);
+            return;
+          }
+
+          // =========================
+          // XÓA MARKER CŨ
+          // =========================
+
+          markers.forEach((marker) => {
+            marker.setMap(null);
+          });
+
+          markers = [];
+
+          // =========================
+          // CHỈ GIỮ PLACE CÓ LOCATION
+          // =========================
+
+          const nearbyResults = results.filter((place) => {
+            return place.geometry && place.geometry.location;
+          });
+
+          // =========================
+          // TẠO MARKER
+          // =========================
+
+          nearbyResults.forEach((place) => {
+            const marker = new google.maps.Marker({
+              position: place.geometry.location,
+              map: map,
+              title: place.name,
+            });
+
+            markers.push(marker);
+
+            marker.addListener("click", () => {
+              loadPlaceDetails(place.place_id);
+            });
+          });
+
+          // =========================
+          // QUAN TRỌNG:
+          // ZOOM VỀ GPS NGƯỜI DÙNG
+          // =========================
+
+          map.setCenter(userLocation);
+
+          map.setZoom(15);
+
+          // =========================
+          // LIST BÊN TRÁI
+          // =========================
+
+          renderResults(nearbyResults);
+        },
+      );
     },
-    function (results, status) {
-      if (status !== google.maps.places.PlacesServiceStatus.OK) {
-        console.error("Places Error:", status);
-        return;
+
+    function (error) {
+      console.error("GPS Error:", error);
+
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          alert("Bạn chưa cho phép website sử dụng vị trí.");
+          break;
+
+        case error.POSITION_UNAVAILABLE:
+          alert("Không lấy được vị trí hiện tại.");
+          break;
+
+        case error.TIMEOUT:
+          alert("Lấy GPS quá thời gian.");
+          break;
+
+        default:
+          alert("Không thể lấy vị trí.");
       }
+    },
 
-      // Xóa marker cũ
-      markers.forEach((marker) => {
-        marker.setMap(null);
-      });
-
-      markers = [];
-
-      const bounds = new google.maps.LatLngBounds();
-
-      results.forEach((place) => {
-        if (!place.geometry) {
-          return;
-        }
-
-        const marker = new google.maps.Marker({
-          position: place.geometry.location,
-          map: map,
-          title: place.name,
-        });
-
-        markers.push(marker);
-
-        bounds.extend(place.geometry.location);
-
-        marker.addListener("click", () => {
-          loadPlaceDetails(place.place_id);
-        });
-      });
-
-      // Zoom về khu vực kết quả
-      if (results.length > 1) {
-        map.fitBounds(bounds);
-      } else {
-        map.setCenter(results[0].geometry.location);
-
-        map.setZoom(16);
-      }
-
-      // Render list bên trái
-      renderResults(results);
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
     },
   );
 }
+
+// function searchPlaces() {
+//   const keyword = document.getElementById("pac-input").value.trim();
+
+//   if (!keyword) {
+//     return;
+//   }
+
+//   const service = new google.maps.places.PlacesService(map);
+
+//   service.textSearch(
+//     {
+//       query: keyword,
+//     },
+//     function (results, status) {
+//       if (status !== google.maps.places.PlacesServiceStatus.OK) {
+//         console.error("Places Error:", status);
+//         return;
+//       }
+
+//       // Xóa marker cũ
+//       markers.forEach((marker) => {
+//         marker.setMap(null);
+//       });
+
+//       markers = [];
+
+//       const bounds = new google.maps.LatLngBounds();
+
+//       results.forEach((place) => {
+//         if (!place.geometry) {
+//           return;
+//         }
+
+//         const marker = new google.maps.Marker({
+//           position: place.geometry.location,
+//           map: map,
+//           title: place.name,
+//         });
+
+//         markers.push(marker);
+
+//         bounds.extend(place.geometry.location);
+
+//         marker.addListener("click", () => {
+//           loadPlaceDetails(place.place_id);
+//         });
+//       });
+
+//       // Zoom về khu vực kết quả
+//       if (results.length > 1) {
+//         map.fitBounds(bounds);
+//       } else {
+//         map.setCenter(results[0].geometry.location);
+
+//         map.setZoom(16);
+//       }
+
+//       // Render list bên trái
+//       renderResults(results);
+//     },
+//   );
+// }
 
 function renderResults(results) {
   clearMarkers();
@@ -1613,8 +1873,6 @@ document.addEventListener("click", function (e) {
     return;
   }
 
-  console.log("Click Upload Video");
-
   const fileInput = document.getElementById("gmUploadVideoFile");
 
   if (!fileInput) {
@@ -1626,6 +1884,12 @@ document.addEventListener("click", function (e) {
 });
 
 document.addEventListener("change", function (e) {
+  const button = e.target.closest("#gmUploadVideoFile");
+
+  if (!button) {
+    return;
+  }
+
   console.log("gmUploadVideoFile");
   if (e.target.id !== "gmUploadVideoFile") {
     return;

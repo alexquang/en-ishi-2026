@@ -42,22 +42,6 @@ add_action('http_api_curl', function ($handle) {
     );
 });
 
-add_action('wp_footer', function () {
-?>
-    <script>
-        window.gtranslateSettings = {
-            default_language: "en",
-            native_language_names: true,
-            flag_style: "2d",
-            wrapper_selector: ".gtranslate_wrapper"
-        };
-    </script>
-    <script
-        src="<?php echo get_stylesheet_directory_uri(); ?>/assets-enishi/js/dropdown.js"
-        defer>
-    </script>
-<?php
-});
 
 add_action('wp_enqueue_scripts', function () {
 
@@ -167,734 +151,6 @@ if (get_stylesheet() !== get_template()) {
 }
 
 add_filter('show_admin_bar', '__return_false');
-
-add_action('wp_footer', function () {
-?>
-    <script>
-        (function() {
-
-            'use strict';
-
-            /*
-             * ==========================================
-             * CONFIG
-             * ==========================================
-             */
-
-            const STORAGE_KEY =
-                'pt_gtranslate_selected_lang';
-
-            const DEFAULT_LANG =
-                'en';
-
-            const AJAX_URL =
-                '<?php echo esc_url(admin_url('admin-ajax.php')); ?>';
-
-
-            /*
-             * ==========================================
-             * SUPPORTED LANGUAGES
-             * ==========================================
-             */
-
-            const supported = [
-                'vi', 'en', 'ja', 'ko', 'zh', 'fr', 'de', 'es', 'it', 'pt',
-                'ru', 'ar', 'th', 'id', 'ms', 'hi', 'nl', 'pl', 'tr',
-                'cs', 'da', 'fi', 'el', 'he', 'hu', 'no', 'ro', 'sv', 'uk'
-            ];
-
-
-            /*
-             * ==========================================
-             * COUNTRY -> LANGUAGE
-             * ==========================================
-             */
-
-            const countryLanguage = {
-
-                'VN': 'vi',
-
-                'KR': 'ko',
-
-                'JP': 'ja',
-
-                'CN': 'zh',
-                'TW': 'zh',
-                'HK': 'zh',
-                'MO': 'zh',
-
-                'TH': 'th',
-
-                'ID': 'id',
-
-                'MY': 'ms',
-
-                'IN': 'hi',
-
-                'FR': 'fr',
-
-                'DE': 'de',
-                'AT': 'de',
-                'CH': 'de',
-
-                'ES': 'es',
-
-                'IT': 'it',
-
-                'PT': 'pt',
-                'BR': 'pt',
-
-                'RU': 'ru',
-
-                'NL': 'nl',
-
-                'PL': 'pl',
-
-                'TR': 'tr',
-
-                'GR': 'el',
-
-                'IL': 'he',
-
-                'CZ': 'cs',
-
-                'DK': 'da',
-
-                'FI': 'fi',
-
-                'HU': 'hu',
-
-                'NO': 'no',
-
-                'RO': 'ro',
-
-                'SE': 'sv',
-
-                'UA': 'uk',
-
-                'SA': 'ar',
-                'AE': 'ar',
-                'QA': 'ar',
-                'KW': 'ar',
-                'BH': 'ar',
-                'OM': 'ar',
-                'JO': 'ar',
-                'LB': 'ar',
-                'EG': 'ar',
-                'MA': 'ar',
-                'DZ': 'ar',
-                'TN': 'ar'
-
-            };
-
-
-            /*
-             * ==========================================
-             * GET GTRANSLATE COOKIE
-             * ==========================================
-             */
-
-            function getGoogleLanguage() {
-
-                const match =
-                    document.cookie.match(
-                        /(?:^|;\s*)googtrans=([^;]+)/
-                    );
-
-                if (!match) {
-                    return null;
-                }
-
-                try {
-
-                    const value =
-                        decodeURIComponent(
-                            match[1]
-                        );
-
-                    /*
-                     * /en/vi
-                     */
-
-                    const parts =
-                        value.split('/');
-
-                    if (parts.length >= 3) {
-
-                        const lang =
-                            parts[2]
-                            .toLowerCase();
-
-                        if (
-                            supported.includes(lang)
-                        ) {
-                            return lang;
-                        }
-                    }
-
-                } catch (error) {
-
-                    console.log(
-                        '[GTranslate] Cookie error:',
-                        error
-                    );
-
-                }
-
-                return null;
-            }
-
-
-            /*
-             * ==========================================
-             * GET USER SELECTED LANGUAGE
-             * ==========================================
-             *
-             * Nếu user đã chọn trước đó
-             * thì luôn ưu tiên ngôn ngữ này.
-             */
-
-            function getUserSelectedLanguage() {
-
-                try {
-
-                    const lang =
-                        localStorage.getItem(
-                            STORAGE_KEY
-                        );
-
-                    if (
-                        lang &&
-                        supported.includes(lang)
-                    ) {
-                        return lang;
-                    }
-
-                } catch (error) {
-
-                    console.log(
-                        '[GTranslate] LocalStorage error:',
-                        error
-                    );
-
-                }
-
-                return null;
-            }
-
-
-            /*
-             * ==========================================
-             * SAVE USER LANGUAGE
-             * ==========================================
-             */
-
-            function saveUserLanguage(lang) {
-
-                if (
-                    !lang ||
-                    !supported.includes(lang)
-                ) {
-                    return;
-                }
-
-                try {
-
-                    localStorage.setItem(
-                        STORAGE_KEY,
-                        lang
-                    );
-
-                } catch (error) {
-
-                    console.log(
-                        '[GTranslate] Cannot save language:',
-                        error
-                    );
-
-                }
-            }
-
-
-            /*
-             * ==========================================
-             * SET GTRANSLATE COOKIE
-             * ==========================================
-             */
-
-            function setGoogleLanguage(lang) {
-
-                if (
-                    !lang ||
-                    !supported.includes(lang)
-                ) {
-                    lang = DEFAULT_LANG;
-                }
-
-                const value =
-                    '/en/' + lang;
-
-
-                document.cookie =
-                    'googtrans=' +
-                    encodeURIComponent(value) +
-                    '; path=/';
-
-
-                /*
-                 * Domain cookie
-                 */
-
-                try {
-
-                    document.cookie =
-                        'googtrans=' +
-                        encodeURIComponent(value) +
-                        '; path=/; domain=' +
-                        window.location.hostname;
-
-                } catch (error) {
-
-                    // Ignore
-
-                }
-            }
-
-
-            /*
-             * ==========================================
-             * COUNTRY -> LANGUAGE
-             * ==========================================
-             */
-
-            function countryToLanguage(country) {
-
-                country =
-                    String(country || '')
-                    .toUpperCase()
-                    .trim();
-
-
-                if (
-                    countryLanguage[country]
-                ) {
-
-                    return countryLanguage[country];
-
-                }
-
-
-                /*
-                 * Quốc gia không nằm trong mapping
-                 * => English
-                 */
-
-                return DEFAULT_LANG;
-            }
-
-
-            /*
-             * ==========================================
-             * GET COUNTRY BY IP
-             * ==========================================
-             *
-             * WordPress server sẽ gọi:
-             *
-             * https://ipwho.is/IP
-             *
-             * ==========================================
-             */
-
-            async function detectCountry() {
-
-                try {
-
-                    const response =
-                        await fetch(
-                            AJAX_URL +
-                            '?action=pt_detect_country', {
-                                method: 'GET',
-
-                                credentials: 'same-origin',
-
-                                cache: 'no-store'
-                            }
-                        );
-
-
-                    if (
-                        !response.ok
-                    ) {
-
-                        throw new Error(
-                            'HTTP ' +
-                            response.status
-                        );
-
-                    }
-
-
-                    const result =
-                        await response.json();
-
-
-                    if (
-                        !result ||
-                        !result.success ||
-                        !result.data
-                    ) {
-
-                        return null;
-
-                    }
-
-
-                    console.log(
-                        '[GTranslate] IP:',
-                        result.data.ip
-                    );
-
-
-                    console.log(
-                        '[GTranslate] Country:',
-                        result.data.country
-                    );
-
-
-                    return result.data.country;
-
-                } catch (error) {
-
-                    console.error(
-                        '[GTranslate] Country detection error:',
-                        error
-                    );
-
-
-                    return null;
-
-                }
-            }
-
-
-            /*
-             * ==========================================
-             * APPLY LANGUAGE
-             * ==========================================
-             */
-
-            function applyLanguage(lang) {
-
-                if (
-                    !lang ||
-                    !supported.includes(lang)
-                ) {
-
-                    lang =
-                        DEFAULT_LANG;
-                }
-
-
-                const current =
-                    getGoogleLanguage();
-
-
-                /*
-                 * Đã đúng ngôn ngữ
-                 * => không reload
-                 */
-
-                if (
-                    current === lang
-                ) {
-
-                    return;
-
-                }
-
-
-                console.log(
-                    '[GTranslate] Change:',
-                    current,
-                    '→',
-                    lang
-                );
-
-
-                setGoogleLanguage(
-                    lang
-                );
-
-
-                /*
-                 * Reload để GTranslate
-                 * áp dụng ngôn ngữ.
-                 */
-
-                window.location.reload();
-
-            }
-
-
-            /*
-             * ==========================================
-             * WATCH GTRANSLATE SELECT
-             * ==========================================
-             *
-             * Khi user chọn ngôn ngữ:
-             *
-             * Korean
-             * Japanese
-             * Vietnamese
-             * ...
-             *
-             * => lưu lại.
-             *
-             * Lần sau IP không ghi đè.
-             *
-             * ==========================================
-             */
-
-            function watchGTranslate() {
-
-                const select =
-                    document.querySelector(
-                        '.goog-te-combo'
-                    );
-
-
-                if (!select) {
-
-                    return false;
-
-                }
-
-
-                if (
-                    select.dataset.ptLanguageWatch
-                ) {
-
-                    return true;
-
-                }
-
-
-                select.dataset.ptLanguageWatch =
-                    '1';
-
-
-                select.addEventListener(
-                    'change',
-                    function() {
-
-                        const lang =
-                            String(
-                                this.value || ''
-                            )
-                            .toLowerCase()
-                            .trim();
-
-
-                        if (
-                            !supported.includes(lang)
-                        ) {
-
-                            return;
-
-                        }
-
-
-                        console.log(
-                            '[GTranslate] USER SELECTED:',
-                            lang
-                        );
-
-
-                        /*
-                         * Lưu lựa chọn thật của user.
-                         */
-
-                        saveUserLanguage(
-                            lang
-                        );
-
-                    }
-                );
-
-
-                return true;
-
-            }
-
-
-            /*
-             * ==========================================
-             * WAIT GTRANSLATE
-             * ==========================================
-             */
-
-            function waitForGTranslate() {
-
-                let attempts = 0;
-
-
-                const timer =
-                    setInterval(
-                        function() {
-
-                            attempts++;
-
-
-                            if (
-                                watchGTranslate() ||
-                                attempts >= 30
-                            ) {
-
-                                clearInterval(
-                                    timer
-                                );
-
-                            }
-
-                        },
-                        500
-                    );
-
-            }
-
-
-            /*
-             * ==========================================
-             * INITIALIZE
-             * ==========================================
-             */
-
-            async function initialize() {
-
-                /*
-                 * ======================================
-                 * PRIORITY 1
-                 *
-                 * USER ĐÃ CHỌN
-                 * ======================================
-                 */
-
-                const userLanguage =
-                    getUserSelectedLanguage();
-
-
-                if (userLanguage) {
-
-                    console.log(
-                        '[GTranslate] User language:',
-                        userLanguage
-                    );
-
-
-                    applyLanguage(
-                        userLanguage
-                    );
-
-
-                    return;
-
-                }
-
-
-                /*
-                 * ======================================
-                 * PRIORITY 2
-                 *
-                 * IP COUNTRY
-                 * ======================================
-                 */
-
-                const country =
-                    await detectCountry();
-
-
-                if (!country) {
-
-                    console.log(
-                        '[GTranslate] Cannot detect country.'
-                    );
-
-
-                    /*
-                     * Không xác định được IP
-                     * => English
-                     */
-
-                    applyLanguage(
-                        'en'
-                    );
-
-
-                    return;
-
-                }
-
-
-                /*
-                 * Country -> Language
-                 */
-
-                const language =
-                    countryToLanguage(
-                        country
-                    );
-
-
-                console.log(
-                    '[GTranslate] Country:',
-                    country
-                );
-
-
-                console.log(
-                    '[GTranslate] Language:',
-                    language
-                );
-
-
-                /*
-                 * Apply
-                 */
-
-                applyLanguage(
-                    language
-                );
-
-            }
-
-
-            /*
-             * ==========================================
-             * START
-             * ==========================================
-             */
-
-            waitForGTranslate();
-
-
-            /*
-             * Đợi GTranslate load
-             */
-
-            setTimeout(
-                function() {
-
-                    initialize();
-
-                },
-                700
-            );
-
-
-        })();
-    </script>
-<?php
-});
 
 add_action('rest_api_init', function () {
 
@@ -2166,4 +1422,366 @@ add_filter('body_class', function ($classes) {
     }
 
     return $classes;
+});
+
+/* Change Lang */
+add_action('wp_footer', function () {
+?>
+    <script>
+        (function() {
+
+            'use strict';
+
+            const STORAGE_KEY = 'pt_gtranslate_selected_lang';
+
+
+            /*
+             * =====================================================
+             * 1. LẤY NGÔN NGỮ USER ĐÃ CHỌN
+             * =====================================================
+             */
+
+            let savedLanguage = 'en';
+
+            try {
+
+                const stored =
+                    localStorage.getItem(STORAGE_KEY);
+
+                if (stored) {
+                    savedLanguage = stored;
+                }
+
+            } catch (e) {
+
+                console.log(
+                    '[GTranslate] localStorage error:',
+                    e
+                );
+            }
+
+
+            console.log(
+                '[GTranslate] Language to load:',
+                savedLanguage
+            );
+
+
+            /*
+             * =====================================================
+             * 2. SET COOKIE GTRANSLATE TRƯỚC KHI LOAD PLUGIN
+             * =====================================================
+             *
+             * GTranslate sử dụng cookie:
+             *
+             * googtrans=/en/ja
+             * googtrans=/en/vi
+             * googtrans=/en/ko
+             *
+             */
+
+            function setGTranslateCookie(lang) {
+
+                if (!lang) {
+                    return;
+                }
+
+                const cookieValue =
+                    '/en/' + lang;
+
+
+                document.cookie =
+                    'googtrans=' +
+                    cookieValue +
+                    '; path=/';
+
+
+                /*
+                 * Domain cookie
+                 */
+
+                try {
+
+                    document.cookie =
+                        'googtrans=' +
+                        cookieValue +
+                        '; path=/; domain=' +
+                        window.location.hostname;
+
+                } catch (e) {
+                    // ignore
+                }
+
+
+                console.log(
+                    '[GTranslate] Cookie:',
+                    cookieValue
+                );
+            }
+
+
+            /*
+             * Set language đã lưu
+             * trước khi dropdown.js chạy
+             */
+
+            setGTranslateCookie(
+                savedLanguage
+            );
+
+
+            /*
+             * =====================================================
+             * 3. GTRANSLATE SETTINGS
+             * =====================================================
+             */
+
+            window.gtranslateSettings = {
+
+                default_language: savedLanguage,
+
+                native_language_names: true,
+
+                flag_style: "2d",
+
+                wrapper_selector: ".gtranslate_wrapper"
+            };
+
+
+            /*
+             * =====================================================
+             * 4. LOAD GTRANSLATE
+             * =====================================================
+             */
+
+            const script =
+                document.createElement('script');
+
+
+            script.src =
+                "<?php echo get_stylesheet_directory_uri(); ?>/assets-enishi/js/dropdown.js";
+
+
+            script.defer = true;
+
+
+            script.onload = function() {
+
+                console.log(
+                    '[GTranslate] dropdown.js loaded'
+                );
+
+                initGTranslateStorage();
+
+            };
+
+
+            script.onerror = function() {
+
+                console.error(
+                    '[GTranslate] Cannot load dropdown.js'
+                );
+
+            };
+
+
+            document.head.appendChild(
+                script
+            );
+
+
+            /*
+             * =====================================================
+             * 5. THEO DÕI USER CHỌN NGÔN NGỮ
+             * =====================================================
+             */
+
+            function initGTranslateStorage() {
+
+                let attempts = 0;
+
+
+                const timer =
+                    setInterval(function() {
+
+                        attempts++;
+
+
+                        const select =
+                            document.querySelector(
+                                '.goog-te-combo'
+                            );
+
+
+                        if (!select) {
+
+                            if (attempts >= 40) {
+
+                                clearInterval(timer);
+
+                                console.log(
+                                    '[GTranslate] Language selector not found'
+                                );
+                            }
+
+                            return;
+                        }
+
+
+                        clearInterval(timer);
+
+
+                        /*
+                         * Tránh bind nhiều lần
+                         */
+
+                        if (
+                            select.dataset.ptStorageReady === '1'
+                        ) {
+                            return;
+                        }
+
+
+                        select.dataset.ptStorageReady =
+                            '1';
+
+
+                        console.log(
+                            '[GTranslate] Language selector ready'
+                        );
+
+
+                        /*
+                         * =================================================
+                         * USER CHỌN LANGUAGE
+                         * =================================================
+                         */
+
+                        select.addEventListener(
+                            'change',
+                            function() {
+
+                                const lang =
+                                    this.value;
+
+
+                                if (!lang) {
+                                    return;
+                                }
+
+
+                                console.log(
+                                    '[GTranslate] USER SELECTED:',
+                                    lang
+                                );
+
+
+                                /*
+                                 * Lưu localStorage
+                                 */
+
+                                try {
+
+                                    localStorage.setItem(
+                                        STORAGE_KEY,
+                                        lang
+                                    );
+
+                                } catch (e) {
+
+                                    console.log(
+                                        '[GTranslate] Cannot save localStorage:',
+                                        e
+                                    );
+                                }
+
+
+                                /*
+                                 * Lưu cookie
+                                 */
+
+                                setGTranslateCookie(
+                                    lang
+                                );
+
+
+                                /*
+                                 * Update setting
+                                 */
+
+                                if (
+                                    window.gtranslateSettings
+                                ) {
+
+                                    window.gtranslateSettings
+                                        .default_language =
+                                        lang;
+                                }
+
+
+                                console.log(
+                                    '[GTranslate] Language saved:',
+                                    lang
+                                );
+                            }
+                        );
+
+
+                        /*
+                         * =================================================
+                         * RESTORE LANGUAGE
+                         * =================================================
+                         *
+                         * Nếu user đã từng chọn language
+                         * thì set lại language.
+                         */
+
+                        if (
+                            savedLanguage &&
+                            savedLanguage !== 'en'
+                        ) {
+
+                            const option =
+                                Array.from(
+                                    select.options
+                                ).find(function(option) {
+
+                                    return option.value ===
+                                        savedLanguage;
+
+                                });
+
+
+                            if (option) {
+
+                                console.log(
+                                    '[GTranslate] Restore:',
+                                    savedLanguage
+                                );
+
+
+                                select.value =
+                                    savedLanguage;
+
+
+                                /*
+                                 * Trigger GTranslate
+                                 */
+
+                                select.dispatchEvent(
+                                    new Event(
+                                        'change', {
+                                            bubbles: true
+                                        }
+                                    )
+                                );
+                            }
+                        }
+
+                    }, 300);
+            }
+
+        })();
+    </script>
+<?php
 });
