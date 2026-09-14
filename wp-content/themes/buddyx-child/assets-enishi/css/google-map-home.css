@@ -2134,3 +2134,30 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
 }
 
 /* IMAGE BOTTOM TODO */
+#search-loading-dialog {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999999 !important;
+
+  background: rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-loading-content {
+  position: relative;
+  z-index: 1000000;
+
+  background: #fff;
+  padding: 20px 28px;
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  font-size: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
