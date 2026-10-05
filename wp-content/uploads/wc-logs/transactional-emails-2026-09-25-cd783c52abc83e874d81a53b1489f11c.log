@@ -1,0 +1,5 @@
+2026-09-25T14:19:07+00:00 WARNING Email "new_wallet_transaction" for user #32 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"quangpham","user":32}
+2026-09-25T14:19:57+00:00 WARNING Email "new_wallet_transaction" for user #113 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"quangpham2","user":113}
+2026-09-25T14:20:30+00:00 WARNING Email "new_wallet_transaction" for user #113 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"quangpham2","user":113}
+2026-09-25T14:24:51+00:00 WARNING Email "new_wallet_transaction" for user #1 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"admin","user":1}
+2026-09-25T14:28:37+00:00 WARNING Email "new_wallet_transaction" for user #33 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"quangpham1","user":33}
