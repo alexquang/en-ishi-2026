@@ -1,0 +1,2 @@
+2026-09-21T02:55:10+00:00 WARNING Email "new_wallet_transaction" for user #41 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"wp_admin_c5ca2a","user":41}
+2026-09-21T18:44:05+00:00 WARNING Email "new_wallet_transaction" for user #112 failed to send: Could not instantiate mail function. CONTEXT: {"email_type":"new_wallet_transaction","status":"failed","recipient":"wp_service_5a8888","user":112}

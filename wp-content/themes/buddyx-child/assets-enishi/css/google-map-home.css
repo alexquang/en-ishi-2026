@@ -541,8 +541,8 @@
 .search-wrapper {
   position: absolute;
   top: 0px !important;
-  left: 10px;
-  z-index: 22;
+  left: 0px !important;
+  z-index: 22 !important;
 }
 
 /* Search */
@@ -600,7 +600,7 @@
 
   top: 50%;
 
-  left: 400px;
+  left: 765px !important;
 
   transform: translateY(-50%);
 
@@ -642,7 +642,7 @@
 }
 
 .search-wrapper.collapsed #toggle-results {
-  left: 0;
+  left: 0 !important;
 }
 
 /* Mobile */
@@ -707,7 +707,7 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
   position: absolute;
 
   top: 20px;
-  left: 420px !important;
+  left: 405px !important;
 
   width: 400px;
   max-width: calc(100% - 40px);

@@ -168,15 +168,20 @@ const majorCities = {
 document.addEventListener("DOMContentLoaded", function () {
 
   const countryLanguageMap = {
+
     VN: "vi",
+
     JP: "ja",
     KR: "ko",
+
     CN: "zh-CN",
     TW: "zh-TW",
     HK: "zh-TW",
+
     TH: "th",
     KH: "km",
     LA: "lo",
+
     ID: "id",
     MY: "ms",
 
@@ -202,9 +207,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function getLanguageByCountry(countryCode) {
 
-    countryCode = String(countryCode || "").toUpperCase();
+    countryCode =
+      String(countryCode || "")
+        .toUpperCase();
 
-    return countryLanguageMap[countryCode] || "en";
+    return (
+      countryLanguageMap[countryCode] ||
+      "en"
+    );
   }
 
 
@@ -214,26 +224,209 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function changeGTranslateLanguage(language) {
 
-    const select = document.querySelector(".goog-te-combo");
+  const targetValue = "en|" + language;
 
-    if (!select) {
-      console.log("GTranslate chưa load");
+  console.log(
+    "[GTranslate] Target:",
+    targetValue
+  );
+
+
+  let attempts = 0;
+
+  const timer = setInterval(function () {
+
+    attempts++;
+
+    const wrapper =
+      document.querySelector(
+        ".gtranslate_wrapper"
+      );
+
+    const select =
+      document.querySelector(
+        "select.gt_selector"
+      );
+
+
+    if (!wrapper || !select) {
+
+      console.log(
+        "[GTranslate] Waiting...",
+        attempts
+      );
+
       return;
     }
 
-    console.log("Change language:", language);
 
-    if (select.value === language) {
+    const option =
+      select.querySelector(
+        'option[value="' +
+        targetValue +
+        '"]'
+      );
+
+
+    if (!option) {
+
+      console.log(
+        "[GTranslate] Option chưa sẵn sàng:",
+        targetValue
+      );
+
       return;
     }
 
-    select.value = language;
 
-    select.dispatchEvent(
-      new Event("change", {
-        bubbles: true
-      })
+    console.log(
+      "[GTranslate] Selector ready"
     );
+
+
+    clearInterval(timer);
+
+
+    // =====================================
+    // KÍCH HOẠT GTRANSLATE
+    // giống thao tác đưa chuột vào menu
+    // =====================================
+
+    [
+      "mouseover",
+      "mouseenter",
+      "mousemove"
+    ].forEach(function (eventName) {
+
+      wrapper.dispatchEvent(
+        new MouseEvent(
+          eventName,
+          {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          }
+        )
+      );
+
+    });
+
+
+    // =====================================
+    // CHỜ GTRANSLATE KHỞI TẠO
+    // =====================================
+
+    setTimeout(function () {
+
+      console.log(
+        "[GTranslate] Setting:",
+        targetValue
+      );
+
+
+      select.focus();
+
+
+      select.value =
+        targetValue;
+
+
+      // ===================================
+      // Native change
+      // ===================================
+
+      select.dispatchEvent(
+        new Event(
+          "change",
+          {
+            bubbles: true,
+            cancelable: true
+          }
+        )
+      );
+
+
+      // ===================================
+      // Nếu site có jQuery
+      // ===================================
+
+      if (
+        typeof jQuery !== "undefined"
+      ) {
+
+        jQuery(select).trigger("change");
+
+      }
+
+
+      console.log(
+        "[GTranslate] Auto language:",
+        targetValue
+      );
+
+
+    }, 500);
+
+
+  }, 300);
+
+
+  // =====================================
+  // TIMEOUT
+  // =====================================
+
+  setTimeout(function () {
+
+    clearInterval(timer);
+
+  }, 15000);
+
+}
+
+  // =====================================
+  // MOVE MAP TO GPS
+  // =====================================
+
+  function moveMapToGPS(lat, lng) {
+
+    const position = {
+      lat: Number(lat),
+      lng: Number(lng)
+    };
+
+
+    console.log(
+      "[MAP] GPS position:",
+      position
+    );
+
+
+    // -------------------------------------
+    // Nếu map đã tồn tại
+    // -------------------------------------
+
+    if (
+      typeof map !== "undefined" &&
+      map
+    ) {
+
+      map.setCenter(
+        position
+      );
+
+      map.setZoom(15);
+
+
+      console.log(
+        "[MAP] Map moved to GPS"
+      );
+
+    } else {
+
+      console.warn(
+        "[MAP] Chưa tìm thấy biến map"
+      );
+    }
   }
 
 
@@ -241,23 +434,83 @@ document.addEventListener("DOMContentLoaded", function () {
   // CHECK GPS
   // =====================================
 
+  if (
+    !navigator.geolocation
+  ) {
+
+    console.warn(
+      "[GPS] Browser không hỗ trợ GPS"
+    );
+
+    return;
+  }
+
+
   navigator.geolocation.getCurrentPosition(
+
+    // ===================================
+    // GPS SUCCESS
+    // ===================================
 
     function (position) {
 
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
+      const lat =
+        position.coords.latitude;
 
-      console.log("GPS:", lat, lng);
+      const lng =
+        position.coords.longitude;
+
+      const accuracy =
+        position.coords.accuracy;
+
+
+      console.log(
+        "GPS:",
+        lat,
+        lng
+      );
+
+
+      console.log(
+        "GPS Accuracy:",
+        accuracy,
+        "meters"
+      );
+
+
+      // ===================================
+      // CHUYỂN MAP VỀ GPS
+      // ===================================
+
+      moveMapToGPS(
+        lat,
+        lng
+      );
 
 
       // ===================================
       // REVERSE GEOCODE
       // ===================================
 
-      const geocoder = new google.maps.Geocoder();
+      if (
+        typeof google === "undefined" ||
+        typeof google.maps === "undefined"
+      ) {
+
+        console.warn(
+          "[Google Maps] API chưa load"
+        );
+
+        return;
+      }
+
+
+      const geocoder =
+        new google.maps.Geocoder();
+
 
       geocoder.geocode(
+
         {
           location: {
             lat: lat,
@@ -265,7 +518,16 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         },
 
-        function (results, status) {
+
+        function (
+          results,
+          status
+        ) {
+
+
+          // =================================
+          // CHECK RESULT
+          // =================================
 
           if (
             status !== "OK" ||
@@ -273,7 +535,7 @@ document.addEventListener("DOMContentLoaded", function () {
             !results.length
           ) {
 
-            console.log(
+            console.warn(
               "Không xác định được quốc gia:",
               status
             );
@@ -286,21 +548,24 @@ document.addEventListener("DOMContentLoaded", function () {
           // FIND COUNTRY
           // =================================
 
-          const countryResult = results.find(
-            function (result) {
+          const countryResult =
+            results.find(
+              function (result) {
 
-              return (
-                result.types &&
-                result.types.includes("country")
-              );
+                return (
+                  result.types &&
+                  result.types.includes(
+                    "country"
+                  )
+                );
 
-            }
-          );
+              }
+            );
 
 
           if (!countryResult) {
 
-            console.log(
+            console.warn(
               "Không tìm thấy country"
             );
 
@@ -314,21 +579,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
           let countryCode = "";
 
-          countryResult.address_components.forEach(
-            function (component) {
 
-              if (
-                component.types &&
-                component.types.includes("country")
-              ) {
+          countryResult
+            .address_components
+            .forEach(
+              function (component) {
 
-                countryCode =
-                  component.short_name.toUpperCase();
+                if (
+                  component.types &&
+                  component.types.includes(
+                    "country"
+                  )
+                ) {
+
+                  countryCode =
+                    component.short_name
+                      .toUpperCase();
+
+                }
 
               }
-
-            }
-          );
+            );
 
 
           console.log(
@@ -342,7 +613,9 @@ document.addEventListener("DOMContentLoaded", function () {
           // =================================
 
           const language =
-            getLanguageByCountry(countryCode);
+            getLanguageByCountry(
+              countryCode
+            );
 
 
           console.log(
@@ -355,7 +628,9 @@ document.addEventListener("DOMContentLoaded", function () {
           // CHANGE GTRANSLATE
           // =================================
 
-          changeGTranslateLanguage(language);
+          changeGTranslateLanguage(
+            language
+          );
 
         }
 
@@ -364,9 +639,13 @@ document.addEventListener("DOMContentLoaded", function () {
     },
 
 
+    // ===================================
+    // GPS ERROR
+    // ===================================
+
     function (error) {
 
-      console.log(
+      console.warn(
         "Không lấy được GPS:",
         error.message
       );
@@ -374,10 +653,16 @@ document.addEventListener("DOMContentLoaded", function () {
     },
 
 
+    // ===================================
+    // GPS OPTIONS
+    // ===================================
+
     {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 300000
+      enableHighAccuracy: true,
+
+      timeout: 20000,
+
+      maximumAge: 0
     }
 
   );

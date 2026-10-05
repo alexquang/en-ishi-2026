@@ -1,0 +1,9 @@
+# Redis Cache Pro - security
+<FilesMatch "\.(log|sql|backup|sqlite)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+<IfModule mod_rewrite.c>
+    RewriteRule ^includes/.*$ - [F,L]
+    RewriteRule ^languages/.*\.(po|mo|pot)$ - [F,L]
+</IfModule>
