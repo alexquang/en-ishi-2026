@@ -1,0 +1,14 @@
+.wpro-wrap{max-width:960px;margin:20px 0;background:#fff;padding:20px 25px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.wpro-wrap h1{font-size:22px;margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid #e5e5e5}
+.wpro-status{padding:12px 18px;background:#f0f8ff;border-left:4px solid #46b450;margin-bottom:18px;display:flex;align-items:center;gap:12px;border-radius:4px}
+.wpro-status .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#46b450}
+.wpro-status .dot.off{background:#dc3232}
+.wpro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.wpro-grid .box{background:#f7f8f9;padding:14px;border-radius:4px;text-align:center}
+.wpro-grid .box .num{font-size:26px;font-weight:600;color:#2271b1}
+.wpro-grid .box .lbl{font-size:11px;color:#6c7781;text-transform:uppercase;letter-spacing:.3px}
+.wpro-table{width:100%;border-collapse:collapse}
+.wpro-table th{background:#f7f8f9;padding:8px 12px;text-align:left;font-weight:600;font-size:12px}
+.wpro-table td{padding:8px 12px;border-top:1px solid #eee}
+.wpro-table tr:hover td{background:#f8f9fa}
+.wpro-foot{margin-top:18px;padding-top:14px;border-top:1px solid #e5e5e5;font-size:12px;color:#999}
