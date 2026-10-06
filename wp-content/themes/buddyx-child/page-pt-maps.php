@@ -5,6 +5,9 @@ Template Name: Google Map Home
 
 get_header();
 ?>
+<script>
+const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
+</script>
 <div class="google-map-section">
 
     <div class="google-map-container">
@@ -25,18 +28,6 @@ get_header();
             <button class="cat-btn" data-type="shopping_mall">
                 🛍 Shopping
             </button>
-
-            <!-- <button class="cat-btn" id="btnTraffic">
-                🚗 Traffic
-            </button>
-
-            <button class="cat-btn" id="btnTransit">
-                🚇 Transit
-            </button>
-
-            <button class="cat-btn" id="btnBike">
-                🚲 Bicycle
-            </button> -->
 
         </div>
 
@@ -179,7 +170,7 @@ get_header();
                 <i class="fa-solid fa-images"></i>
                 Place Pictures
             </h3>
-            <?php if (is_user_logged_in()) : ?>
+            <?php // if (is_user_logged_in()) : ?>
                 <button
                     id="gmUploadPhotoBtn"
                     class="gm-upload-btn">
@@ -192,7 +183,7 @@ get_header();
                     id="gmUploadPhotoFile"
                     accept="image/*"
                     hidden>
-            <?php endif; ?>
+            <?php // endif; ?>
             <button id="gmPictureClose">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -226,7 +217,7 @@ get_header();
                 <i class="fa-solid fa-images"></i>
                 Place Videos
             </h3>
-            <?php if (is_user_logged_in()) : ?>
+            <?php // if (is_user_logged_in()) : ?>
                 <button
                     id="gmUploadVideoBtn"
                     class="gm-upload-btn">
@@ -238,7 +229,7 @@ get_header();
                     type="file"
                     id="gmUploadVideoFile"
                     hidden>
-            <?php endif; ?>
+            <?php // endif; ?>
             <button id="gmVideoClose">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -258,6 +249,30 @@ get_header();
         </div>
 
     </div>
+
+</div>
+<div id="gmLoginRequiredDialog" class="gm-login-dialog">
+
+  <div class="gm-login-dialog-content">
+
+    <button
+      type="button"
+      id="gmLoginDialogClose"
+      class="gm-login-dialog-close"
+    >
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div class="gm-login-dialog-icon">
+      <i class="fa-solid fa-lock"></i>
+    </div>
+
+    <h3>Login Required</h3>
+
+    <p>
+      Please log in to upload a video or picture.
+    </p>
+  </div>
 
 </div>
 <?php get_footer(); ?>

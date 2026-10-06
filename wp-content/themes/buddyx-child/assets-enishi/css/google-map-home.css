@@ -600,7 +600,7 @@
 
   top: 50%;
 
-  left: 765px !important;
+  /* left: 765px !important; */
 
   transform: translateY(-50%);
 
@@ -2160,4 +2160,103 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
 
   font-size: 15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.gm-login-dialog {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.gm-login-dialog-content {
+  position: relative;
+
+  width: 400px;
+  max-width: calc(100% - 40px);
+
+  padding: 30px;
+
+  background: #fff;
+  border-radius: 14px;
+
+  text-align: center;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.gm-login-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  width: 36px;
+  height: 36px;
+
+  border: 0;
+  background: transparent;
+
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.gm-login-dialog-icon {
+  width: 60px;
+  height: 60px;
+
+  margin: 0 auto 15px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #f1f3f5;
+
+  font-size: 24px;
+}
+
+.gm-login-dialog-content h3 {
+  margin: 0 0 10px;
+}
+
+.gm-login-dialog-content p {
+  margin-bottom: 25px;
+  color: #666;
+}
+
+.gm-login-dialog-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.gm-login-btn,
+.gm-login-cancel-btn {
+  padding: 10px 20px;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.gm-login-btn {
+  background: #0073aa;
+  color: #fff;
+}
+
+.gm-login-cancel-btn {
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+}
+.pac-container {
+    width: 400px !important;
+    max-width: calc(100vw - 20px);
 }

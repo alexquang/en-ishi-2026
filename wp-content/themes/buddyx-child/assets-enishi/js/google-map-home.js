@@ -14,7 +14,18 @@ let photoCarouselPlaces = [];
 function showRestaurantMarkers(results) {
   clearMarkers();
 
-  results.slice(0, 20).forEach(function (place) {
+  // Chỉ lấy tối đa 20 kết quả
+  const places = results
+    .slice(0, 20)
+    .filter((place) => place.geometry?.location);
+
+  if (places.length === 0) {
+    return;
+  }
+
+  const bounds = new google.maps.LatLngBounds();
+
+  places.forEach(function (place) {
     const mapMarker = new google.maps.Marker({
       map: map,
       position: place.geometry.location,
@@ -23,10 +34,33 @@ function showRestaurantMarkers(results) {
 
     markers.push(mapMarker);
 
+    // Đưa vị trí marker vào bounds
+    bounds.extend(place.geometry.location);
+
     mapMarker.addListener("click", function () {
       loadPlaceDetails(place.place_id, mapMarker);
     });
   });
+
+  // ==============================
+  // ZOOM MAP
+  // ==============================
+
+  if (places.length === 1) {
+    // Chỉ có 1 kết quả
+    map.setCenter(places[0].geometry.location);
+    map.setZoom(16);
+  } else {
+    // Có nhiều kết quả
+    map.fitBounds(bounds);
+
+    // Giới hạn zoom tối đa
+    google.maps.event.addListenerOnce(map, "idle", function () {
+      if (map.getZoom() > 16) {
+        map.setZoom(16);
+      }
+    });
+  }
 }
 
 function loadNearbyPlaces(lat, lng) {
@@ -36,23 +70,31 @@ function loadNearbyPlaces(lat, lng) {
 
   const allPlaces = new Map();
 
+  let completed = 0;
+
   types.forEach((type) => {
     service.nearbySearch(
       {
         location: new google.maps.LatLng(lat, lng),
-        radius: 50000,
+        radius: 3000,
         type: type,
       },
+
       function (results, status) {
-        if (status !== google.maps.places.PlacesServiceStatus.OK) {
-          return;
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          results.forEach((place) => {
+            if (place.place_id) {
+              allPlaces.set(place.place_id, place);
+            }
+          });
         }
 
-        results.forEach((place) => {
-          allPlaces.set(place.place_id, place);
-        });
+        completed++;
 
-        showRestaurantMarkers([...allPlaces.values()]);
+        // Chỉ render 1 lần sau khi cả 3 request hoàn thành
+        if (completed === types.length) {
+          showRestaurantMarkers([...allPlaces.values()]);
+        }
       },
     );
   });
@@ -167,6 +209,25 @@ const majorCities = {
 
 document.addEventListener("DOMContentLoaded", function () {
 
+  /*
+   * =====================================================
+   * LOCAL STORAGE
+   * =====================================================
+   */
+
+  const STORAGE_KEY =
+    "pt_gtranslate_selected_lang";
+
+
+  /*
+   * =====================================================
+   * COUNTRY -> LANGUAGE
+   * =====================================================
+   *
+   * Vẫn giữ lại nếu bạn còn dùng cho mục đích khác.
+   * Nhưng GPS KHÔNG còn tự đổi GTranslate.
+   */
+
   const countryLanguageMap = {
 
     VN: "vi",
@@ -197,7 +258,8 @@ document.addEventListener("DOMContentLoaded", function () {
     IT: "it",
     PT: "pt",
     NL: "nl",
-    RU: "ru"
+    RU: "ru",
+
   };
 
 
@@ -208,21 +270,36 @@ document.addEventListener("DOMContentLoaded", function () {
   function getLanguageByCountry(countryCode) {
 
     countryCode =
-      String(countryCode || "")
-        .toUpperCase();
+      String(
+        countryCode || ""
+      ).toUpperCase();
+
 
     return (
-      countryLanguageMap[countryCode] ||
-      "en"
+      countryLanguageMap[countryCode]
+      || "en"
     );
+
   }
 
 
   // =====================================
   // CHANGE GTRANSLATE
   // =====================================
+  //
+  // Hàm này vẫn giữ lại.
+  //
+  // Nhưng KHÔNG gọi từ GPS.
+  //
+  // Chỉ gọi khi bạn muốn restore
+  // language từ localStorage.
+  // =====================================
 
-  function changeGTranslateLanguage(language) {
+function changeGTranslateLanguage(language) {
+
+  if (!language) {
+    return;
+  }
 
   const targetValue = "en|" + language;
 
@@ -231,8 +308,9 @@ document.addEventListener("DOMContentLoaded", function () {
     targetValue
   );
 
-
   let attempts = 0;
+
+  const maxAttempts = 50;
 
   const timer = setInterval(function () {
 
@@ -260,12 +338,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
+    /*
+     * Tìm option
+     */
+
     const option =
-      select.querySelector(
-        'option[value="' +
-        targetValue +
-        '"]'
-      );
+      Array.from(
+        select.options
+      ).find(function (option) {
+
+        return (
+          option.value ===
+          targetValue
+        );
+
+      });
 
 
     if (!option) {
@@ -279,101 +366,119 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 
-    console.log(
-      "[GTranslate] Selector ready"
-    );
-
-
     clearInterval(timer);
 
 
-    // =====================================
-    // KÍCH HOẠT GTRANSLATE
-    // giống thao tác đưa chuột vào menu
-    // =====================================
+    console.log(
+      "[GTranslate] Selector ready:",
+      targetValue
+    );
 
-    [
-      "mouseover",
-      "mouseenter",
-      "mousemove"
-    ].forEach(function (eventName) {
 
-      wrapper.dispatchEvent(
-        new MouseEvent(
-          eventName,
-          {
-            bubbles: true,
-            cancelable: true,
-            view: window
-          }
-        )
+    /*
+     * Nếu đã đúng
+     */
+
+    if (
+      select.value ===
+      targetValue
+    ) {
+
+      console.log(
+        "[GTranslate] Already selected:",
+        targetValue
       );
 
-    });
+      /*
+       * Không return ngay.
+       *
+       * Vì select đúng nhưng nội dung
+       * có thể chưa được dịch.
+       */
+
+    }
 
 
-    // =====================================
-    // CHỜ GTRANSLATE KHỞI TẠO
-    // =====================================
+    /*
+     * Đặt value
+     */
+
+    select.value =
+      targetValue;
+
+
+    console.log(
+      "[GTranslate] SELECT VALUE:",
+      select.value
+    );
+
+
+    /*
+     * =========================================
+     * NATIVE CHANGE
+     * =========================================
+     */
+
+    select.dispatchEvent(
+      new Event(
+        "change",
+        {
+          bubbles: true,
+          cancelable: true
+        }
+      )
+    );
+
+
+    /*
+     * =========================================
+     * JQUERY CHANGE
+     * =========================================
+     */
+
+    if (
+      typeof jQuery !== "undefined"
+    ) {
+
+      console.log(
+        "[GTranslate] Trigger jQuery change"
+      );
+
+      jQuery(select)
+        .trigger("change");
+
+    }
+
+
+    /*
+     * =========================================
+     * KIỂM TRA SAU KHI GTRANSLATE XỬ LÝ
+     * =========================================
+     */
 
     setTimeout(function () {
 
       console.log(
-        "[GTranslate] Setting:",
-        targetValue
+        "[GTranslate] Final select:",
+        select.value
       );
 
-
-      select.focus();
-
-
-      select.value =
-        targetValue;
-
-
-      // ===================================
-      // Native change
-      // ===================================
-
-      select.dispatchEvent(
-        new Event(
-          "change",
-          {
-            bubbles: true,
-            cancelable: true
-          }
+      console.log(
+        "[GTranslate] Final storage:",
+        localStorage.getItem(
+          "pt_gtranslate_selected_lang"
         )
       );
 
-
-      // ===================================
-      // Nếu site có jQuery
-      // ===================================
-
-      if (
-        typeof jQuery !== "undefined"
-      ) {
-
-        jQuery(select).trigger("change");
-
-      }
-
-
-      console.log(
-        "[GTranslate] Auto language:",
-        targetValue
-      );
-
-
-    }, 500);
+    }, 2000);
 
 
   }, 300);
 
 
-  // =====================================
-  // TIMEOUT
-  // =====================================
+  /*
+   * TIMEOUT
+   */
 
   setTimeout(function () {
 
@@ -383,6 +488,53 @@ document.addEventListener("DOMContentLoaded", function () {
 
 }
 
+
+  // =====================================
+  // RESTORE LANGUAGE FROM LOCAL STORAGE
+  // =====================================
+  //
+  // Đây mới là nơi quyết định language.
+  //
+  // en -> English
+  // vi -> Vietnamese
+  // ko -> Korean
+  // ja -> Japanese
+  // =====================================
+
+ function restoreLanguageFromStorage() {
+
+    let savedLanguage = "en";
+
+    try {
+        const stored =
+            localStorage.getItem(STORAGE_KEY);
+
+        if (stored) {
+            savedLanguage = stored.trim();
+        }
+
+    } catch (e) {
+        console.error(
+            "[GTranslate] Cannot read localStorage:",
+            e
+        );
+    }
+
+    if (!savedLanguage) {
+        savedLanguage = "en";
+    }
+
+    console.log(
+        "[GTranslate] Language from localStorage:",
+        savedLanguage
+    );
+
+    changeGTranslateLanguage(savedLanguage);
+}
+
+restoreLanguageFromStorage();
+
+
   // =====================================
   // MOVE MAP TO GPS
   // =====================================
@@ -390,8 +542,11 @@ document.addEventListener("DOMContentLoaded", function () {
   function moveMapToGPS(lat, lng) {
 
     const position = {
+
       lat: Number(lat),
-      lng: Number(lng)
+
+      lng: Number(lng),
+
     };
 
 
@@ -401,20 +556,23 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
 
-    // -------------------------------------
-    // Nếu map đã tồn tại
-    // -------------------------------------
+    /*
+     * Nếu map đã tồn tại
+     */
 
     if (
-      typeof map !== "undefined" &&
-      map
+      typeof map !== "undefined"
+      && map
     ) {
 
       map.setCenter(
         position
       );
 
-      map.setZoom(15);
+
+      map.setZoom(
+        15
+      );
 
 
       console.log(
@@ -426,7 +584,9 @@ document.addEventListener("DOMContentLoaded", function () {
       console.warn(
         "[MAP] Chưa tìm thấy biến map"
       );
+
     }
+
   }
 
 
@@ -442,7 +602,9 @@ document.addEventListener("DOMContentLoaded", function () {
       "[GPS] Browser không hỗ trợ GPS"
     );
 
+
     return;
+
   }
 
 
@@ -457,8 +619,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const lat =
         position.coords.latitude;
 
+
       const lng =
         position.coords.longitude;
+
 
       const accuracy =
         position.coords.accuracy;
@@ -479,7 +643,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
       // ===================================
-      // CHUYỂN MAP VỀ GPS
+      // CHỈ DI CHUYỂN MAP
       // ===================================
 
       moveMapToGPS(
@@ -493,7 +657,8 @@ document.addEventListener("DOMContentLoaded", function () {
       // ===================================
 
       if (
-        typeof google === "undefined" ||
+        typeof google === "undefined"
+        ||
         typeof google.maps === "undefined"
       ) {
 
@@ -501,7 +666,9 @@ document.addEventListener("DOMContentLoaded", function () {
           "[Google Maps] API chưa load"
         );
 
+
         return;
+
       }
 
 
@@ -512,10 +679,15 @@ document.addEventListener("DOMContentLoaded", function () {
       geocoder.geocode(
 
         {
+
           location: {
+
             lat: lat,
-            lng: lng
-          }
+
+            lng: lng,
+
+          },
+
         },
 
 
@@ -530,8 +702,10 @@ document.addEventListener("DOMContentLoaded", function () {
           // =================================
 
           if (
-            status !== "OK" ||
-            !results ||
+            status !== "OK"
+            ||
+            !results
+            ||
             !results.length
           ) {
 
@@ -540,7 +714,9 @@ document.addEventListener("DOMContentLoaded", function () {
               status
             );
 
+
             return;
+
           }
 
 
@@ -553,7 +729,8 @@ document.addEventListener("DOMContentLoaded", function () {
               function (result) {
 
                 return (
-                  result.types &&
+                  result.types
+                  &&
                   result.types.includes(
                     "country"
                   )
@@ -569,7 +746,9 @@ document.addEventListener("DOMContentLoaded", function () {
               "Không tìm thấy country"
             );
 
+
             return;
+
           }
 
 
@@ -586,7 +765,8 @@ document.addEventListener("DOMContentLoaded", function () {
               function (component) {
 
                 if (
-                  component.types &&
+                  component.types
+                  &&
                   component.types.includes(
                     "country"
                   )
@@ -611,25 +791,45 @@ document.addEventListener("DOMContentLoaded", function () {
           // =================================
           // COUNTRY -> LANGUAGE
           // =================================
+          //
+          // CHỈ LOG.
+          //
+          // KHÔNG ĐỔI GTRANSLATE.
+          // =================================
 
-          const language =
+          const gpsLanguage =
             getLanguageByCountry(
               countryCode
             );
 
 
           console.log(
-            "LANGUAGE:",
-            language
+            "GPS LANGUAGE:",
+            gpsLanguage
           );
 
 
-          // =================================
-          // CHANGE GTRANSLATE
-          // =================================
+          /*
+           * QUAN TRỌNG:
+           *
+           * KHÔNG gọi:
+           *
+           * changeGTranslateLanguage(
+           *     gpsLanguage
+           * );
+           *
+           * Vì nếu VN:
+           *
+           * VN -> vi
+           * -> GTranslate = vi
+           *
+           * và sẽ ghi đè lựa chọn
+           * trong localStorage.
+           */
 
-          changeGTranslateLanguage(
-            language
+
+          console.log(
+            "[GTranslate] Language controlled by localStorage"
           );
 
         }
@@ -658,17 +858,18 @@ document.addEventListener("DOMContentLoaded", function () {
     // ===================================
 
     {
+
       enableHighAccuracy: true,
 
       timeout: 20000,
 
-      maximumAge: 0
+      maximumAge: 0,
+
     }
 
   );
 
 });
-
 // async function initMapByCountry(countryLat, countryLng, countryCode) {
 //   let center = {
 //     lat: Number(countryLat),
@@ -826,7 +1027,7 @@ async function initMap(userLat, userLng) {
   const input = document.getElementById("pac-input");
 
   autocomplete = new google.maps.places.Autocomplete(input, {
-    fields: ["formatted_address", "geometry", "name"],
+    fields: ["formatted_address", "geometry", "name", "place_id", "types"],
   });
 
   autocomplete.bindTo("bounds", map);
@@ -834,10 +1035,10 @@ async function initMap(userLat, userLng) {
   autocomplete.addListener("place_changed", function () {
     const place = autocomplete.getPlace();
 
-    // if (!place.geometry || !place.geometry.location) {
-    //   alert("No locations found");
-    //   return;
-    // }
+    if (!place.geometry || !place.geometry.location) {
+      alert("No locations found");
+      return;
+    }
 
     // Xóa toàn bộ marker kết quả cũ
     clearMarkers();
@@ -903,14 +1104,16 @@ window.initMap = initMap;
 document
   .getElementById("find-btn")
   .addEventListener("click", async function () {
-    const keyword = document.getElementById("pac-input").value.trim();
-
+    const originalKeyword = document.getElementById("pac-input").value.trim();
     const aiPanel = document.getElementById("ai-result-panel");
 
-    if (!keyword) {
+    if (!originalKeyword) {
       alert("Enter a keyword.");
       return;
     }
+
+    // Chuẩn hóa từ viết tắt
+    const keyword = normalizeSearchQuery(originalKeyword);
 
     // Hiện loading
     await showSearchLoading();
@@ -921,6 +1124,21 @@ document
 
     if (resultWrapper) {
       resultWrapper.style.display = "block";
+
+      // Chiều rộng panel = 390px
+      resultWrapper.style.width = "400px";
+      resultWrapper.style.maxWidth = "400px";
+    }
+
+    // Đưa nút toggle tới mép panel 390px
+    const toggleBtn = document.getElementById("toggle-results");
+
+    if (toggleBtn) {
+      toggleBtn.style.position = "fixed";
+
+      toggleBtn.style.setProperty("left", "400px", "important");
+
+      toggleBtn.style.transform = "none";
     }
 
     if (aiPanel) {
@@ -1285,6 +1503,22 @@ function renderResults(results) {
 
     mapMarker.addListener("click", function () {
       loadPlaceDetails(place.place_id, mapMarker);
+
+      console.log("click vao pin");
+
+      setTimeout(function () {
+        const toggleBtn = document.getElementById("toggle-results");
+
+        if (!toggleBtn) {
+          return;
+        }
+
+        toggleBtn.style.position = "fixed";
+
+        toggleBtn.style.setProperty("left", "765px", "important");
+
+        toggleBtn.style.transform = "none";
+      }, 100);
     });
 
     markers.push(mapMarker);
@@ -1935,6 +2169,16 @@ function loadPlaceDetails(placeId, marker) {
       if (closeBtn) {
         closeBtn.addEventListener("click", function () {
           popup.classList.remove("show");
+
+          const toggleBtn = document.getElementById("toggle-results");
+
+          if (toggleBtn) {
+            toggleBtn.style.position = "fixed";
+
+            toggleBtn.style.setProperty("left", "400px", "important");
+
+            toggleBtn.style.transform = "none";
+          }
         });
       }
 
@@ -2155,6 +2399,12 @@ document.addEventListener("click", function (e) {
   const uploadBtn = e.target.closest("#gmUploadVideoBtn");
 
   if (!uploadBtn) {
+    return;
+  }
+
+  // Chưa đăng nhập
+  if (!gmUserLoggedIn) {
+    showLoginRequiredDialog();
     return;
   }
 
@@ -2453,10 +2703,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const icon = this.querySelector("i");
 
+    const toggleResults = document.getElementById("toggle-results");
+
     if (wrapper.classList.contains("collapsed")) {
       icon.className = "fa-solid fa-chevron-right";
+
+      // Panel thu gọn → left = 0px
+      if (toggleResults) {
+        toggleResults.style.setProperty("left", "0px", "important");
+      }
     } else {
       icon.className = "fa-solid fa-chevron-left";
+
+      // Panel mở lại
+      if (toggleResults) {
+        toggleResults.style.setProperty("left", "400px", "important");
+      }
     }
   });
 });
@@ -2673,7 +2935,21 @@ document.addEventListener("click", function (e) {
     e.target.id === "gmUploadPhotoBtn" ||
     e.target.closest("#gmUploadPhotoBtn")
   ) {
-    document.getElementById("gmUploadPhotoFile").click();
+    // Chưa đăng nhập
+    if (!gmUserLoggedIn) {
+      showLoginRequiredDialog();
+      return;
+    }
+
+    // Đã đăng nhập
+    const fileInput = document.getElementById("gmUploadPhotoFile");
+
+    if (!fileInput) {
+      console.error("gmUploadPhotoFile not found");
+      return;
+    }
+
+    fileInput.click();
   }
 });
 
@@ -2732,6 +3008,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const aiPanel = document.getElementById("ai-result-panel");
   const aiContent = document.getElementById("ai-result-content");
   const closeButton = document.getElementById("close-ai-result");
+
+  if (!searchInput) {
+    return;
+  }
+
+  searchInput.focus();
 
   if (!aiButton) {
     console.warn("ai-search-btn not found");
@@ -2940,3 +3222,162 @@ document.getElementById("gmVideoClose").addEventListener("click", function () {
 });
 
 /* Auto Load Image TODO*/
+
+function normalizeSearchQuery(query) {
+  if (!query) {
+    return "";
+  }
+
+  let q = query.trim();
+
+  // =====================================================
+  // TP HỒ CHÍ MINH
+  // tphcm
+  // tp hcm
+  // tp. hcm
+  // hcmc
+  // =====================================================
+
+  q = q.replace(/\b(tp\.?\s*hcm|tphcm|hcmc)\b/gi, "TP Hồ Chí Minh");
+
+  // =====================================================
+  // QUẬN 1 -> 12
+  //
+  // q1
+  // q.1
+  // q 1
+  // =====================================================
+
+  for (let i = 1; i <= 12; i++) {
+    const regex = new RegExp(`\\bq\\.?\\s*${i}\\b`, "gi");
+
+    q = q.replace(regex, `Quận ${i}`);
+  }
+
+  // =====================================================
+  // QUẬN
+  //
+  // quan 1 -> Quận 1
+  // =====================================================
+
+  q = q.replace(/\bquan\s+(\d+)\b/gi, "Quận $1");
+
+  // =====================================================
+  // PHƯỜNG
+  //
+  // p1
+  // p.1
+  // p 1
+  // phuong 1
+  // =====================================================
+
+  q = q.replace(/\bp\.?\s*(\d+)\b/gi, "Phường $1");
+
+  q = q.replace(/\bphuong\s+(\d+)\b/gi, "Phường $1");
+
+  // =====================================================
+  // HUYỆN
+  //
+  // h1
+  // h.1
+  // h 1
+  // huyen 1
+  // =====================================================
+
+  q = q.replace(/\bh\.?\s*(\d+)\b/gi, "Huyện $1");
+
+  q = q.replace(/\bhuyen\s+(\d+)\b/gi, "Huyện $1");
+
+  // =====================================================
+  // THÀNH PHỐ THỦ ĐỨC
+  // =====================================================
+
+  q = q.replace(/\btp\.?\s*thu\s*duc\b/gi, "Thành phố Thủ Đức");
+
+  // =====================================================
+  // XÃ
+  // =====================================================
+
+  q = q.replace(/\bxa\s+/gi, "Xã ");
+
+  q = q.replace(/\bx\.\s+/gi, "Xã ");
+
+  // =====================================================
+  // THỊ TRẤN
+  // tt / tt.
+  // =====================================================
+
+  q = q.replace(/\btt\.?\s+/gi, "Thị trấn ");
+
+  // =====================================================
+  // THỊ XÃ
+  // tx / tx.
+  // =====================================================
+
+  q = q.replace(/\btx\.?\s+/gi, "Thị xã ");
+
+  // =====================================================
+  // MỘT SỐ THÀNH PHỐ VIẾT TẮT
+  // =====================================================
+
+  const cityAliases = {
+    hn: "Hà Nội",
+    hanoi: "Hà Nội",
+
+    dn: "Đà Nẵng",
+    danang: "Đà Nẵng",
+
+    hp: "Hải Phòng",
+    haiphong: "Hải Phòng",
+
+    ct: "Cần Thơ",
+    cantho: "Cần Thơ",
+  };
+
+  // Chỉ thay khi toàn bộ query là alias
+
+  const lower = q.toLowerCase();
+
+  if (cityAliases[lower]) {
+    q = cityAliases[lower];
+  }
+
+  // =====================================================
+  // CLEAN
+  // =====================================================
+
+  q = q.replace(/\s+/g, " ").trim();
+
+  return q;
+}
+
+function showLoginRequiredDialog() {
+  const dialog = document.getElementById("gmLoginRequiredDialog");
+
+  if (!dialog) {
+    console.error("gmLoginRequiredDialog not found");
+    return;
+  }
+
+  dialog.style.display = "flex";
+}
+
+function hideLoginRequiredDialog() {
+  const dialog = document.getElementById("gmLoginRequiredDialog");
+
+  if (!dialog) {
+    return;
+  }
+
+  dialog.style.display = "none";
+}
+
+document.addEventListener("click", function (e) {
+  if (e.target.closest("#gmLoginDialogClose")) {
+    hideLoginRequiredDialog();
+  }
+
+  if (e.target.closest("#gmLoginDialogCancel")) {
+    hideLoginRequiredDialog();
+  }
+});
