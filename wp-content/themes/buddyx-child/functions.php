@@ -32,7 +32,6 @@ add_action('http_api_curl', function ($handle) {
         CURLOPT_IPRESOLVE,
         CURL_IPRESOLVE_V4
     );
-
 });
 
 
@@ -479,31 +478,59 @@ function pt_ai_search()
      */
 
     $prompt = <<<PROMPT
+You are a general AI search assistant.
 
-You are an AI assistant for a Google Maps website.
+Search and understand the user's entire input.
 
-User search:
+The user may ask about ANYTHING, including:
+- places
+- businesses
+- restaurants
+- cafes
+- hotels
+- hospitals
+- schools
+- companies
+- people
+- products
+- services
+- prices
+- news
+- events
+- travel
+- geography
+- technology
+- general knowledge
+- current information
+- or any other topic.
 
-{$query}
+Do not restrict the search to places or categories.
 
-Analyze the user's request and provide useful information
-about places they may be looking for.
+Use Google Search when current or factual web information is useful.
 
-Keep the answer concise and easy to read.
+Answer the user's actual query directly.
+
+Do not invent information.
+
+Respond in Vietnamese when appropriate.
+
+Keep the answer concise.
 
 Return HTML only.
 
-Do not use Markdown.
+Allowed HTML:
+<p>
+<strong>
+<ul>
+<li>
+<br>
 
+Do not use Markdown.
 Do not use <html>, <head>, or <body>.
 
-Use simple HTML such as:
-
-<p>, <strong>, <ul>, <li>, <br>.
-
+User query:
+{$query}
 PROMPT;
-
-
     /*
      * =====================================================
      * 4. GEMINI REQUEST BODY
@@ -1420,16 +1447,25 @@ add_filter('body_class', function ($classes) {
 /* Change Lang */
 add_action('wp_footer', function () {
 ?>
-<script>
-(function () {
+   <script>
+(function() {
 
     'use strict';
 
-    const STORAGE_KEY = 'pt_gtranslate_selected_lang';
 
     /*
      * =====================================================
-     * 1. LẤY NGÔN NGỮ ĐÃ LƯU
+     * CONFIG
+     * =====================================================
+     */
+
+    const STORAGE_KEY =
+        'pt_gtranslate_selected_lang';
+
+
+    /*
+     * =====================================================
+     * 1. LẤY NGÔN NGỮ TỪ LOCAL STORAGE
      * =====================================================
      */
 
@@ -1441,28 +1477,49 @@ add_action('wp_footer', function () {
             localStorage.getItem(STORAGE_KEY);
 
         if (stored) {
-            savedLanguage = stored;
+
+            savedLanguage =
+                stored.trim();
+
         }
 
     } catch (e) {
 
-        console.log(
+        console.error(
             '[GTranslate] localStorage error:',
             e
         );
+
+    }
+
+
+    /*
+     * Nếu giá trị không hợp lệ
+     * thì dùng English
+     */
+
+    if (!savedLanguage) {
+        savedLanguage = 'en';
     }
 
 
     console.log(
-        '[GTranslate] Language to load:',
+        '[GTranslate] LOCAL STORAGE LANGUAGE:',
         savedLanguage
     );
 
 
     /*
      * =====================================================
-     * 2. COOKIE GTRANSLATE
+     * 2. SET GTRANSLATE COOKIE
      * =====================================================
+     *
+     * localStorage là nguồn chính.
+     *
+     * en -> /en/en
+     * vi -> /en/vi
+     * ko -> /en/ko
+     * ja -> /en/ja
      */
 
     function setGTranslateCookie(lang) {
@@ -1471,9 +1528,14 @@ add_action('wp_footer', function () {
             return;
         }
 
+
         const cookieValue =
             '/en/' + lang;
 
+
+        /*
+         * Cookie root
+         */
 
         document.cookie =
             'googtrans=' +
@@ -1481,10 +1543,24 @@ add_action('wp_footer', function () {
             '; path=/';
 
 
+        /*
+         * Cookie cho /maps/
+         *
+         * phòng trường hợp GTranslate
+         * đang có cookie path riêng.
+         */
+
+        document.cookie =
+            'googtrans=' +
+            cookieValue +
+            '; path=/maps/';
+
+
         console.log(
-            '[GTranslate] Cookie:',
+            '[GTranslate] COOKIE:',
             cookieValue
         );
+
     }
 
 
@@ -1504,12 +1580,13 @@ add_action('wp_footer', function () {
 
         wrapper_selector:
             '.gtranslate_wrapper'
+
     };
 
 
     /*
      * =====================================================
-     * 4. SET COOKIE TRƯỚC KHI LOAD
+     * 4. SET COOKIE TRƯỚC KHI LOAD GTRANSLATE
      * =====================================================
      */
 
@@ -1537,21 +1614,24 @@ add_action('wp_footer', function () {
     script.defer = true;
 
 
-    script.onload = function () {
+    script.onload = function() {
 
         console.log(
             '[GTranslate] dropdown.js loaded'
         );
 
+
         initGTranslateStorage();
+
     };
 
 
-    script.onerror = function () {
+    script.onerror = function() {
 
         console.error(
             '[GTranslate] Cannot load dropdown.js'
         );
+
     };
 
 
@@ -1562,7 +1642,7 @@ add_action('wp_footer', function () {
 
     /*
      * =====================================================
-     * 6. TÌM SELECTOR GTRANSLATE
+     * 6. TÌM SELECT GTRANSLATE
      * =====================================================
      */
 
@@ -1574,229 +1654,418 @@ add_action('wp_footer', function () {
 
 
         const timer =
-            setInterval(function () {
+            setInterval(
+                function() {
 
-                attempts++;
+                    attempts++;
 
 
-                /*
-                 * Selector chính của GTranslate
-                 */
+                    const select =
+                        document.querySelector(
+                            'select.gt_selector'
+                        );
 
-                const select =
-                    document.querySelector(
-                        'select.gt_selector'
+
+                    /*
+                     * Chưa có selector
+                     */
+
+                    if (!select) {
+
+                        if (
+                            attempts >=
+                            maxAttempts
+                        ) {
+
+                            clearInterval(timer);
+
+                            console.warn(
+                                '[GTranslate] Không tìm thấy select.gt_selector'
+                            );
+
+                        }
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * Đã tìm thấy
+                     */
+
+                    clearInterval(timer);
+
+
+                    console.log(
+                        '[GTranslate] SELECT READY:',
+                        select
                     );
 
 
-                /*
-                 * Chưa có selector
-                 */
-
-                if (!select) {
+                    /*
+                     * Tránh bind nhiều lần
+                     */
 
                     if (
-                        attempts >=
-                        maxAttempts
+                        select.dataset
+                            .ptStorageReady === '1'
                     ) {
 
-                        clearInterval(timer);
+                        return;
 
-                        console.warn(
-                            '[GTranslate] Không tìm thấy select.gt_selector'
-                        );
                     }
 
-                    return;
-                }
 
-
-                /*
-                 * Đã tìm thấy
-                 */
-
-                clearInterval(timer);
-
-
-                console.log(
-                    '[GTranslate] Selector ready:',
-                    select
-                );
-
-
-                /*
-                 * Tránh bind nhiều lần
-                 */
-
-                if (
                     select.dataset
-                        .ptStorageReady === '1'
-                ) {
-
-                    return;
-                }
+                        .ptStorageReady = '1';
 
 
-                select.dataset
-                    .ptStorageReady = '1';
+                    /*
+                     * =================================================
+                     * 7. USER CHỌN NGÔN NGỮ
+                     * =================================================
+                     */
+
+                    select.addEventListener(
+                        'change',
+                        function(event) {
+
+                            const value =
+                                this.value;
 
 
-                /*
-                 * =================================================
-                 * 7. USER CHỌN NGÔN NGỮ
-                 * =================================================
-                 */
-
-                select.addEventListener(
-                    'change',
-                    function () {
-
-                        const value =
-                            this.value;
+                            if (!value) {
+                                return;
+                            }
 
 
-                        if (!value) {
-                            return;
-                        }
+                            let lang =
+                                value;
 
 
-                        console.log(
-                            '[GTranslate] SELECTED:',
-                            value
-                        );
+                            /*
+                             * en|vi -> vi
+                             * en|ko -> ko
+                             * en|ja -> ja
+                             */
+
+                            if (
+                                value.indexOf('|') !== -1
+                            ) {
+
+                                lang =
+                                    value.split('|')[1];
+
+                            }
 
 
-                        /*
-                         * GTranslate value:
-                         *
-                         * en|vi
-                         * en|ko
-                         * en|ja
-                         *
-                         * Lấy phần sau dấu |
-                         */
-
-                        let lang =
-                            value;
+                            if (!lang) {
+                                return;
+                            }
 
 
-                        if (
-                            value.indexOf('|') !== -1
-                        ) {
-
-                            lang =
-                                value.split('|')[1];
-                        }
+                            console.log(
+                                '[GTranslate] CHANGE:',
+                                value
+                            );
 
 
-                        console.log(
-                            '[GTranslate] Language code:',
-                            lang
-                        );
-
-
-                        /*
-                         * Lưu localStorage
-                         */
-
-                        try {
-
-                            localStorage.setItem(
-                                STORAGE_KEY,
+                            console.log(
+                                '[GTranslate] LANG:',
                                 lang
                             );
 
-                        } catch (e) {
 
                             console.log(
-                                '[GTranslate] Cannot save localStorage:',
-                                e
+                                '[GTranslate] isTrusted:',
+                                event.isTrusted
                             );
+
+
+                            /*
+                             * =================================================
+                             * CHỈ USER THẬT MỚI ĐƯỢC GHI LOCAL STORAGE
+                             * =================================================
+                             */
+
+                            if (!event.isTrusted) {
+
+                                console.log(
+                                    '[GTranslate] Programmatic change - SKIP SAVE'
+                                );
+
+                                return;
+
+                            }
+
+
+                            /*
+                             * =================================================
+                             * USER CHỌN NGÔN NGỮ
+                             * =================================================
+                             */
+
+                            try {
+
+                                localStorage.setItem(
+                                    STORAGE_KEY,
+                                    lang
+                                );
+
+
+                                console.log(
+                                    '[GTranslate] LOCAL STORAGE UPDATED:',
+                                    lang
+                                );
+
+                            } catch (e) {
+
+                                console.error(
+                                    '[GTranslate] Cannot save localStorage:',
+                                    e
+                                );
+
+                            }
+
+
+                            /*
+                             * Update cookie
+                             */
+
+                            setGTranslateCookie(
+                                lang
+                            );
+
+
                         }
+                    );
 
 
-                        /*
-                         * Lưu cookie
-                         */
+                    /*
+                     * =================================================
+                     * 8. RESTORE LANGUAGE TỪ LOCAL STORAGE
+                     * =================================================
+                     */
 
-                        setGTranslateCookie(
-                            lang
-                        );
+                    restoreLanguage(
+                        select
+                    );
 
 
-                        console.log(
-                            '[GTranslate] Language saved:',
-                            lang
-                        );
+                },
+                300
+            );
 
-                    }
+    }
+
+
+    /*
+     * =====================================================
+     * 9. RESTORE LANGUAGE
+     * =====================================================
+     */
+
+    function restoreLanguage(select) {
+
+        /*
+         * localStorage là nguồn chính
+         */
+
+        let lang =
+            savedLanguage || 'en';
+
+
+        /*
+         * GTranslate value
+         *
+         * en -> en|en
+         * vi -> en|vi
+         * ko -> en|ko
+         * ja -> en|ja
+         */
+
+        const targetValue =
+            'en|' + lang;
+
+
+        console.log(
+            '[GTranslate] ==========================='
+        );
+
+        console.log(
+            '[GTranslate] RESTORE FROM LOCAL STORAGE:',
+            lang
+        );
+
+        console.log(
+            '[GTranslate] TARGET:',
+            targetValue
+        );
+
+
+        /*
+         * Tìm option
+         */
+
+        let option = null;
+
+
+        for (
+            let i = 0;
+            i < select.options.length;
+            i++
+        ) {
+
+            if (
+                select.options[i].value ===
+                targetValue
+            ) {
+
+                option =
+                    select.options[i];
+
+                break;
+
+            }
+
+        }
+
+
+        /*
+         * Không tìm thấy
+         */
+
+        if (!option) {
+
+            console.warn(
+                '[GTranslate] Không tìm thấy:',
+                targetValue
+            );
+
+
+            console.log(
+                '[GTranslate] Available options:'
+            );
+
+
+            Array.from(
+                select.options
+            ).forEach(
+                function(option) {
+
+                    console.log(
+                        option.value,
+                        '=>',
+                        option.text
+                    );
+
+                }
+            );
+
+
+            return;
+
+        }
+
+
+        console.log(
+            '[GTranslate] OPTION FOUND:',
+            option.value,
+            '=>',
+            option.text
+        );
+
+
+        /*
+         * =================================================
+         * SET COOKIE LẠI LẦN CUỐI
+         * =================================================
+         *
+         * Rất quan trọng.
+         *
+         * Nếu localStorage = en
+         * thì cookie chắc chắn = /en/en
+         */
+
+        setGTranslateCookie(
+            lang
+        );
+
+
+        /*
+         * =================================================
+         * SET SELECT
+         * =================================================
+         */
+
+        select.value =
+            targetValue;
+
+
+        console.log(
+            '[GTranslate] SELECT VALUE:',
+            select.value
+        );
+
+
+        /*
+         * =================================================
+         * TRIGGER GTRANSLATE
+         * =================================================
+         */
+
+        select.dispatchEvent(
+            new Event(
+                'change',
+                {
+                    bubbles: true
+                }
+            )
+        );
+
+
+        console.log(
+            '[GTranslate] RESTORE TRIGGERED:',
+            lang
+        );
+
+
+        /*
+         * =================================================
+         * KIỂM TRA LẠI SAU 500ms
+         * =================================================
+         */
+
+        setTimeout(
+            function() {
+
+                console.log(
+                    '[GTranslate] AFTER RESTORE SELECT:',
+                    select.value
+                );
+
+
+                console.log(
+                    '[GTranslate] AFTER RESTORE LOCAL STORAGE:',
+                    localStorage.getItem(
+                        STORAGE_KEY
+                    )
                 );
 
 
                 /*
-                 * =================================================
-                 * 8. RESTORE LANGUAGE
-                 * =================================================
+                 * Nếu localStorage vẫn là en
+                 * thì không cho code của chúng ta
+                 * tự đổi sang vi.
                  */
 
-                if (
-                    savedLanguage &&
-                    savedLanguage !== 'en'
-                ) {
+            },
+            500
+        );
 
-                    const targetValue =
-                        'en|' +
-                        savedLanguage;
-
-
-                    const option =
-                        select.querySelector(
-                            'option[value="' +
-                            targetValue +
-                            '"]'
-                        );
-
-
-                    if (option) {
-
-                        console.log(
-                            '[GTranslate] Restore:',
-                            targetValue
-                        );
-
-
-                        /*
-                         * Đặt option
-                         */
-
-                        select.value =
-                            targetValue;
-
-
-                        /*
-                         * Trigger GTranslate
-                         */
-
-                        select.dispatchEvent(
-                            new Event(
-                                'change',
-                                {
-                                    bubbles: true
-                                }
-                            )
-                        );
-
-                    } else {
-
-                        console.warn(
-                            '[GTranslate] Không tìm thấy option:',
-                            targetValue
-                        );
-                    }
-                }
-
-            }, 300);
     }
+
 
 })();
 </script>
