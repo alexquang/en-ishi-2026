@@ -490,8 +490,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
   );
-
 });
+
 // async function initMapByCountry(countryLat, countryLng, countryCode) {
 //   let center = {
 //     lat: Number(countryLat),
@@ -2981,8 +2981,13 @@ function showLoginRequiredDialog() {
     return;
   }
 
+  // Lưu trạng thái trước khi login
+  sessionStorage.setItem("gm_login_from_upload", "1");
+  sessionStorage.setItem("gm_upload_modal_open", "1");
+
   dialog.style.display = "flex";
 }
+
 
 function hideLoginRequiredDialog() {
   const dialog = document.getElementById("gmLoginRequiredDialog");
@@ -2994,7 +2999,9 @@ function hideLoginRequiredDialog() {
   dialog.style.display = "none";
 }
 
+
 document.addEventListener("click", function (e) {
+
   if (e.target.closest("#gmLoginDialogClose")) {
     hideLoginRequiredDialog();
   }
@@ -3002,4 +3009,5 @@ document.addEventListener("click", function (e) {
   if (e.target.closest("#gmLoginDialogCancel")) {
     hideLoginRequiredDialog();
   }
+
 });
