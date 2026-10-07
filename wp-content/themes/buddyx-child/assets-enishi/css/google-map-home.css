@@ -2260,3 +2260,9 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
     width: 400px !important;
     max-width: calc(100vw - 20px);
 }
+
+.nsl-container {
+margin: auto !important;
+text-align: center !important;
+
+}
