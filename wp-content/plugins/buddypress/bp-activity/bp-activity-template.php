@@ -1779,10 +1779,18 @@ function bp_insert_activity_meta( $content = '' ) {
 	 *
 	 * @param array $value Array containing the time since markup and the current activity component.
 	 */
-	$time_since = apply_filters_ref_array( 'bp_activity_time_since', array(
-		$time_since,
-		&$activities_template->activity
-	) );
+$time_since = sprintf(
+    '<span class="time-since">%s</span>',
+    esc_html( $date_recorded )
+);
+
+$time_since = apply_filters_ref_array(
+    'bp_activity_time_since',
+    array(
+        $time_since,
+        &$activities_template->activity
+    )
+);
 
 	// Insert the permalink.
 	if ( ! bp_is_single_activity() ) {

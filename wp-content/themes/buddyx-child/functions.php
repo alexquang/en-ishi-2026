@@ -33,42 +33,6 @@ add_action('http_api_curl', function ($handle) {
         CURL_IPRESOLVE_V4
     );
 });
-
-function pt_gtranslate_scripts() {
-
-    wp_enqueue_script(
-        'gtranslate-dropdown',
-        get_stylesheet_directory_uri() . '/assets-enishi/js/dropdown.js',
-        array(),
-        null,
-        true
-    );
-
-    wp_add_inline_script(
-        'gtranslate-dropdown',
-        "
-        window.gtranslateSettings = {
-            default_language: 'en',
-            native_language_names: true,
-            flag_style: '2d',
-            wrapper_selector: '.gtranslate_wrapper'
-        };
-        ",
-        'before'
-    );
-
-    wp_enqueue_script(
-        'gtranslate-gps',
-        get_stylesheet_directory_uri() . '/assets-enishi/js/gtranslate-gps.js',
-        array('gtranslate-dropdown'),
-        null,
-        true
-    );
-}
-
-add_action('wp_enqueue_scripts', 'pt_gtranslate_scripts');
-
-
 add_action('wp_enqueue_scripts', function () {
 
     if (! is_page('maps')) {
@@ -1475,3 +1439,86 @@ add_filter('body_class', function ($classes) {
 
     return $classes;
 });
+
+function pt_gtranslate_scripts() {
+
+    /*
+     * =====================================================
+     * GTRANSLATE LOADING STATE
+     * Chạy trong HEAD để tránh page render trước
+     * =====================================================
+     */
+    add_action('wp_head', function () {
+        ?>
+        <style id="pt-gtranslate-loading-style">
+            html.pt-gtranslate-loading body {
+                opacity: 0;
+            }
+
+            html body {
+                transition: opacity 0.15s ease;
+            }
+        </style>
+
+        <script id="pt-gtranslate-loading-script">
+            document.documentElement.classList.add(
+                'pt-gtranslate-loading'
+            );
+        </script>
+        <?php
+    }, 1);
+
+
+    /*
+     * =====================================================
+     * GTRANSLATE DROPDOWN
+     * =====================================================
+     */
+    wp_enqueue_script(
+        'gtranslate-dropdown',
+        get_stylesheet_directory_uri() .
+        '/assets-enishi/js/dropdown.js',
+        array(),
+        null,
+        true
+    );
+
+
+    /*
+     * =====================================================
+     * GTRANSLATE SETTINGS
+     * =====================================================
+     */
+    wp_add_inline_script(
+        'gtranslate-dropdown',
+        "
+        window.gtranslateSettings = {
+            default_language: 'en',
+            native_language_names: true,
+            flag_style: '2d',
+            wrapper_selector: '.gtranslate_wrapper'
+        };
+        ",
+        'before'
+    );
+
+
+    /*
+     * =====================================================
+     * GPS LANGUAGE
+     * =====================================================
+     */
+    wp_enqueue_script(
+        'gtranslate-gps',
+        get_stylesheet_directory_uri() .
+        '/assets-enishi/js/gtranslate-gps.js',
+        array('gtranslate-dropdown'),
+        null,
+        true
+    );
+}
+
+add_action(
+    'wp_enqueue_scripts',
+    'pt_gtranslate_scripts'
+);

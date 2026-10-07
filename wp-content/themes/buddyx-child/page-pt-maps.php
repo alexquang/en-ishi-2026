@@ -253,26 +253,37 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 </div>
 <div id="gmLoginRequiredDialog" class="gm-login-dialog">
 
-  <div class="gm-login-dialog-content">
+    <div class="gm-login-dialog-content">
 
-    <button
-      type="button"
-      id="gmLoginDialogClose"
-      class="gm-login-dialog-close"
-    >
-      <i class="fa-solid fa-xmark"></i>
-    </button>
+        <button
+            type="button"
+            id="gmLoginDialogClose"
+            class="gm-login-dialog-close"
+        >
+            <i class="fa-solid fa-xmark"></i>
+        </button>
 
-    <div class="gm-login-dialog-icon">
-      <i class="fa-solid fa-lock"></i>
+        <div class="gm-login-dialog-icon">
+            <i class="fa-solid fa-lock"></i>
+        </div>
+
+        <h3>Login Required</h3>
+
+        <p>
+            Please log in to upload a video or picture.
+        </p>
+
+        <div id="gmNextendGoogleLogin">
+
+            <?php
+            echo do_shortcode(
+                '[nextend_social_login provider="google"]'
+            );
+            ?>
+
+        </div>
+
     </div>
-
-    <h3>Login Required</h3>
-
-    <p>
-      Please log in to upload a video or picture.
-    </p>
-  </div>
 
 </div>
 <?php get_footer(); ?>

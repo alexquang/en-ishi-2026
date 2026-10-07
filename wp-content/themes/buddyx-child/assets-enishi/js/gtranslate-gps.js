@@ -3,10 +3,12 @@
 
     console.log("[GPS] Starting GPS language detection...");
 
+
     // =====================================================
     // COUNTRY -> GTRANSLATE LANGUAGE
     // =====================================================
     const languageMap = {
+
         VN: "vi",
         KR: "ko",
         JP: "ja",
@@ -33,7 +35,14 @@
         CA: "en",
         AU: "en",
         NZ: "en"
+
     };
+
+
+    // =====================================================
+    // PREVENT MULTIPLE TRANSLATION
+    // =====================================================
+    let gpsTranslateApplied = false;
 
 
     // =====================================================
@@ -44,27 +53,40 @@
         return new Promise(function (resolve, reject) {
 
             if (!navigator.geolocation) {
-                reject("Geolocation is not supported");
+
+                reject(
+                    "Geolocation is not supported"
+                );
+
                 return;
             }
+
 
             navigator.geolocation.getCurrentPosition(
 
                 function (position) {
 
-                    const latitude = position.coords.latitude;
-                    const longitude = position.coords.longitude;
+                    const latitude =
+                        position.coords.latitude;
 
-                    console.log("[GPS] Latitude:", latitude);
-                    console.log("[GPS] Longitude:", longitude);
+                    const longitude =
+                        position.coords.longitude;
 
-                    /*
-                     * Reverse geocoding
-                     *
-                     * Replace this URL with your own API if needed.
-                     *
-                     * Example using Nominatim:
-                     */
+
+                    console.log(
+                        "[GPS] Latitude:",
+                        latitude
+                    );
+
+                    console.log(
+                        "[GPS] Longitude:",
+                        longitude
+                    );
+
+
+                    // -------------------------------------------------
+                    // Reverse geocoding
+                    // -------------------------------------------------
                     const url =
                         "https://nominatim.openstreetmap.org/reverse" +
                         "?format=json" +
@@ -73,18 +95,28 @@
                         "&zoom=3" +
                         "&addressdetails=1";
 
+
                     fetch(url, {
+
                         headers: {
                             "Accept": "application/json"
                         }
+
                     })
+
                     .then(function (response) {
+
                         if (!response.ok) {
-                            throw new Error("Reverse geocoding failed");
+
+                            throw new Error(
+                                "Reverse geocoding failed"
+                            );
                         }
 
                         return response.json();
+
                     })
+
                     .then(function (data) {
 
                         const countryCode =
@@ -93,19 +125,35 @@
                                 ? data.address.country_code.toUpperCase()
                                 : null;
 
+
                         if (!countryCode) {
-                            reject("Country not found");
+
+                            reject(
+                                "Country not found"
+                            );
+
                             return;
                         }
 
-                        console.log("[GPS] COUNTRY:", countryCode);
+
+                        console.log(
+                            "[GPS] COUNTRY:",
+                            countryCode
+                        );
+
 
                         resolve(countryCode);
+
                     })
+
                     .catch(function (error) {
+
                         reject(error);
+
                     });
+
                 },
+
 
                 function (error) {
 
@@ -114,240 +162,413 @@
                         error.message
                     );
 
+
                     reject(error);
+
                 },
+
 
                 {
                     enableHighAccuracy: false,
                     timeout: 10000,
                     maximumAge: 300000
                 }
+
             );
+
         });
+
+    }
+
+
+    // =====================================================
+    // WAIT GOOGLE TRANSLATE
+    // =====================================================
+    function waitForGoogleTranslate(resolve) {
+
+        let attempts = 0;
+
+        const maxAttempts = 100;
+
+
+        const timer = setInterval(function () {
+
+            attempts++;
+
+
+            const combo =
+                document.querySelector(
+                    "select.goog-te-combo"
+                );
+
+
+            if (combo) {
+
+                clearInterval(timer);
+
+
+                console.log(
+                    "[GTranslate] Google Translate ready"
+                );
+
+
+                resolve(true);
+
+                return;
+            }
+
+
+            if (attempts >= maxAttempts) {
+
+                clearInterval(timer);
+
+
+                console.warn(
+                    "[GTranslate] Google Translate timeout"
+                );
+
+
+                resolve(false);
+
+            }
+
+        }, 200);
+
+    }
+
+
+    // =====================================================
+    // LOAD GOOGLE TRANSLATE ENGINE
+    // =====================================================
+    function loadGoogleTranslate() {
+
+        return new Promise(function (resolve) {
+
+
+            // -------------------------------------------------
+            // Already ready
+            // -------------------------------------------------
+            const existingCombo =
+                document.querySelector(
+                    "select.goog-te-combo"
+                );
+
+
+            if (existingCombo) {
+
+                resolve(true);
+
+                return;
+            }
+
+
+            // -------------------------------------------------
+            // Script already loading
+            // -------------------------------------------------
+            if (window.gt_translate_script) {
+
+                waitForGoogleTranslate(resolve);
+
+                return;
+            }
+
+
+            console.log(
+                "[GTranslate] Loading Google Translate..."
+            );
+
+
+            // -------------------------------------------------
+            // Create Google Translate script
+            // -------------------------------------------------
+            window.gt_translate_script =
+                document.createElement("script");
+
+
+            window.gt_translate_script.src =
+                "https://translate.google.com/translate_a/element.js" +
+                "?cb=googleTranslateElementInit2";
+
+
+            window.gt_translate_script.onload =
+                function () {
+
+                    waitForGoogleTranslate(resolve);
+
+                };
+
+
+            window.gt_translate_script.onerror =
+                function () {
+
+                    console.error(
+                        "[GTranslate] Failed to load Google Translate"
+                    );
+
+                    resolve(false);
+
+                };
+
+
+            document.body.appendChild(
+                window.gt_translate_script
+            );
+
+
+            // -------------------------------------------------
+            // Also wait in case onload fires before combo
+            // -------------------------------------------------
+            waitForGoogleTranslate(resolve);
+
+        });
+
     }
 
 
     // =====================================================
     // APPLY GTRANSLATE LANGUAGE
     // =====================================================
-function applyGTranslateLanguage(language) {
+    function applyGTranslateLanguage(language) {
 
-    console.log("[GPS] GPS LANGUAGE:", language);
 
-    const targetValue = "en|" + language;
+        // -------------------------------------------------
+        // Prevent duplicate execution
+        // -------------------------------------------------
+        if (gpsTranslateApplied) {
 
-    let attempts = 0;
-
-    const timer = setInterval(function () {
-
-        attempts++;
-
-        const select =
-            document.querySelector("select.gt_selector");
-
-        if (!select) {
-
-            if (attempts % 5 === 0) {
-                console.log(
-                    "[GTranslate] Waiting for menu..."
-                );
-            }
+            console.log(
+                "[GTranslate] Already applied:",
+                language
+            );
 
             return;
+
         }
 
 
-        // =====================================================
-        // CHECK LANGUAGE OPTION
-        // =====================================================
+        const targetValue =
+            "en|" + language;
 
-        const option = Array.from(select.options).find(
-            function (option) {
-                return option.value === targetValue;
-            }
-        );
-
-        if (!option) {
-
-            if (attempts % 5 === 0) {
-                console.log(
-                    "[GTranslate] Waiting language:",
-                    targetValue
-                );
-            }
-
-            return;
-        }
-
-
-        // =====================================================
-        // STOP WAITING MENU
-        // =====================================================
-
-        clearInterval(timer);
-
-
-        // =====================================================
-        // SET COOKIE
-        // =====================================================
-
-        const cookieValue = "/en/" + language;
-
-        document.cookie =
-            "googtrans=" +
-            cookieValue +
-            "; path=/";
-
-        document.cookie =
-            "googtrans=" +
-            cookieValue +
-            "; path=/maps/";
-
-
-        // =====================================================
-        // SET MENU VALUE
-        // =====================================================
-
-        select.value = targetValue;
 
         console.log(
-            "[GTranslate] Final select:",
-            select.value
+            "[GTranslate] Preparing:",
+            targetValue
         );
 
 
-        // =====================================================
-        // LOAD GOOGLE TRANSLATE ENGINE
-        // =====================================================
+        // -------------------------------------------------
+        // English = default language
+        // No translation required
+        // -------------------------------------------------
+        if (language === "en") {
 
-        function waitForGoogleTranslate() {
-
-            const googleCombo =
-                document.querySelector(
-                    "select.goog-te-combo"
-                );
-
-            const googleContainer =
-                document.getElementById(
-                    "google_translate_element2"
-                );
-
-
-            // Google Translate đã sẵn sàng
-            if (
-                googleCombo &&
-                googleContainer &&
-                googleContainer.innerHTML.length > 0
-            ) {
-
-                console.log(
-                    "[GTranslate] Google Translate ready"
-                );
-
-                // ---------------------------------------------
-                // APPLY LANGUAGE
-                // ---------------------------------------------
-
-                window.doGTranslate(targetValue);
-
-                console.log(
-                    "[GTranslate] Applied:",
-                    language
-                );
-
-                return;
-            }
-
-
-            // =================================================
-            // LOAD GOOGLE TRANSLATE SCRIPT
-            // =================================================
-
-            if (!window.gt_translate_script) {
-
-                console.log(
-                    "[GTranslate] Loading Google Translate..."
-                );
-
-                window.gt_translate_script =
-                    document.createElement("script");
-
-                window.gt_translate_script.src =
-                    "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2";
-
-                document.body.appendChild(
-                    window.gt_translate_script
-                );
-            }
-
-
-            // =================================================
-            // WAIT
-            // =================================================
-
-            setTimeout(
-                waitForGoogleTranslate,
-                300
+            console.log(
+                "[GTranslate] English detected - no translation required"
             );
+
+
+            gpsTranslateApplied = true;
+
+
+            setTimeout(function () {
+
+                document.documentElement
+                    .classList
+                    .remove(
+                        "pt-gtranslate-loading"
+                    );
+
+            }, 100);
+
+
+            return;
         }
 
 
-        waitForGoogleTranslate();
+        // -------------------------------------------------
+        // Load Google Translate
+        // -------------------------------------------------
+        loadGoogleTranslate()
 
-    }, 300);
+            .then(function (ready) {
+
+
+                if (!ready) {
+
+                    console.warn(
+                        "[GTranslate] Google Translate not ready"
+                    );
+
+
+                    document.documentElement
+                        .classList
+                        .remove(
+                            "pt-gtranslate-loading"
+                        );
+
+
+                    return;
+                }
+
+
+                const combo =
+                    document.querySelector(
+                        "select.goog-te-combo"
+                    );
+
+
+                if (!combo) {
+
+                    console.warn(
+                        "[GTranslate] Combo not found"
+                    );
+
+
+                    document.documentElement
+                        .classList
+                        .remove(
+                            "pt-gtranslate-loading"
+                        );
+
+
+                    return;
+                }
+
+
+                if (
+                    typeof window.doGTranslate !==
+                    "function"
+                ) {
+
+                    console.warn(
+                        "[GTranslate] doGTranslate not ready"
+                    );
+
+
+                    document.documentElement
+                        .classList
+                        .remove(
+                            "pt-gtranslate-loading"
+                        );
+
+
+                    return;
+                }
+
+
+                // -------------------------------------------------
+                // Mark as applied ONLY now
+                // -------------------------------------------------
+                gpsTranslateApplied = true;
+
+
+                console.log(
+                    "[GTranslate] Applying:",
+                    targetValue
+                );
+
+
+                // -------------------------------------------------
+                // Apply translation
+                // -------------------------------------------------
+                window.doGTranslate(
+                    targetValue
+                );
+
+
+                // -------------------------------------------------
+                // Wait for Google Translate DOM changes
+                // -------------------------------------------------
+                setTimeout(function () {
+
+                    document.documentElement
+                        .classList
+                        .remove(
+                            "pt-gtranslate-loading"
+                        );
+
+
+                    console.log(
+                        "[GTranslate] Translation finished:",
+                        language
+                    );
+
+                }, 1200);
+
+            });
+
+    }
 
 
     // =====================================================
-    // TIMEOUT
-    // =====================================================
-
-    setTimeout(function () {
-
-        clearInterval(timer);
-
-    }, 20000);
-}
-
-    // =====================================================
-    // START
+    // START GPS LANGUAGE DETECTION
     // =====================================================
     function startGPSLanguage() {
+
 
         getGPSCountry()
 
             .then(function (countryCode) {
 
+
                 const language =
                     languageMap[countryCode] || "en";
+
 
                 console.log(
                     "[GPS] COUNTRY:",
                     countryCode
                 );
 
+
                 console.log(
                     "[GPS] GPS LANGUAGE:",
                     language
                 );
 
-                applyGTranslateLanguage(language);
+
+                applyGTranslateLanguage(
+                    language
+                );
+
             })
 
+
             .catch(function (error) {
+
 
                 console.warn(
                     "[GPS] GPS detection failed:",
                     error
                 );
 
-                // Default English
-                applyGTranslateLanguage("en");
+
+                /*
+                 * GPS is the authority.
+                 *
+                 * Do NOT automatically change
+                 * to English when GPS fails.
+                 */
+
+
+                document.documentElement
+                    .classList
+                    .remove(
+                        "pt-gtranslate-loading"
+                    );
+
             });
+
     }
 
 
-    // Wait until DOM is ready
-    if (document.readyState === "loading") {
+    // =====================================================
+    // START
+    // =====================================================
+    if (
+        document.readyState ===
+        "loading"
+    ) {
 
         document.addEventListener(
             "DOMContentLoaded",
@@ -357,6 +578,8 @@ function applyGTranslateLanguage(language) {
     } else {
 
         startGPSLanguage();
+
     }
+
 
 })();

@@ -50,19 +50,31 @@ bp_nouveau_before_loop(); ?>
 
 						<?php endif; ?>
 
-						<p class="last-activity item-meta">
-							<?php
-								printf(
-									/* translators: %s: last activity timestamp (e.g. "Active 1 hour ago") */
-									esc_html__( 'Active %s', 'buddyx' ),
-									sprintf(
-										'<span data-livestamp="%1$s">%2$s</span>',
-										bp_core_get_iso8601_date( bp_get_group_last_active( 0, array( 'relative' => false ) ) ),
-										esc_html( bp_get_group_last_active() )
-									)
-								);
-							?>
-						</p>
+<p class="last-activity item-meta">
+
+    <?php
+    printf(
+        /* translators: %s: last activity timestamp */
+        esc_html__('Active %s', 'buddypress'),
+
+        sprintf(
+            '<span class="last-activity-time notranslate" translate="no" data-livestamp="%1$s">%2$s</span>',
+            esc_attr(
+                bp_core_get_iso8601_date(
+                    bp_get_group_last_active(
+                        0,
+                        array('relative' => false)
+                    )
+                )
+            ),
+            esc_html(
+                bp_get_group_last_active()
+            )
+        )
+    );
+    ?>
+
+</p>
 
 					</div>
 
