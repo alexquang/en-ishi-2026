@@ -324,6 +324,38 @@
 
     }
 
+    function syncGTranslateDropdown(language) {
+
+    const combo = document.querySelector(
+        "select.goog-te-combo"
+    );
+
+    if (!combo) {
+        console.warn(
+            "[GTranslate] Dropdown not found for sync:",
+            language
+        );
+        return false;
+    }
+
+    // Set selected language
+    combo.value = language;
+
+    // Trigger Google Translate
+    combo.dispatchEvent(
+        new Event("change", {
+            bubbles: true
+        })
+    );
+
+    console.log(
+        "[GTranslate] Dropdown synced:",
+        language
+    );
+
+    return true;
+}
+
 
     // =====================================================
     // APPLY GTRANSLATE LANGUAGE
@@ -479,21 +511,55 @@
                 // -------------------------------------------------
                 // Wait for Google Translate DOM changes
                 // -------------------------------------------------
-                setTimeout(function () {
+// -------------------------------------------------
+// Wait for Google Translate DOM changes
+// -------------------------------------------------
+setTimeout(function () {
 
-                    document.documentElement
-                        .classList
-                        .remove(
-                            "pt-gtranslate-loading"
-                        );
+    const combo = document.querySelector(
+        "select.goog-te-combo"
+    );
 
+    if (combo) {
 
-                    console.log(
-                        "[GTranslate] Translation finished:",
-                        language
-                    );
+        combo.value = language;
 
-                }, 1200);
+        // Trigger change nếu cần
+        combo.dispatchEvent(
+            new Event("change", {
+                bubbles: true
+            })
+        );
+
+        console.log(
+            "[GTranslate] Dropdown synced:",
+            language
+        );
+
+    } else {
+
+        console.warn(
+            "[GTranslate] Dropdown not found:",
+            language
+        );
+    }
+
+    setTimeout(function () {
+
+        document.documentElement
+            .classList
+            .remove(
+                "pt-gtranslate-loading"
+            );
+
+        console.log(
+            "[GTranslate] Translation finished:",
+            language
+        );
+
+    }, 300);
+
+}, 1200);
 
             });
 
