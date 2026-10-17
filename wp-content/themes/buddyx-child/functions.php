@@ -1448,18 +1448,8 @@ function pt_gtranslate_scripts() {
      * Chạy trong HEAD để tránh page render trước
      * =====================================================
      */
-    add_action('wp_head', function () {
+    add_action('wp_footer', function () {
         ?>
-        <style id="pt-gtranslate-loading-style">
-            html.pt-gtranslate-loading body {
-                opacity: 0;
-            }
-
-            html body {
-                transition: opacity 0.15s ease;
-            }
-        </style>
-
         <script id="pt-gtranslate-loading-script">
             document.documentElement.classList.add(
                 'pt-gtranslate-loading'
