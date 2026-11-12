@@ -1,31 +1,34 @@
 <?php
-/*
-Template Name: Google Map Home
-*/
+/**
+ * Template Name: Google Map Home
+ *
+ * @package BuddyX_Child
+ */
 
 get_header();
 ?>
 <script>
 const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 </script>
+
 <div class="google-map-section">
 
     <div class="google-map-container">
         <div class="top-categories">
 
-            <button class="cat-btn" data-type="restaurant">
+            <button type="button" class="cat-btn" data-type="restaurant">
                 🍜 Restaurants
             </button>
 
-            <button class="cat-btn" data-type="lodging">
+            <button type="button" class="cat-btn" data-type="lodging">
                 🏨 Hotels
             </button>
 
-            <button class="cat-btn" data-type="cafe">
+            <button type="button" class="cat-btn" data-type="cafe">
                 ☕ Coffee
             </button>
 
-            <button class="cat-btn" data-type="shopping_mall">
+            <button type="button" class="cat-btn" data-type="shopping_mall">
                 🛍 Shopping
             </button>
 
@@ -38,10 +41,10 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
                     type="text"
                     placeholder="Search Google Maps"
                     autocomplete="off">
-                <button class="find-btn" id="find-btn">
+                <button type="button" class="find-btn" id="find-btn" aria-label="Search">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
-                <button class="ai-search-btn" id="ai-search-btn" title="Search with Gemini">
+                <button type="button" class="ai-search-btn" id="ai-search-btn" title="Search with Gemini" aria-label="Search with Gemini">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <path
                             d="M12 2C12 7.52 16.48 12 22 12
@@ -63,46 +66,38 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 
                 </div>
 
-                <button id="toggle-results">
+                <button type="button" id="toggle-results" aria-label="Toggle Results Panel">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
 
             </div>
 
             <!-- GEMINI RESULT -->
-
             <div id="ai-result-panel" class="ai-result-panel">
 
                 <div class="ai-result-header">
 
                     <div class="ai-result-title">
-
                         <i class="fa-solid fa-wand-magic-sparkles"></i>
-
                         <span>Gemini AI</span>
-
                     </div>
 
                     <button
                         id="close-ai-result"
                         class="ai-close-btn"
-                        type="button">
-
+                        type="button"
+                        aria-label="Close Gemini Result">
                         <i class="fa-solid fa-xmark"></i>
-
                     </button>
 
                 </div>
 
-
                 <div
                     id="ai-result-content"
                     class="ai-result-content">
-
                 </div>
 
             </div>
-
             <!-- END GEMINI RESULT -->
 
         </div>
@@ -111,7 +106,7 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
     <div id="map"></div>
 
     <div class="map-layers-control">
-        <button id="layers-toggle">
+        <button type="button" id="layers-toggle">
             <i class="fa-solid fa-layer-group"></i>
             Layers
         </button>
@@ -157,7 +152,6 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
     </div>
 
 </div>
-</div>
 
 <!-- Dialog Picture -->
 <div id="gmPictureDialog" class="gm-picture-dialog">
@@ -170,21 +164,22 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
                 <i class="fa-solid fa-images"></i>
                 Place Pictures
             </h3>
-            <?php // if (is_user_logged_in()) : ?>
-                <button
-                    id="gmUploadPhotoBtn"
-                    class="gm-upload-btn">
-                    <i class="fa-solid fa-upload"></i>
-                    Upload
-                </button>
 
-                <input
-                    type="file"
-                    id="gmUploadPhotoFile"
-                    accept="image/*"
-                    hidden>
-            <?php // endif; ?>
-            <button id="gmPictureClose">
+            <button
+                type="button"
+                id="gmUploadPhotoBtn"
+                class="gm-upload-btn">
+                <i class="fa-solid fa-upload"></i>
+                Upload
+            </button>
+
+            <input
+                type="file"
+                id="gmUploadPhotoFile"
+                accept="image/*"
+                hidden>
+
+            <button type="button" id="gmPictureClose" aria-label="Close Picture Dialog">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
@@ -214,23 +209,25 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
         <div class="gm-video-header">
 
             <h3>
-                <i class="fa-solid fa-images"></i>
+                <i class="fa-solid fa-video"></i>
                 Place Videos
             </h3>
-            <?php // if (is_user_logged_in()) : ?>
-                <button
-                    id="gmUploadVideoBtn"
-                    class="gm-upload-btn">
-                    <i class="fa-solid fa-upload"></i>
-                    Upload
-                </button>
 
-                <input
-                    type="file"
-                    id="gmUploadVideoFile"
-                    hidden>
-            <?php // endif; ?>
-            <button id="gmVideoClose">
+            <button
+                type="button"
+                id="gmUploadVideoBtn"
+                class="gm-upload-btn">
+                <i class="fa-solid fa-upload"></i>
+                Upload
+            </button>
+
+            <input
+                type="file"
+                id="gmUploadVideoFile"
+                accept="video/*"
+                hidden>
+
+            <button type="button" id="gmVideoClose" aria-label="Close Video Dialog">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
@@ -251,6 +248,8 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
     </div>
 
 </div>
+
+<!-- Dialog Login Required -->
 <div id="gmLoginRequiredDialog" class="gm-login-dialog">
 
     <div class="gm-login-dialog-content">
@@ -259,6 +258,7 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
             type="button"
             id="gmLoginDialogClose"
             class="gm-login-dialog-close"
+            aria-label="Close Login Dialog"
         >
             <i class="fa-solid fa-xmark"></i>
         </button>
@@ -276,9 +276,11 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
         <div id="gmNextendGoogleLogin">
 
             <?php
-            echo do_shortcode(
-                '[nextend_social_login provider="google"]'
-            );
+            if ( shortcode_exists( 'nextend_social_login' ) ) {
+                echo do_shortcode( '[nextend_social_login provider="google"]' );
+            } else {
+                echo '<a class="button gm-login-btn" href="' . esc_url( wp_login_url( get_permalink() ) ) . '">Log In</a>';
+            }
             ?>
 
         </div>
@@ -286,4 +288,5 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
     </div>
 
 </div>
+
 <?php get_footer(); ?>
