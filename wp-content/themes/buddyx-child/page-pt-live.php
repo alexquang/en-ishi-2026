@@ -1,498 +1,307 @@
 <?php
-/*
-Template Name: Live Stream
-*/
+/**
+ * Template Name: Live Stream
+ * Description: Trang Livestream cho menu Channel -> Video (En-Ishi Live Studio & Viewer)
+ */
 
-if (!is_user_logged_in()) {
-    wp_redirect(wp_login_url());
-    exit;
-}
+defined('ABSPATH') || exit;
 
 get_header();
 
-$user_id = get_current_user_id();
+$is_logged_in = is_user_logged_in();
+$current_user = wp_get_current_user();
+$user_id      = $is_logged_in ? (int) $current_user->ID : 0;
+$user_name    = $is_logged_in ? ($current_user->display_name ?: $current_user->user_login) : 'Khách';
+$user_avatar  = $is_logged_in ? get_avatar_url($user_id, ['size' => 96]) : 'https://www.gravatar.com/avatar/?d=mp&s=96';
+$user_room    = $is_logged_in ? ('channel-' . sanitize_key($current_user->user_login ?: $user_id)) : 'enishi-main';
+
+$requested_room = isset($_GET['room']) ? sanitize_text_field(wp_unslash($_GET['room'])) : '';
+$requested_mode = isset($_GET['mode']) ? sanitize_text_field(wp_unslash($_GET['mode'])) : 'watch';
+
+$active_streams = function_exists('pt_get_active_livestreams_list')
+    ? pt_get_active_livestreams_list()
+    : [];
+
+if ($requested_room === '') {
+    $requested_room = !empty($active_streams[0]['room']) ? $active_streams[0]['room'] : 'enishi-main';
+}
+
+$initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
+    'room'        => $requested_room,
+    'title'       => 'En-Ishi Official Live Channel - Giao lưu & Khám phá',
+    'category'    => 'Giao lưu',
+    'host_name'   => 'En-Ishi Channel',
+    'host_avatar' => $user_avatar,
+    'viewers'     => 1,
+    'is_live'     => true,
+];
 ?>
-<div class="twitch-layout">
 
-    <main class="stream-area">
-
-        <div class="video-container">
-
-            <video
-                id="localVideo"
-                autoplay
-                muted
-                playsinline>
-            </video>
-
-            <div class="live-badge" id="live-status">
-                ⚫ OFFLINE
-            </div>
-
-        </div>
-
-        <div class="stream-info">
-
-            <h2 class="stream-title">
-                🎥 PT Live Stream
-            </h2>
-
-            <div class="stream-meta">
-
-                <div class="streamer">
-
-                    <?php echo get_avatar($user_id, 48); ?>
-
-                    <div>
-                        <strong>
-                            <?php echo wp_get_current_user()->display_name; ?>
-                        </strong>
-                    </div>
-
-                </div>
-
-                <div id="viewerCount" class="viewer-count">
-                    👥 0 viewers
-                </div>
-
-            </div>
-
-            <div class="stream-actions">
-
-                <button id="startLive" class="btn-live">
-                    Start Live
-                </button>
-
-                <button
-                    id="stopLive"
-                    class="btn-stop"
-                    style="display:none;">
-                    End Live
-                </button>
-
-                <button class="btn-follow">
-                    Follow
-                </button>
-
-                <button class="btn-donate">
-                    Donate
-                </button>
-
-            </div>
-
-        </div>
-
-    </main>
-
-    <aside class="chat-sidebar">
-
-        <div class="chat-header">
-            💬 Stream Chat
-        </div>
-
-        <div id="chatMessages"></div>
-
-        <div class="chat-input">
-
-            <input
-                type="text"
-                id="chatInput"
-                placeholder="Send a message">
-
-            <button id="sendChat">
-                Send
-            </button>
-
-        </div>
-
-    </aside>
-
-</div>
-
-<style>
-
-.twitch-layout{
-    display:flex;
-    gap:0;
-    min-height:calc(100vh - 100px);
-    background:#0e0e10;
-}
-
-.stream-area{
-    flex:1;
-    background:#18181b;
-}
-
-.video-container{
-    position:relative;
-    background:#000;
-    aspect-ratio:16/9;
-}
-
-#localVideo{
-    width:100%;
-    height:100%;
-    object-fit:cover;
-}
-
-.live-badge{
-    position:absolute;
-    top:15px;
-    left:15px;
-    background:#e91916;
-    color:#fff;
-    padding:6px 12px;
-    border-radius:6px;
-    font-weight:700;
-}
-
-.stream-info{
-    background:#1f1f23;
-    padding:20px;
-    color:#fff;
-}
-
-.stream-title{
-    color:#fff;
-    margin-bottom:15px;
-}
-
-.stream-meta{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
-
-.streamer{
-    display:flex;
-    gap:12px;
-    align-items:center;
-}
-
-.streamer img{
-    border-radius:50%;
-}
-
-.viewer-count{
-    font-weight:600;
-}
-
-.stream-actions{
-    margin-top:20px;
-    display:flex;
-    gap:10px;
-}
-
-.stream-actions button{
-    border:0;
-    border-radius:8px;
-    padding:10px 18px;
-    cursor:pointer;
-}
-
-.btn-live{
-    background:#9147ff;
-    color:#fff;
-}
-
-.btn-stop{
-    background:#ef4444;
-    color:#fff;
-}
-
-.btn-follow{
-    background:#2d2d33;
-    color:#fff;
-}
-
-.btn-donate{
-    background:#f59e0b;
-    color:#fff;
-}
-
-.chat-sidebar{
-    width:360px;
-    background:#1f1f23;
-    display:flex;
-    flex-direction:column;
-    border-left:1px solid #2f2f35;
-}
-
-.chat-header{
-    padding:16px;
-    color:#fff;
-    font-weight:700;
-    border-bottom:1px solid #2f2f35;
-}
-
-#chatMessages{
-    flex:1;
-    overflow-y:auto;
-    padding:15px;
-    color:#fff;
-}
-
-.chat-message{
-    margin-bottom:12px;
-}
-
-.chat-user{
-    color:#bf94ff;
-    font-weight:600;
-}
-
-.chat-input{
-    display:flex;
-    gap:8px;
-    padding:15px;
-    border-top:1px solid #2f2f35;
-}
-
-.chat-input input{
-    flex:1;
-    background:#18181b;
-    border:1px solid #333;
-    color:#fff;
-    border-radius:8px;
-    padding:10px;
-}
-
-.chat-input button{
-    background:#9147ff;
-    color:#fff;
-    border:0;
-    border-radius:8px;
-    padding:0 16px;
-}
-
-@media(max-width:991px){
-
-    .twitch-layout{
-        flex-direction:column;
-    }
-
-    .chat-sidebar{
-        width:100%;
-        height:400px;
-    }
-
-}
-
-</style>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+<link rel="stylesheet" href="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets-enishi/css/pt-live.css?v=' . filemtime(get_stylesheet_directory() . '/assets-enishi/css/pt-live.css')); ?>" />
 <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
 
+<main class="ptlive-wrapper">
+    <div class="ptlive-container">
+
+        <!-- TOP BAR -->
+        <header class="ptlive-topbar">
+            <div class="ptlive-brand">
+                <span class="ptlive-brand-badge">
+                    <span class="ptlive-dot"></span> LIVE CHANNEL
+                </span>
+                <div class="ptlive-brand-title">
+                    <h1>Channel &rarr; Video Livestream</h1>
+                    <p>Phát trực tiếp &amp; giao lưu thời gian thực cùng cộng đồng En-Ishi</p>
+                </div>
+            </div>
+
+            <div class="ptlive-mode-tabs" role="tablist">
+                <button type="button" id="ptlive-mode-watch" class="ptlive-mode-btn <?php echo $requested_mode !== 'host' ? 'is-active' : ''; ?>">
+                    <i class="fa-solid fa-tv"></i>
+                    <span>Xem Livestream</span>
+                </button>
+                <button type="button" id="ptlive-mode-host" class="ptlive-mode-btn mode-host <?php echo $requested_mode === 'host' ? 'is-active' : ''; ?>">
+                    <i class="fa-solid fa-tower-broadcast"></i>
+                    <span>Phát Trực Tiếp (Go Live)</span>
+                </button>
+            </div>
+
+            <div class="ptlive-top-stats">
+                <div class="ptlive-stat-pill">
+                    <i class="fa-solid fa-signal"></i>
+                    <span>Đang phát: <strong id="ptlive-active-total-count"><?php echo count($active_streams); ?></strong> kênh</span>
+                </div>
+                <div class="ptlive-stat-pill">
+                    <i class="fa-solid fa-hashtag"></i>
+                    <span id="ptlive-room-tag"><?php echo esc_html($requested_room); ?></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN STAGE + LIVE CHAT -->
+        <section class="ptlive-main-grid">
+
+            <!-- LEFT: VIDEO PLAYER & STUDIO -->
+            <div class="ptlive-stage-card">
+                <div class="ptlive-video-box">
+
+                    <!-- HUD Top Overlay -->
+                    <div class="ptlive-video-hud-top">
+                        <div class="ptlive-hud-left">
+                            <span id="ptlive-status-badge" class="ptlive-status-badge">
+                                <i class="fa-solid fa-circle-pause"></i> OFFLINE
+                            </span>
+                            <span class="ptlive-hud-pill" title="Số người đang xem">
+                                <i class="fa-solid fa-eye"></i>
+                                <span id="ptlive-viewer-count"><?php echo esc_html((string) ($initial_host['viewers'] ?? 1)); ?></span>
+                            </span>
+                            <span class="ptlive-hud-pill" title="Thời lượng phát">
+                                <i class="fa-regular fa-clock"></i>
+                                <span id="ptlive-uptime">00:00</span>
+                            </span>
+                        </div>
+                        <div class="ptlive-hud-right">
+                            <button type="button" id="ptlive-btn-fullscreen" class="ptlive-hud-pill" style="cursor:pointer;" title="Toàn màn hình">
+                                <i class="fa-solid fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Video Mount Container -->
+                    <div id="ptlive-video-mount" class="ptlive-video-mount"></div>
+
+                    <!-- Standby Overlay -->
+                    <div id="ptlive-standby-overlay" class="ptlive-standby-overlay">
+                        <div class="ptlive-standby-icon">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                        </div>
+                        <h3 id="ptlive-standby-title">Chào mừng đến với Kênh Livestream Video</h3>
+                        <p id="ptlive-standby-desc">
+                            Chọn một kênh đang phát trực tiếp bên dưới để xem hoặc bấm <strong>Phát Trực Tiếp (Go Live)</strong> để bắt đầu buổi phát sóng của riêng bạn.
+                        </p>
+                        <div class="ptlive-standby-actions">
+                            <button type="button" id="ptlive-standby-primary-btn" class="ptlive-btn btn-primary">
+                                <i class="fa-solid fa-video"></i> Phát Trực Tiếp Ngay
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Floating Reactions -->
+                    <div id="ptlive-reactions-layer" class="ptlive-reactions-layer"></div>
+                </div>
+
+                <!-- CONTROLS BAR -->
+                <div class="ptlive-controls-bar">
+                    <!-- Host Broadcast Controls -->
+                    <div id="ptlive-host-controls" class="ptlive-controls-group" style="display: none;">
+                        <button type="button" id="ptlive-btn-preview" class="ptlive-btn">
+                            <i class="fa-solid fa-camera"></i>
+                            <span>Xem trước Camera</span>
+                        </button>
+                        <button type="button" id="ptlive-btn-start" class="ptlive-btn btn-primary">
+                            <i class="fa-solid fa-tower-broadcast"></i>
+                            <span>Bắt đầu Live</span>
+                        </button>
+                        <button type="button" id="ptlive-btn-stop" class="ptlive-btn btn-danger" style="display: none;">
+                            <i class="fa-solid fa-stop"></i>
+                            <span>Kết thúc Live</span>
+                        </button>
+                        <button type="button" id="ptlive-btn-cam" class="ptlive-btn">
+                            <i class="fa-solid fa-video"></i>
+                            <span>Camera</span>
+                        </button>
+                        <button type="button" id="ptlive-btn-mic" class="ptlive-btn">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span>Micro</span>
+                        </button>
+                        <button type="button" id="ptlive-btn-screen" class="ptlive-btn">
+                            <i class="fa-solid fa-desktop"></i>
+                            <span>Chia sẻ màn hình</span>
+                        </button>
+                    </div>
+
+                    <!-- Quick Reactions Bar (Available to both Viewers & Host) -->
+                    <div class="ptlive-reaction-bar">
+                        <span style="font-size:12px; color:var(--ptlive-muted); margin-right:4px;">Thả cảm xúc:</span>
+                        <button type="button" class="ptlive-react-btn" data-emoji="❤️" title="Thả tim">❤️</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="🔥" title="Cháy quá">🔥</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="👏" title="Vỗ tay">👏</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="🎉" title="Chúc mừng">🎉</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="☕" title="Cafe">☕</button>
+                    </div>
+                </div>
+
+                <!-- STREAMER PROFILE & STREAM INFO BAR -->
+                <div class="ptlive-info-bar">
+                    <div class="ptlive-streamer-profile">
+                        <img id="ptlive-streamer-avatar" class="ptlive-streamer-avatar" src="<?php echo esc_url($initial_host['host_avatar']); ?>" alt="Streamer Avatar" />
+                        <div class="ptlive-streamer-meta">
+                            <h2 id="ptlive-stream-title-display" class="ptlive-stream-title-display">
+                                <?php echo esc_html($initial_host['title']); ?>
+                            </h2>
+                            <div class="ptlive-streamer-sub">
+                                <span id="ptlive-streamer-name" class="ptlive-streamer-name"><?php echo esc_html($initial_host['host_name']); ?></span>
+                                <span id="ptlive-stream-category-display" class="ptlive-category-tag"><?php echo esc_html($initial_host['category']); ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ptlive-info-actions">
+                        <button type="button" id="ptlive-btn-follow" class="ptlive-btn">
+                            <i class="fa-solid fa-heart"></i> Theo dõi
+                        </button>
+                        <button type="button" id="ptlive-btn-share-link" class="ptlive-btn">
+                            <i class="fa-solid fa-share-nodes"></i> Chia sẻ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BROADCASTER STUDIO SETUP (Visible in Host Mode) -->
+                <div id="ptlive-studio-setup" class="ptlive-studio-setup" style="display: none;">
+                    <div class="ptlive-studio-setup-head">
+                        <h4><i class="fa-solid fa-sliders"></i> Cấu hình Phòng Phát Trực Tiếp (Livestream Studio)</h4>
+                    </div>
+                    <div class="ptlive-setup-grid">
+                        <div class="ptlive-field">
+                            <label for="ptlive-input-title">Tiêu đề buổi phát trực tiếp</label>
+                            <input type="text" id="ptlive-input-title" placeholder="Nhập tiêu đề livestream của bạn..." value="<?php echo esc_attr($user_name . ' đang phát trực tiếp'); ?>" />
+                        </div>
+                        <div class="ptlive-field">
+                            <label for="ptlive-input-category">Chủ đề / Danh mục</label>
+                            <select id="ptlive-input-category">
+                                <option value="Giao lưu">Giao lưu &amp; Trò chuyện</option>
+                                <option value="Cafe & Review">Cafe &amp; Review Địa điểm</option>
+                                <option value="Âm nhạc">Âm nhạc &amp; Giải trí</option>
+                                <option value="Ẩm thực">Ẩm thực &amp; Đời sống</option>
+                                <option value="Sự kiện">Sự kiện nổi bật</option>
+                            </select>
+                        </div>
+                        <div class="ptlive-field">
+                            <label for="ptlive-select-camera">Thiết bị Camera</label>
+                            <select id="ptlive-select-camera">
+                                <option value="">Camera mặc định</option>
+                            </select>
+                        </div>
+                        <div class="ptlive-field">
+                            <label for="ptlive-select-mic">Thiết bị Microphone</label>
+                            <select id="ptlive-select-mic">
+                                <option value="">Microphone mặc định</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: REAL-TIME LIVE CHAT -->
+            <aside class="ptlive-chat-card">
+                <div class="ptlive-chat-header">
+                    <h3><i class="fa-regular fa-comments"></i> Trò chuyện trực tiếp</h3>
+                    <span id="ptlive-chat-room-tag" class="ptlive-chat-room-tag">#<?php echo esc_html($requested_room); ?></span>
+                </div>
+
+                <div id="ptlive-chat-messages" class="ptlive-chat-messages">
+                    <div class="ptlive-chat-system">
+                        Chào mừng bạn đến với phòng chat trực tiếp! Hãy giữ thái độ văn minh, lịch sự.
+                    </div>
+                </div>
+
+                <div class="ptlive-chat-footer">
+                    <form id="ptlive-chat-form" class="ptlive-chat-form" autocomplete="off">
+                        <input
+                            type="text"
+                            id="ptlive-chat-input"
+                            class="ptlive-chat-input"
+                            placeholder="Nhập tin nhắn trò chuyện..."
+                            maxlength="300"
+                        />
+                        <button type="submit" class="ptlive-btn btn-accent">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </aside>
+
+        </section>
+
+        <!-- DISCOVER ACTIVE LIVESTREAMS & CHANNELS -->
+        <section class="ptlive-directory-section">
+            <div class="ptlive-section-head">
+                <h2><i class="fa-solid fa-fire" style="color:var(--ptlive-red);"></i> Danh sách Kênh Video &amp; Livestream</h2>
+                <div class="ptlive-filter-pills">
+                    <button type="button" class="ptlive-filter-pill is-active" data-category="all">Tất cả</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Giao lưu">Giao lưu</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Cafe & Review">Cafe &amp; Review</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Âm nhạc">Âm nhạc</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Ẩm thực">Ẩm thực</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Sự kiện">Sự kiện</button>
+                </div>
+            </div>
+
+            <div id="ptlive-streams-grid" class="ptlive-streams-grid"></div>
+        </section>
+
+    </div>
+</main>
+
+<div id="ptlive-toast" class="ptlive-toast"></div>
+
 <script>
-    const ROOM_NAME = 'live_user_<?php echo $user_id; ?>';
-
-    let room = null;
-
-    async function getToken() {
-
-        const url =
-            '/wp-json/enishi/v1/livekit-token?room=' +
-            encodeURIComponent(ROOM_NAME);
-
-        const response = await fetch(url, {
-            credentials: 'same-origin'
-        });
-
-        if (!response.ok) {
-
-            const text = await response.text();
-
-            throw new Error(
-                'Token API Error (' +
-                response.status +
-                '): ' +
-                text
-            );
-        }
-
-        return await response.json();
-    }
-
-    async function startLive() {
-
-        try {
-
-            document.getElementById('live-status')
-                .innerHTML = '🟡 Connecting...';
-
-            const data = await getToken();
-
-            console.log('TOKEN RESPONSE', data);
-
-            room = new LivekitClient.Room();
-
-            await room.connect(
-                data.url,
-                data.token
-            );
-
-
-
-            updateViewerCount();
-
-room.on(
-    LivekitClient.RoomEvent.ParticipantConnected,
-    () => {
-        updateViewerCount();
-    }
-);
-
-room.on(
-    LivekitClient.RoomEvent.ParticipantDisconnected,
-    () => {
-        updateViewerCount();
-    }
-);
-
-
-            room.on(
-                LivekitClient.RoomEvent.DataReceived,
-                (payload, participant) => {
-
-                    const text =
-                        new TextDecoder().decode(payload);
-
-                    addMessage(
-                        participant?.identity || 'Unknown',
-                        text
-                    );
-                }
-            );
-
-            await room.localParticipant
-                .enableCameraAndMicrophone();
-
-            setTimeout(() => {
-
-                room.localParticipant
-                    .videoTrackPublications
-                    .forEach(pub => {
-
-                        if (!pub.track) {
-                            return;
-                        }
-
-                        const track = pub.track;
-
-                        const element = track.attach();
-
-                        element.id = 'localVideo';
-
-                        element.style.width = '100%';
-                        element.style.maxWidth = '900px';
-                        element.style.borderRadius = '12px';
-
-                        const old =
-                            document.getElementById('localVideo');
-
-                        if (old) {
-                            old.replaceWith(element);
-                        }
-                    });
-
-            }, 1000);
-
-            document.getElementById('live-status')
-                .innerHTML = '🔴 LIVE';
-
-            document.getElementById('startLive')
-                .style.display = 'none';
-
-            document.getElementById('stopLive')
-                .style.display = 'inline-block';
-
-            console.log('LIVE STARTED');
-
-        } catch (e) {
-
-            console.error(e);
-
-            document.getElementById('live-status')
-                .innerHTML = '❌ ' + e.message;
-
-            alert(e.message);
-        }
-    }
-
-    function stopLive() {
-
-        if (room) {
-
-            room.disconnect();
-
-            room = null;
-        }
-
-        document.getElementById('live-status')
-            .innerHTML = '⚫ Offline';
-
-        document.getElementById('startLive')
-            .style.display = 'inline-block';
-
-        document.getElementById('stopLive')
-            .style.display = 'none';
-    }
-
-    function addMessage(user, text) {
-
-        const box =
-            document.getElementById('chatMessages');
-
-        box.innerHTML += `
-        <div>
-            <b>${user}</b>: ${text}
-        </div>
-    `;
-
-        box.scrollTop = box.scrollHeight;
-    }
-
-
-    document
-        .getElementById('sendChat')
-        .addEventListener('click', async () => {
-
-            const text =
-                document.getElementById('chatInput').value;
-
-            if (!text || !room) {
-                return;
-            }
-
-            await room.localParticipant.publishData(
-                new TextEncoder().encode(text), {
-                    reliable: true
-                }
-            );
-
-            addMessage('Me', text);
-
-            document.getElementById('chatInput').value = '';
-        });
-
-
-        function updateViewerCount() {
-
-    const total =
-        room.remoteParticipants.size;
-
-    document.getElementById('viewerCount')
-        .innerHTML =
-        '👥 ' + total + ' viewers';
-}
-
-
-    document
-        .getElementById('startLive')
-        .addEventListener('click', startLive);
-
-    document
-        .getElementById('stopLive')
-        .addEventListener('click', stopLive);
+    window.ptLiveConfig = <?php echo wp_json_encode([
+        'ajaxUrl'         => admin_url('admin-ajax.php'),
+        'restTokenUrl'    => rest_url('enishi/v1/livekit-token'),
+        'nonce'           => wp_create_nonce('pt_live_nonce'),
+        'isLoggedIn'      => $is_logged_in,
+        'userId'          => $user_id,
+        'userName'        => $user_name,
+        'userAvatar'      => $user_avatar,
+        'userRoom'        => $user_room,
+        'initialRoom'     => $requested_room,
+        'initialMode'     => $requested_mode === 'host' ? 'host' : 'watch',
+        'initialStreams'  => $active_streams,
+        'initialHostInfo' => $initial_host,
+    ]); ?>;
 </script>
+<script src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets-enishi/js/pt-live.js?v=' . filemtime(get_stylesheet_directory() . '/assets-enishi/js/pt-live.js')); ?>"></script>
 
 <?php get_footer(); ?>

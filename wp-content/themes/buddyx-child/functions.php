@@ -148,23 +148,41 @@ add_action('rest_api_init', function () {
         'callback' => function ($request) {
 
             $room = sanitize_text_field(
-                $request->get_param('room')
+                $request->get_param('room') ?: 'enishi-main'
+            );
+            $role = sanitize_text_field(
+                $request->get_param('role') ?: 'viewer'
             );
 
             $user = wp_get_current_user();
+            if ($user && $user->ID > 0) {
+                $identity = 'user_' . $user->ID . '_' . sanitize_key($user->user_login ?: $user->ID);
+                $name     = $user->display_name ?: $user->user_login;
+            } else {
+                $guest_suffix = substr(md5((string) wp_rand() . ($_SERVER['REMOTE_ADDR'] ?? '')), 0, 6);
+                $identity     = 'guest_' . $guest_suffix;
+                $name         = 'Guest ' . strtoupper($guest_suffix);
+            }
+
+            $can_publish = ($role === 'host' && $user && $user->ID > 0);
 
             return [
-                'url' => 'wss://live.pt-solution.vn',
-                'token' => enishi_generate_livekit_token(
+                'url'      => 'wss://live.pt-solution.vn',
+                'room'     => $room,
+                'identity' => $identity,
+                'name'     => $name,
+                'token'    => enishi_generate_livekit_token(
                     $room,
-                    (string)$user->ID
+                    $identity,
+                    $can_publish,
+                    $name
                 )
             ];
         }
     ]);
 });
 
-function enishi_generate_livekit_token($room, $identity)
+function enishi_generate_livekit_token($room, $identity, $can_publish = true, $name = '')
 {
     $apiKey = 'ENISHI';
     $apiSecret = 'd8f8d3f9a2f4a3c8e7b1d5f6a9c2e4b7d1f8c3a6e9b2f5d7a4c1e8f6b3d9a2';
@@ -175,15 +193,17 @@ function enishi_generate_livekit_token($room, $identity)
     ];
 
     $payload = [
-        'iss' => $apiKey,
-        'sub' => $identity,
-        'nbf' => time(),
-        'exp' => time() + 3600,
+        'iss'  => $apiKey,
+        'sub'  => (string) $identity,
+        'name' => $name !== '' ? $name : (string) $identity,
+        'nbf'  => time() - 10,
+        'exp'  => time() + 7200,
         'video' => [
             'roomJoin'     => true,
             'room'         => $room,
-            'canPublish'   => true,
-            'canSubscribe' => true
+            'canPublish'   => (bool) $can_publish,
+            'canSubscribe' => true,
+            'canPublishData' => true,
         ]
     ];
 
@@ -2015,3 +2035,311 @@ function pt_check_login_status_ajax()
         'ai_nonce'     => wp_create_nonce('pt_ai_search_nonce'),
     ]);
 }
+
+/**
+ * =========================================================
+ * CHANNEL -> VIDEO LIVESTREAM BACKEND & TEMPLATE ROUTING
+ * =========================================================
+ */
+
+/**
+ * Tự động khởi tạo trang Video (Channel -> Video) nếu chưa tồn tại và gán template page-pt-live.php
+ */
+add_action('init', function () {
+    if (get_option('pt_channel_video_page_initialized_v1')) {
+        return;
+    }
+
+    $video_page = get_page_by_path('video');
+    if (!$video_page) {
+        $page_id = wp_insert_post([
+            'post_title'   => 'Video',
+            'post_name'    => 'video',
+            'post_status'  => 'publish',
+            'post_type'    => 'page',
+            'post_content' => '',
+        ]);
+        if ($page_id && !is_wp_error($page_id)) {
+            update_post_meta($page_id, '_wp_page_template', 'page-pt-live.php');
+        }
+    } else {
+        $current_tpl = get_post_meta($video_page->ID, '_wp_page_template', true);
+        if (empty($current_tpl) || $current_tpl === 'default') {
+            update_post_meta($video_page->ID, '_wp_page_template', 'page-pt-live.php');
+        }
+    }
+
+    $channel_video_page = get_page_by_path('channel/video');
+    if ($channel_video_page) {
+        update_post_meta($channel_video_page->ID, '_wp_page_template', 'page-pt-live.php');
+    }
+
+    update_option('pt_channel_video_page_initialized_v1', 1);
+}, 20);
+
+/**
+ * Đảm bảo mọi truy cập vào trang Channel -> Video (/video, /channel/video, /channel-video, /pt-live)
+ * đều render giao diện Livestream (page-pt-live.php)
+ */
+add_filter('template_include', function ($template) {
+    if (is_page(['video', 'channel-video', 'pt-live', 'live-stream', 'livestream'])) {
+        $live_tpl = get_stylesheet_directory() . '/page-pt-live.php';
+        if (file_exists($live_tpl)) {
+            return $live_tpl;
+        }
+    }
+
+    if (is_page()) {
+        global $post;
+        if ($post && in_array($post->post_name, ['video', 'channel-video', 'pt-live', 'livestream'], true)) {
+            $live_tpl = get_stylesheet_directory() . '/page-pt-live.php';
+            if (file_exists($live_tpl)) {
+                return $live_tpl;
+            }
+        }
+    }
+
+    // Nếu URL là /channel/video hoặc /video nhưng trang chưa tạo kịp trong DB
+    $req_uri = isset($_SERVER['REQUEST_URI']) ? trim((string) parse_url(wp_unslash($_SERVER['REQUEST_URI']), PHP_URL_PATH), '/') : '';
+    if (in_array($req_uri, ['video', 'channel/video', 'channel-video'], true) && is_404()) {
+        status_header(200);
+        global $wp_query;
+        $wp_query->is_404  = false;
+        $wp_query->is_page = true;
+        $live_tpl = get_stylesheet_directory() . '/page-pt-live.php';
+        if (file_exists($live_tpl)) {
+            return $live_tpl;
+        }
+    }
+
+    return $template;
+}, 99);
+
+/**
+ * Lấy danh sách các kênh đang phát trực tiếp (kèm các kênh mẫu của cộng đồng)
+ */
+function pt_get_active_livestreams_list()
+{
+    $stored = get_option('pt_active_livestreams', []);
+    if (!is_array($stored)) {
+        $stored = [];
+    }
+
+    $now     = time();
+    $cleaned = [];
+
+    foreach ($stored as $room => $info) {
+        if (!is_array($info)) {
+            continue;
+        }
+        $updated = isset($info['updated_at']) ? (int) $info['updated_at'] : 0;
+        // Giữ các kênh còn heartbeat trong 10 phút gần nhất
+        if ($now - $updated <= 600) {
+            $cleaned[$room] = $info;
+        }
+    }
+
+    if (count($cleaned) !== count($stored)) {
+        update_option('pt_active_livestreams', $cleaned, false);
+    }
+
+    $result = array_values($cleaned);
+
+    // Bổ sung các kênh cộng đồng mặc định để người xem luôn có phòng giao lưu
+    $default_channels = [
+        [
+            'room'        => 'enishi-main',
+            'title'       => 'En-Ishi Official Live - Giao lưu & Kết nối Cộng đồng',
+            'category'    => 'Giao lưu',
+            'host_name'   => 'En-Ishi Official',
+            'host_avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&auto=format&fit=crop&q=80',
+            'thumb'       => 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=640&auto=format&fit=crop&q=80',
+            'viewers'     => 24,
+            'is_live'     => true,
+        ],
+        [
+            'room'        => 'tokyo-cafe-tour',
+            'title'       => 'Review Quán Cafe Acoustic & Không Gian Đẹp Cuối Tuần',
+            'category'    => 'Cafe & Review',
+            'host_name'   => 'Hana Cafe Vlog',
+            'host_avatar' => 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=160&auto=format&fit=crop&q=80',
+            'thumb'       => 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=640&auto=format&fit=crop&q=80',
+            'viewers'     => 18,
+            'is_live'     => true,
+        ],
+        [
+            'room'        => 'acoustic-night-live',
+            'title'       => 'Đêm Nhạc Acoustic Live & Yêu Cầu Bài Hát Trực Tiếp',
+            'category'    => 'Âm nhạc',
+            'host_name'   => 'Kenji Music',
+            'host_avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&auto=format&fit=crop&q=80',
+            'thumb'       => 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=640&auto=format&fit=crop&q=80',
+            'viewers'     => 42,
+            'is_live'     => true,
+        ],
+        [
+            'room'        => 'street-food-discovery',
+            'title'       => 'Khám Phá Ẩm Thực Đường Phố & Quán Ngon Quanh Đây',
+            'category'    => 'Ẩm thực',
+            'host_name'   => 'Minh Foodie',
+            'host_avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&auto=format&fit=crop&q=80',
+            'thumb'       => 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=640&auto=format&fit=crop&q=80',
+            'viewers'     => 15,
+            'is_live'     => false,
+        ],
+    ];
+
+    $existing_rooms = array_column($result, 'room');
+    foreach ($default_channels as $ch) {
+        if (!in_array($ch['room'], $existing_rooms, true)) {
+            $result[] = $ch;
+        }
+    }
+
+    return $result;
+}
+
+add_action('wp_ajax_pt_live_start_stream', 'pt_live_start_stream_ajax');
+function pt_live_start_stream_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    $user     = wp_get_current_user();
+    $room     = sanitize_text_field(wp_unslash($_POST['room'] ?? ('channel-' . $user->ID)));
+    $title    = sanitize_text_field(wp_unslash($_POST['title'] ?? ($user->display_name . ' đang phát trực tiếp')));
+    $category = sanitize_text_field(wp_unslash($_POST['category'] ?? 'Giao lưu'));
+    $avatar   = get_avatar_url($user->ID, ['size' => 128]);
+
+    $stored = get_option('pt_active_livestreams', []);
+    if (!is_array($stored)) {
+        $stored = [];
+    }
+
+    $stored[$room] = [
+        'room'        => $room,
+        'title'       => $title,
+        'category'    => $category,
+        'host_id'     => (int) $user->ID,
+        'host_name'   => $user->display_name ?: $user->user_login,
+        'host_avatar' => $avatar,
+        'thumb'       => $avatar,
+        'viewers'     => 1,
+        'is_live'     => true,
+        'started_at'  => time(),
+        'updated_at'  => time(),
+    ];
+
+    update_option('pt_active_livestreams', $stored, false);
+
+    wp_send_json_success([
+        'stream'  => $stored[$room],
+        'streams' => pt_get_active_livestreams_list(),
+    ]);
+}
+
+add_action('wp_ajax_pt_live_heartbeat', 'pt_live_heartbeat_ajax');
+function pt_live_heartbeat_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    $room    = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    $viewers = max(1, intval($_POST['viewers'] ?? 1));
+
+    $stored = get_option('pt_active_livestreams', []);
+    if (is_array($stored) && isset($stored[$room])) {
+        $stored[$room]['updated_at'] = time();
+        $stored[$room]['viewers']    = $viewers;
+        update_option('pt_active_livestreams', $stored, false);
+    }
+
+    wp_send_json_success(['ok' => true]);
+}
+
+add_action('wp_ajax_pt_live_stop_stream', 'pt_live_stop_stream_ajax');
+function pt_live_stop_stream_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    $room   = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    $stored = get_option('pt_active_livestreams', []);
+    if (is_array($stored) && isset($stored[$room])) {
+        unset($stored[$room]);
+        update_option('pt_active_livestreams', $stored, false);
+    }
+
+    wp_send_json_success([
+        'streams' => pt_get_active_livestreams_list(),
+    ]);
+}
+
+add_action('wp_ajax_pt_live_send_chat', 'pt_live_send_chat_ajax');
+add_action('wp_ajax_nopriv_pt_live_send_chat', 'pt_live_send_chat_ajax');
+function pt_live_send_chat_ajax()
+{
+    $room    = sanitize_text_field(wp_unslash($_POST['room'] ?? 'enishi-main'));
+    $text    = sanitize_text_field(wp_unslash($_POST['text'] ?? ''));
+    $msg_id  = sanitize_text_field(wp_unslash($_POST['msg_id'] ?? ('msg_' . wp_generate_password(8, false))));
+    $is_host = !empty($_POST['is_host']);
+
+    if ($text === '') {
+        wp_send_json_error(['message' => 'Empty message'], 400);
+    }
+
+    if (is_user_logged_in()) {
+        $u      = wp_get_current_user();
+        $author = $u->display_name ?: $u->user_login;
+        $avatar = get_avatar_url($u->ID, ['size' => 64]);
+    } else {
+        $author = 'Khách';
+        $avatar = 'https://www.gravatar.com/avatar/?d=mp&s=64';
+    }
+
+    $key      = 'pt_live_chat_' . md5($room);
+    $messages = get_transient($key);
+    if (!is_array($messages)) {
+        $messages = [];
+    }
+
+    $entry = [
+        'id'      => $msg_id,
+        'user'    => $author,
+        'avatar'  => $avatar,
+        'text'    => mb_substr($text, 0, 300),
+        'time'    => wp_date('H:i'),
+        'is_host' => $is_host,
+    ];
+
+    $messages[] = $entry;
+    if (count($messages) > 60) {
+        $messages = array_slice($messages, -60);
+    }
+
+    set_transient($key, $messages, 12 * HOUR_IN_SECONDS);
+
+    wp_send_json_success(['message' => $entry]);
+}
+
+add_action('wp_ajax_pt_live_get_state', 'pt_live_get_state_ajax');
+add_action('wp_ajax_nopriv_pt_live_get_state', 'pt_live_get_state_ajax');
+function pt_live_get_state_ajax()
+{
+    $room     = sanitize_text_field(wp_unslash($_GET['room'] ?? 'enishi-main'));
+    $key      = 'pt_live_chat_' . md5($room);
+    $messages = get_transient($key);
+    if (!is_array($messages)) {
+        $messages = [];
+    }
+
+    wp_send_json_success([
+        'room'     => $room,
+        'messages' => $messages,
+        'streams'  => pt_get_active_livestreams_list(),
+    ]);
+}
+

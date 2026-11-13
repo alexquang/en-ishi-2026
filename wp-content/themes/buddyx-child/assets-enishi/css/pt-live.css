@@ -1,0 +1,973 @@
+/* ==========================================================================
+   EN-ISHI LIVESTREAM STUDIO & VIEWER (Channel -> Video)
+   Prefix: ptlive-
+   ========================================================================== */
+
+:root {
+    --ptlive-bg: #0f111a;
+    --ptlive-panel: #161926;
+    --ptlive-panel-2: #1d2133;
+    --ptlive-border: rgba(255, 255, 255, 0.08);
+    --ptlive-text: #f3f4f8;
+    --ptlive-muted: #9499b3;
+    --ptlive-red: #ff2e4c;
+    --ptlive-red-glow: rgba(255, 46, 76, 0.35);
+    --ptlive-accent: #6366f1;
+    --ptlive-accent-hover: #4f46e5;
+    --ptlive-green: #10b981;
+    --ptlive-amber: #f59e0b;
+    --ptlive-radius: 14px;
+}
+
+.ptlive-wrapper {
+    background: var(--ptlive-bg);
+    color: var(--ptlive-text);
+    min-height: calc(100vh - 76px);
+    padding: 20px 24px 48px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+    box-sizing: border-box;
+}
+
+.ptlive-wrapper *,
+.ptlive-wrapper *::before,
+.ptlive-wrapper *::after {
+    box-sizing: border-box;
+}
+
+.ptlive-container {
+    max-width: 1520px;
+    margin: 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   TOP BAR / NAVIGATION
+   -------------------------------------------------------------------------- */
+.ptlive-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    background: var(--ptlive-panel);
+    border: 1px solid var(--ptlive-border);
+    border-radius: var(--ptlive-radius);
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.ptlive-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ptlive-brand-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #ff2e4c, #ff6b4a);
+    color: #fff;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    box-shadow: 0 4px 14px var(--ptlive-red-glow);
+}
+
+.ptlive-brand-badge .ptlive-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    animation: ptlive-pulse 1.4s infinite;
+}
+
+@keyframes ptlive-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.35); opacity: 0.55; }
+}
+
+.ptlive-brand-title h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+.ptlive-brand-title p {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--ptlive-muted);
+}
+
+.ptlive-mode-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ptlive-bg);
+    padding: 5px;
+    border-radius: 10px;
+    border: 1px solid var(--ptlive-border);
+}
+
+.ptlive-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--ptlive-muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ptlive-mode-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ptlive-mode-btn.is-active {
+    background: var(--ptlive-accent);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
+.ptlive-mode-btn.is-active.mode-host {
+    background: linear-gradient(135deg, #ff2e4c, #e11d48);
+    box-shadow: 0 4px 12px var(--ptlive-red-glow);
+}
+
+.ptlive-top-stats {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.ptlive-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--ptlive-panel-2);
+    border: 1px solid var(--ptlive-border);
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ptlive-text);
+}
+
+.ptlive-stat-pill i {
+    color: var(--ptlive-red);
+}
+
+/* --------------------------------------------------------------------------
+   MAIN STAGE + CHAT GRID
+   -------------------------------------------------------------------------- */
+.ptlive-main-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 370px;
+    gap: 20px;
+    align-items: start;
+}
+
+/* --------------------------------------------------------------------------
+   VIDEO STAGE CARD
+   -------------------------------------------------------------------------- */
+.ptlive-stage-card {
+    background: var(--ptlive-panel);
+    border: 1px solid var(--ptlive-border);
+    border-radius: var(--ptlive-radius);
+    overflow: hidden;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
+}
+
+.ptlive-video-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 680px;
+    background: radial-gradient(circle at center, #1e2238 0%, #090b10 100%);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ptlive-video-mount {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.ptlive-video-mount video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+    display: block;
+}
+
+.ptlive-video-mount video.ptlive-screen-video {
+    object-fit: contain;
+}
+
+/* Overlays on top of video */
+.ptlive-video-hud-top {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.ptlive-hud-left,
+.ptlive-hud-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+}
+
+.ptlive-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 13px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    background: rgba(15, 17, 26, 0.78);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #cbd5e1;
+}
+
+.ptlive-status-badge.is-live {
+    background: linear-gradient(135deg, #ff2e4c, #e11d48);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 16px var(--ptlive-red-glow);
+}
+
+.ptlive-hud-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(15, 17, 26, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+/* Empty / Standby State inside Video Box */
+.ptlive-standby-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 28px;
+    background: radial-gradient(circle at center, rgba(30, 34, 56, 0.85) 0%, rgba(9, 11, 16, 0.94) 100%);
+    z-index: 4;
+    transition: opacity 0.25s ease;
+}
+
+.ptlive-standby-overlay.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ptlive-standby-icon {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: rgba(255, 46, 76, 0.12);
+    border: 1px solid rgba(255, 46, 76, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: var(--ptlive-red);
+    margin-bottom: 16px;
+    box-shadow: 0 0 30px rgba(255, 46, 76, 0.2);
+}
+
+.ptlive-standby-overlay h3 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+}
+
+.ptlive-standby-overlay p {
+    margin: 0 0 20px;
+    font-size: 14px;
+    color: var(--ptlive-muted);
+    max-width: 460px;
+    line-height: 1.5;
+}
+
+.ptlive-standby-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Floating Reactions Layer */
+.ptlive-reactions-layer {
+    position: absolute;
+    bottom: 70px;
+    right: 24px;
+    width: 90px;
+    height: 260px;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 9;
+}
+
+.ptlive-floating-heart {
+    position: absolute;
+    bottom: 0;
+    font-size: 24px;
+    animation: ptlive-float-up 2.4s ease-out forwards;
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes ptlive-float-up {
+    0% {
+        transform: translateY(0) scale(0.7);
+        opacity: 1;
+    }
+    60% {
+        opacity: 0.95;
+    }
+    100% {
+        transform: translateY(-230px) scale(1.25);
+        opacity: 0;
+    }
+}
+
+/* Video Bottom Controls Bar */
+.ptlive-controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 14px 20px;
+    background: var(--ptlive-panel-2);
+    border-top: 1px solid var(--ptlive-border);
+}
+
+.ptlive-controls-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ptlive-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    text-decoration: none;
+}
+
+.ptlive-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
+}
+
+.ptlive-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.ptlive-btn.btn-primary {
+    background: linear-gradient(135deg, #ff2e4c, #e11d48);
+    border-color: transparent;
+    box-shadow: 0 4px 15px var(--ptlive-red-glow);
+}
+
+.ptlive-btn.btn-primary:hover {
+    background: linear-gradient(135deg, #ff4762, #f43f5e);
+}
+
+.ptlive-btn.btn-danger {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.45);
+    color: #fca5a5;
+}
+
+.ptlive-btn.btn-danger:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+.ptlive-btn.btn-accent {
+    background: var(--ptlive-accent);
+    border-color: transparent;
+}
+
+.ptlive-btn.btn-accent:hover {
+    background: var(--ptlive-accent-hover);
+}
+
+.ptlive-btn.is-off {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+
+.ptlive-btn.is-active-share {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #6ee7b7;
+}
+
+/* Reaction Quick Buttons */
+.ptlive-reaction-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.ptlive-react-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.ptlive-react-btn:hover {
+    transform: scale(1.18);
+    background: rgba(255, 255, 255, 0.14);
+}
+
+/* --------------------------------------------------------------------------
+   STREAMER INFO & BROADCAST SETTINGS PANEL
+   -------------------------------------------------------------------------- */
+.ptlive-info-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 18px 22px;
+    border-top: 1px solid var(--ptlive-border);
+}
+
+.ptlive-streamer-profile {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.ptlive-streamer-avatar {
+    position: relative;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--ptlive-red);
+    flex-shrink: 0;
+}
+
+.ptlive-streamer-meta {
+    min-width: 0;
+}
+
+.ptlive-stream-title-display {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ptlive-streamer-sub {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--ptlive-muted);
+}
+
+.ptlive-streamer-name {
+    color: #e2e8f0;
+    font-weight: 700;
+}
+
+.ptlive-category-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(99, 102, 241, 0.16);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 2px 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+.ptlive-info-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Broadcaster Studio Setup Form */
+.ptlive-studio-setup {
+    padding: 18px 22px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--ptlive-border);
+}
+
+.ptlive-studio-setup-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.ptlive-studio-setup-head h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ptlive-setup-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ptlive-field label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--ptlive-muted);
+    margin-bottom: 6px;
+}
+
+.ptlive-field input,
+.ptlive-field select {
+    width: 100%;
+    background: var(--ptlive-bg);
+    border: 1px solid var(--ptlive-border);
+    color: #fff;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 13px;
+    outline: none;
+}
+
+.ptlive-field input:focus,
+.ptlive-field select:focus {
+    border-color: var(--ptlive-accent);
+}
+
+/* --------------------------------------------------------------------------
+   RIGHT SIDEBAR: LIVE CHAT
+   -------------------------------------------------------------------------- */
+.ptlive-chat-card {
+    background: var(--ptlive-panel);
+    border: 1px solid var(--ptlive-border);
+    border-radius: var(--ptlive-radius);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 580px;
+    max-height: 760px;
+    overflow: hidden;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.3);
+}
+
+.ptlive-chat-header {
+    padding: 14px 18px;
+    background: var(--ptlive-panel-2);
+    border-bottom: 1px solid var(--ptlive-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ptlive-chat-header h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ptlive-chat-room-tag {
+    font-size: 11px;
+    color: var(--ptlive-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px 9px;
+    border-radius: 999px;
+}
+
+.ptlive-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scroll-behavior: smooth;
+}
+
+.ptlive-chat-msg {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    animation: ptlive-fade-in 0.2s ease;
+}
+
+@keyframes ptlive-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ptlive-chat-msg img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.ptlive-chat-bubble {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 7px 11px;
+    border-radius: 10px;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.ptlive-chat-author {
+    font-weight: 700;
+    color: #93c5fd;
+    margin-right: 6px;
+}
+
+.ptlive-chat-author.is-host {
+    color: #fda4af;
+}
+
+.ptlive-chat-time {
+    font-size: 10px;
+    color: var(--ptlive-muted);
+    float: right;
+    margin-left: 8px;
+}
+
+.ptlive-chat-system {
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--ptlive-muted);
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+}
+
+.ptlive-chat-footer {
+    padding: 12px 14px;
+    background: var(--ptlive-panel-2);
+    border-top: 1px solid var(--ptlive-border);
+}
+
+.ptlive-chat-form {
+    display: flex;
+    gap: 8px;
+}
+
+.ptlive-chat-input {
+    flex: 1;
+    background: var(--ptlive-bg);
+    border: 1px solid var(--ptlive-border);
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 13px;
+    outline: none;
+}
+
+.ptlive-chat-input:focus {
+    border-color: var(--ptlive-accent);
+}
+
+/* --------------------------------------------------------------------------
+   DISCOVER ACTIVE LIVESTREAMS & CHANNELS DIRECTORY
+   -------------------------------------------------------------------------- */
+.ptlive-directory-section {
+    margin-top: 26px;
+    background: var(--ptlive-panel);
+    border: 1px solid var(--ptlive-border);
+    border-radius: var(--ptlive-radius);
+    padding: 20px 22px;
+}
+
+.ptlive-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.ptlive-section-head h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 800;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.ptlive-filter-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.ptlive-filter-pill {
+    border: 1px solid var(--ptlive-border);
+    background: var(--ptlive-bg);
+    color: var(--ptlive-muted);
+    padding: 6px 13px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.ptlive-filter-pill.is-active,
+.ptlive-filter-pill:hover {
+    background: var(--ptlive-accent);
+    color: #fff;
+    border-color: transparent;
+}
+
+.ptlive-streams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    gap: 16px;
+}
+
+.ptlive-stream-card {
+    background: var(--ptlive-panel-2);
+    border: 1px solid var(--ptlive-border);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.ptlive-stream-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.ptlive-stream-card.is-watching {
+    border-color: var(--ptlive-red);
+    box-shadow: 0 0 0 1px var(--ptlive-red);
+}
+
+.ptlive-card-thumb {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #1e1b4b, #31102f);
+    overflow: hidden;
+}
+
+.ptlive-card-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ptlive-card-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--ptlive-red);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.ptlive-card-badge.is-standby {
+    background: rgba(15, 23, 42, 0.8);
+    color: #cbd5e1;
+}
+
+.ptlive-card-viewers {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+
+.ptlive-card-body {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.ptlive-card-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.ptlive-card-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.ptlive-card-title {
+    margin: 0 0 3px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ptlive-card-host {
+    font-size: 12px;
+    color: var(--ptlive-muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Toast Notification */
+.ptlive-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1e293b;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: all 0.22s ease;
+}
+
+.ptlive-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .ptlive-main-grid {
+        grid-template-columns: 1fr;
+    }
+    .ptlive-chat-card {
+        min-height: 420px;
+        max-height: 500px;
+    }
+    .ptlive-setup-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .ptlive-wrapper {
+        padding: 12px 10px 36px;
+    }
+    .ptlive-setup-grid {
+        grid-template-columns: 1fr;
+    }
+    .ptlive-topbar {
+        padding: 12px 14px;
+    }
+}
