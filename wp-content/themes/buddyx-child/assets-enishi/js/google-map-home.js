@@ -1,3 +1,7 @@
+/**
+ * Google Maps Home Integration
+ */
+
 let map;
 let marker;
 let autocomplete;
@@ -9,19 +13,33 @@ let transitLayer;
 let bikeLayer;
 let layerControlsInitialized = false;
 let service;
-let photoCarouselPlaces = [];
+
+// AJAX URL linh hoạt theo domain hiện tại
+const ajaxUrl = (typeof ptMap !== 'undefined' && ptMap.ajax_url) ? ptMap.ajax_url : '/wp-admin/admin-ajax.php';
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function clearMarkers() {
+  markers.forEach((m) => m.setMap(null));
+  markers = [];
+}
 
 function showRestaurantMarkers(results) {
   clearMarkers();
 
-  // Chỉ lấy tối đa 20 kết quả
   const places = results
     .slice(0, 20)
-    .filter((place) => place.geometry?.location);
+    .filter((place) => place.geometry && place.geometry.location);
 
-  if (places.length === 0) {
-    return;
-  }
+  if (places.length === 0) return;
 
   const bounds = new google.maps.LatLngBounds();
 
@@ -33,8 +51,6 @@ function showRestaurantMarkers(results) {
     });
 
     markers.push(mapMarker);
-
-    // Đưa vị trí marker vào bounds
     bounds.extend(place.geometry.location);
 
     mapMarker.addListener("click", function () {
@@ -42,19 +58,11 @@ function showRestaurantMarkers(results) {
     });
   });
 
-  // ==============================
-  // ZOOM MAP
-  // ==============================
-
   if (places.length === 1) {
-    // Chỉ có 1 kết quả
     map.setCenter(places[0].geometry.location);
     map.setZoom(16);
   } else {
-    // Có nhiều kết quả
     map.fitBounds(bounds);
-
-    // Giới hạn zoom tối đa
     google.maps.event.addListenerOnce(map, "idle", function () {
       if (map.getZoom() > 16) {
         map.setZoom(16);
@@ -64,575 +72,47 @@ function showRestaurantMarkers(results) {
 }
 
 function loadNearbyPlaces(lat, lng) {
+  if (!map) return;
   const types = ["restaurant", "cafe", "lodging"];
-
-  const service = new google.maps.places.PlacesService(map);
-
+  const placesService = new google.maps.places.PlacesService(map);
   const allPlaces = new Map();
-
   let completed = 0;
 
   types.forEach((type) => {
-    service.nearbySearch(
+    placesService.nearbySearch(
       {
         location: new google.maps.LatLng(lat, lng),
         radius: 3000,
         type: type,
       },
-
       function (results, status) {
-        if (status === google.maps.places.PlacesServiceStatus.OK) {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
           results.forEach((place) => {
             if (place.place_id) {
               allPlaces.set(place.place_id, place);
             }
           });
         }
-
         completed++;
-
-        // Chỉ render 1 lần sau khi cả 3 request hoàn thành
         if (completed === types.length) {
           showRestaurantMarkers([...allPlaces.values()]);
         }
-      },
-    );
-  });
-}
-
-const majorCities = {
-  VN: {
-    name: "Ho Chi Minh City",
-    lat: 10.8231,
-    lng: 106.6297,
-    zoom: 8,
-  },
-
-  JP: {
-    name: "Tokyo",
-    lat: 35.6762,
-    lng: 139.6503,
-    zoom: 8,
-  },
-
-  KR: {
-    name: "Seoul",
-    lat: 37.5665,
-    lng: 126.978,
-    zoom: 8,
-  },
-
-  TH: {
-    name: "Bangkok",
-    lat: 13.7563,
-    lng: 100.5018,
-    zoom: 8,
-  },
-
-  SG: {
-    name: "Singapore",
-    lat: 1.3521,
-    lng: 103.8198,
-    zoom: 11,
-  },
-
-  MY: {
-    name: "Kuala Lumpur",
-    lat: 3.139,
-    lng: 101.6869,
-    zoom: 9,
-  },
-
-  ID: {
-    name: "Jakarta",
-    lat: -6.2088,
-    lng: 106.8456,
-    zoom: 8,
-  },
-
-  PH: {
-    name: "Manila",
-    lat: 14.5995,
-    lng: 120.9842,
-    zoom: 9,
-  },
-
-  CN: {
-    name: "Shanghai",
-    lat: 31.2304,
-    lng: 121.4737,
-    zoom: 7,
-  },
-
-  US: {
-    name: "New York",
-    lat: 40.7128,
-    lng: -74.006,
-    zoom: 8,
-  },
-
-  CA: {
-    name: "Toronto",
-    lat: 43.6532,
-    lng: -79.3832,
-    zoom: 8,
-  },
-
-  GB: {
-    name: "London",
-    lat: 51.5074,
-    lng: -0.1278,
-    zoom: 9,
-  },
-
-  FR: {
-    name: "Paris",
-    lat: 48.8566,
-    lng: 2.3522,
-    zoom: 9,
-  },
-
-  DE: {
-    name: "Berlin",
-    lat: 52.52,
-    lng: 13.405,
-    zoom: 8,
-  },
-
-  AU: {
-    name: "Sydney",
-    lat: -33.8688,
-    lng: 151.2093,
-    zoom: 8,
-  },
-};
-
-document.addEventListener("DOMContentLoaded", function () {
-
-  // =====================================
-  // MOVE MAP TO GPS
-  // =====================================
-
-  function moveMapToGPS(lat, lng) {
-
-    const position = {
-
-      lat: Number(lat),
-
-      lng: Number(lng),
-
-    };
-
-
-    console.log(
-      "[MAP] GPS position:",
-      position
-    );
-
-
-    /*
-     * Nếu map đã tồn tại
-     */
-
-    if (
-      typeof map !== "undefined"
-      && map
-    ) {
-
-      map.setCenter(
-        position
-      );
-
-
-      map.setZoom(
-        15
-      );
-
-
-      console.log(
-        "[MAP] Map moved to GPS"
-      );
-
-    } else {
-
-      console.warn(
-        "[MAP] Chưa tìm thấy biến map"
-      );
-
-    }
-
-  }
-
-
-  // =====================================
-  // CHECK GPS
-  // =====================================
-
-  if (
-    !navigator.geolocation
-  ) {
-
-    console.warn(
-      "[GPS] Browser không hỗ trợ GPS"
-    );
-
-
-    return;
-
-  }
-
-
-  navigator.geolocation.getCurrentPosition(
-
-    // ===================================
-    // GPS SUCCESS
-    // ===================================
-
-    function (position) {
-
-      const lat =
-        position.coords.latitude;
-
-
-      const lng =
-        position.coords.longitude;
-
-
-      const accuracy =
-        position.coords.accuracy;
-
-
-      console.log(
-        "GPS:",
-        lat,
-        lng
-      );
-
-
-      console.log(
-        "GPS Accuracy:",
-        accuracy,
-        "meters"
-      );
-
-
-      // ===================================
-      // CHỈ DI CHUYỂN MAP
-      // ===================================
-
-      moveMapToGPS(
-        lat,
-        lng
-      );
-
-
-      // ===================================
-      // REVERSE GEOCODE
-      // ===================================
-
-      if (
-        typeof google === "undefined"
-        ||
-        typeof google.maps === "undefined"
-      ) {
-
-        console.warn(
-          "[Google Maps] API chưa load"
-        );
-
-
-        return;
-
       }
-
-
-      const geocoder =
-        new google.maps.Geocoder();
-
-
-      geocoder.geocode(
-
-        {
-
-          location: {
-
-            lat: lat,
-
-            lng: lng,
-
-          },
-
-        },
-
-
-        function (
-          results,
-          status
-        ) {
-
-
-          // =================================
-          // CHECK RESULT
-          // =================================
-
-          if (
-            status !== "OK"
-            ||
-            !results
-            ||
-            !results.length
-          ) {
-
-            console.warn(
-              "Không xác định được quốc gia:",
-              status
-            );
-
-
-            return;
-
-          }
-
-
-          // =================================
-          // FIND COUNTRY
-          // =================================
-
-          const countryResult =
-            results.find(
-              function (result) {
-
-                return (
-                  result.types
-                  &&
-                  result.types.includes(
-                    "country"
-                  )
-                );
-
-              }
-            );
-
-
-          if (!countryResult) {
-
-            console.warn(
-              "Không tìm thấy country"
-            );
-
-
-            return;
-
-          }
-
-
-          // =================================
-          // GET COUNTRY CODE
-          // =================================
-
-          let countryCode = "";
-
-
-          countryResult
-            .address_components
-            .forEach(
-              function (component) {
-
-                if (
-                  component.types
-                  &&
-                  component.types.includes(
-                    "country"
-                  )
-                ) {
-
-                  countryCode =
-                    component.short_name
-                      .toUpperCase();
-
-                }
-
-              }
-            );
-        }
-
-      );
-
-    },
-
-
-    // ===================================
-    // GPS ERROR
-    // ===================================
-
-    function (error) {
-
-      console.warn(
-        "Không lấy được GPS:",
-        error.message
-      );
-
-    },
-
-
-    // ===================================
-    // GPS OPTIONS
-    // ===================================
-
-    {
-
-      enableHighAccuracy: true,
-
-      timeout: 20000,
-
-      maximumAge: 0,
-
-    }
-
-  );
-});
-
-// async function initMapByCountry(countryLat, countryLng, countryCode) {
-//   let center = {
-//     lat: Number(countryLat),
-//     lng: Number(countryLng),
-//   };
-
-//   let zoom = 7;
-
-//   map = new google.maps.Map(document.getElementById("map"), {
-//     center: center,
-
-//     zoom: zoom,
-
-//     mapTypeControl: false,
-
-//     gestureHandling: "greedy",
-
-//     scrollwheel: true,
-
-//     draggable: true,
-
-//     streetViewControl: false,
-
-//     fullscreenControl: false,
-//   });
-
-//   service = new google.maps.places.PlacesService(map);
-
-//   // Không tạo GPS marker
-//   marker = null;
-
-//   trafficLayer = new google.maps.TrafficLayer();
-
-//   transitLayer = new google.maps.TransitLayer();
-
-//   bikeLayer = new google.maps.BicyclingLayer();
-
-//   if (!layerControlsInitialized) {
-//     initLayerControls();
-
-//     layerControlsInitialized = true;
-//   }
-// }
-
-async function initMapByCountry(countryLat, countryLng, countryCode) {
-  // =========================
-  // MẶC ĐỊNH
-  // =========================
-
-  let center = {
-    lat: Number(countryLat),
-    lng: Number(countryLng),
-  };
-
-  let zoom = 6;
-
-  // =========================
-  // TÌM THÀNH PHỐ MẶC ĐỊNH
-  // =========================
-
-  const city = majorCities[countryCode];
-
-  if (city) {
-    center = {
-      lat: city.lat,
-      lng: city.lng,
-    };
-
-    zoom = city.zoom;
-
-    console.log("Default city:", city.name);
-  } else {
-    console.log("Không có thành phố mặc định cho:", countryCode);
-  }
-
-  // =========================
-  // CREATE MAP
-  // =========================
-
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: center,
-
-    zoom: zoom,
-
-    mapTypeControl: false,
-
-    gestureHandling: "greedy",
-
-    scrollwheel: true,
-
-    draggable: true,
-
-    streetViewControl: false,
-
-    fullscreenControl: false,
+    );
   });
-
-  // =========================
-  // PLACES SERVICE
-  // =========================
-
-  service = new google.maps.places.PlacesService(map);
-
-  // =========================
-  // KHÔNG TẠO GPS MARKER
-  // =========================
-
-  marker = null;
-
-  // =========================
-  // LAYERS
-  // =========================
-
-  trafficLayer = new google.maps.TrafficLayer();
-
-  transitLayer = new google.maps.TransitLayer();
-
-  bikeLayer = new google.maps.BicyclingLayer();
-
-  // =========================
-  // LAYER CONTROL
-  // =========================
-
-  if (!layerControlsInitialized) {
-    initLayerControls();
-
-    layerControlsInitialized = true;
-  }
-
-  console.log("Map initialized:", countryCode, center, zoom);
 }
 
-async function initMap(userLat, userLng) {
-  const center = {
-    lat: userLat ?? 0,
-    lng: userLng ?? 0,
-  };
+function initMap(userLat, userLng) {
+  const defaultLat = userLat ? Number(userLat) : 10.8231;
+  const defaultLng = userLng ? Number(userLng) : 106.6297;
+  const center = { lat: defaultLat, lng: defaultLng };
 
-  map = new google.maps.Map(document.getElementById("map"), {
+  const mapElement = document.getElementById("map");
+  if (!mapElement) return;
+
+  map = new google.maps.Map(mapElement, {
     center: center,
-    zoom: 12,
+    zoom: 13,
     mapTypeControl: false,
     gestureHandling: "greedy",
     scrollwheel: true,
@@ -642,78 +122,66 @@ async function initMap(userLat, userLng) {
   service = new google.maps.places.PlacesService(map);
 
   marker = new google.maps.Marker({
-    center: center,
+    position: center, // Đã sửa: 'position' thay vì 'center'
     map: map,
+    title: "Your Location",
   });
 
   const input = document.getElementById("pac-input");
-
-  autocomplete = new google.maps.places.Autocomplete(input, {
-    fields: ["formatted_address", "geometry", "name", "place_id", "types"],
-  });
-
-  autocomplete.bindTo("bounds", map);
-
-  autocomplete.addListener("place_changed", function () {
-    const place = autocomplete.getPlace();
-
-    if (!place.geometry || !place.geometry.location) {
-      alert("No locations found");
-      return;
-    }
-
-    // Xóa toàn bộ marker kết quả cũ
-    clearMarkers();
-
-    // Xóa marker đang chọn
-    if (selectedMarker) {
-      selectedMarker.setMap(null);
-      selectedMarker = null;
-    }
-
-    // Xóa marker GPS hiện tại
-    if (marker) {
-      marker.setMap(null);
-    }
-
-    if (place.geometry.viewport) {
-      map.fitBounds(place.geometry.viewport);
-    } else {
-      map.setCenter(place.geometry.location);
-      map.setZoom(15);
-    }
-
-    marker = new google.maps.Marker({
-      position: place.geometry.location,
-      map: map,
-      title: place.name,
-      animation: google.maps.Animation.DROP,
+  if (input) {
+    autocomplete = new google.maps.places.Autocomplete(input, {
+      fields: ["formatted_address", "geometry", "name", "place_id", "types"],
     });
 
-    // Tự tìm quanh vị trí mới
-    loadNearbyPlaces(
-      place.geometry.location.lat(),
-      place.geometry.location.lng(),
-    );
-  });
+    autocomplete.bindTo("bounds", map);
 
-  google.maps.event.addListenerOnce(map, "idle", function () {
-    loadNearbyPlaces(userLat, userLng);
-  });
+    autocomplete.addListener("place_changed", function () {
+      const place = autocomplete.getPlace();
+      if (!place.geometry || !place.geometry.location) {
+        alert("No locations found");
+        return;
+      }
 
-  if (!map) {
-    map = new google.maps.Map(document.getElementById("map"), {
-      center: { lat, lng },
-      zoom: 15,
-      gestureHandling: "greedy",
-      scrollwheel: true,
-      draggable: true,
+      clearMarkers();
+
+      if (selectedMarker) {
+        selectedMarker.setMap(null);
+        selectedMarker = null;
+      }
+
+      if (marker) {
+        marker.setMap(null);
+      }
+
+      if (place.geometry.viewport) {
+        map.fitBounds(place.geometry.viewport);
+      } else {
+        map.setCenter(place.geometry.location);
+        map.setZoom(15);
+      }
+
+      marker = new google.maps.Marker({
+        position: place.geometry.location,
+        map: map,
+        title: place.name,
+        animation: google.maps.Animation.DROP,
+      });
+
+      loadNearbyPlaces(
+        place.geometry.location.lat(),
+        place.geometry.location.lng()
+      );
     });
-
-    trafficLayer = new google.maps.TrafficLayer();
-    transitLayer = new google.maps.TransitLayer();
-    bikeLayer = new google.maps.BicyclingLayer();
   }
+
+  // Tự động load địa điểm xung quanh
+  google.maps.event.addListenerOnce(map, "idle", function () {
+    loadNearbyPlaces(defaultLat, defaultLng);
+  });
+
+  trafficLayer = new google.maps.TrafficLayer();
+  transitLayer = new google.maps.TransitLayer();
+  bikeLayer = new google.maps.BicyclingLayer();
 
   if (!layerControlsInitialized) {
     initLayerControls();
@@ -723,396 +191,109 @@ async function initMap(userLat, userLng) {
 
 window.initMap = initMap;
 
-document
-  .getElementById("find-btn")
-  .addEventListener("click", async function () {
-    const originalKeyword = document.getElementById("pac-input").value.trim();
-    const aiPanel = document.getElementById("ai-result-panel");
-
-    if (!originalKeyword) {
-      alert("Enter a keyword.");
-      return;
-    }
-
-    // Chuẩn hóa từ viết tắt
-    const keyword = normalizeSearchQuery(originalKeyword);
-
-    // Hiện loading
-    await showSearchLoading();
-
-    document.getElementById("search-wrapper").style.display = "block";
-
-    const resultWrapper = document.querySelector(".result-wrapper");
-
-    if (resultWrapper) {
-      resultWrapper.style.display = "block";
-
-      // Chiều rộng panel = 390px
-      resultWrapper.style.width = "400px";
-      resultWrapper.style.maxWidth = "400px";
-    }
-
-    // Đưa nút toggle tới mép panel 390px
-    const toggleBtn = document.getElementById("toggle-results");
-
-    if (toggleBtn) {
-      toggleBtn.style.position = "fixed";
-
-      toggleBtn.style.setProperty("left", "400px", "important");
-
-      toggleBtn.style.transform = "none";
-    }
-
-    if (aiPanel) {
-      aiPanel.style.display = "none";
-    }
-
-    try {
-      // Search ngay sau khi click
-      await searchPlaces(keyword);
-
-      // Search xong mới chờ 5 giây
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-    } finally {
-      hideSearchLoading();
-    }
-  });
-
-function showSearchLoading() {
-  let dialog = document.getElementById("search-loading-dialog");
-
-  if (!dialog) {
-    dialog = document.createElement("div");
-    dialog.id = "search-loading-dialog";
-
-    dialog.innerHTML = `
-            <div class="search-loading-content">
-                <span class="search-loading"></span>
-                <span>Please wait, searching...</span>
-            </div>
-        `;
-
-    document.body.appendChild(dialog);
-
-    const style = document.createElement("style");
-    style.id = "search-loading-style";
-
-    style.textContent = `
-            #search-loading-dialog {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-
-                width: 100vw !important;
-                height: 100vh !important;
-
-                z-index: 2147483647 !important;
-
-                background: rgba(0, 0, 0, 0.35);
-
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            #search-loading-dialog .search-loading-content {
-                position: relative;
-                z-index: 2147483647 !important;
-
-                background: #fff;
-                padding: 20px 28px;
-                border-radius: 10px;
-
-                display: flex;
-                align-items: center;
-                gap: 12px;
-
-                font-size: 15px;
-                color: #333;
-
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-            }
-
-            #search-loading-dialog .search-loading {
-                width: 18px;
-                height: 18px;
-
-                border: 2px solid #ddd;
-                border-top-color: #333;
-                border-radius: 50%;
-
-                animation: searchLoadingSpin 0.7s linear infinite;
-            }
-
-            @keyframes searchLoadingSpin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-        `;
-
-    document.head.appendChild(style);
-  }
-
-  // Hiện dialog
-  dialog.style.display = "flex";
-
-  // Đảm bảo luôn nằm trên Google Maps
-  document.body.appendChild(dialog);
-}
-
-function hideSearchLoading() {
-  const dialog = document.getElementById("search-loading-dialog");
-
-  if (dialog) {
-    dialog.style.display = "none";
-  }
-}
-
 function initLayerControls() {
   const toggleBtn = document.getElementById("layers-toggle");
-
   const menu = document.getElementById("layers-menu");
 
-  toggleBtn.addEventListener("click", function () {
-    menu.classList.toggle("show");
-
-    console.log("show");
-  });
-
-  document
-    .getElementById("traffic-layer")
-    .addEventListener("change", function () {
-      if (this.checked) {
-        trafficLayer.setMap(map);
-      } else {
-        trafficLayer.setMap(null);
-      }
+  if (toggleBtn && menu) {
+    toggleBtn.addEventListener("click", function () {
+      menu.classList.toggle("show");
     });
+  }
 
-  document
-    .getElementById("transit-layer")
-    .addEventListener("change", function () {
-      if (this.checked) {
-        transitLayer.setMap(map);
-      } else {
-        transitLayer.setMap(null);
-      }
+  const trafficCheck = document.getElementById("traffic-layer");
+  if (trafficCheck) {
+    trafficCheck.addEventListener("change", function () {
+      if (trafficLayer) trafficLayer.setMap(this.checked ? map : null);
     });
+  }
 
-  document.getElementById("bike-layer").addEventListener("change", function () {
-    if (this.checked) {
-      bikeLayer.setMap(map);
-    } else {
-      bikeLayer.setMap(null);
-    }
-  });
+  const transitCheck = document.getElementById("transit-layer");
+  if (transitCheck) {
+    transitCheck.addEventListener("change", function () {
+      if (transitLayer) transitLayer.setMap(this.checked ? map : null);
+    });
+  }
+
+  const bikeCheck = document.getElementById("bike-layer");
+  if (bikeCheck) {
+    bikeCheck.addEventListener("change", function () {
+      if (bikeLayer) bikeLayer.setMap(this.checked ? map : null);
+    });
+  }
 
   document.querySelectorAll('input[name="maptype"]').forEach(function (radio) {
     radio.addEventListener("change", function () {
-      map.setMapTypeId(this.value);
+      if (map) map.setMapTypeId(this.value);
     });
   });
 }
 
-function searchPlaces() {
-  const keyword = document.getElementById("pac-input").value.trim();
+function searchPlaces(overrideKeyword) {
+  const input = document.getElementById("pac-input");
+  const keyword = overrideKeyword || (input ? input.value.trim() : "");
 
-  if (!keyword) {
-    return;
-  }
+  if (!keyword) return;
 
-  if (!navigator.geolocation) {
-    alert("Trình duyệt không hỗ trợ định vị.");
-    return;
-  }
+  const currentCenter = map ? map.getCenter() : new google.maps.LatLng(10.8231, 106.6297);
+  const placesService = service || new google.maps.places.PlacesService(map);
 
-  navigator.geolocation.getCurrentPosition(
-    function (position) {
-      const userLat = position.coords.latitude;
-      const userLng = position.coords.longitude;
-
-      const userLocation = new google.maps.LatLng(userLat, userLng);
-
-      console.log("User GPS:", userLat, userLng);
-
-      const service = new google.maps.places.PlacesService(map);
-
-      service.textSearch(
-        {
-          query: keyword,
-          location: userLocation,
-          radius: 5000,
-        },
-
-        function (results, status) {
-          if (status !== google.maps.places.PlacesServiceStatus.OK) {
-            console.error("Places Error:", status);
-            renderResults([]);
-            return;
-          }
-
-          // =========================
-          // XÓA MARKER CŨ
-          // =========================
-
-          markers.forEach((marker) => {
-            marker.setMap(null);
-          });
-
-          markers = [];
-
-          // =========================
-          // CHỈ GIỮ PLACE CÓ LOCATION
-          // =========================
-
-          const nearbyResults = results.filter((place) => {
-            return place.geometry && place.geometry.location;
-          });
-
-          // =========================
-          // TẠO MARKER
-          // =========================
-
-          nearbyResults.forEach((place) => {
-            const marker = new google.maps.Marker({
-              position: place.geometry.location,
-              map: map,
-              title: place.name,
-            });
-
-            markers.push(marker);
-
-            marker.addListener("click", () => {
-              loadPlaceDetails(place.place_id);
-            });
-          });
-
-          // =========================
-          // QUAN TRỌNG:
-          // ZOOM VỀ GPS NGƯỜI DÙNG
-          // =========================
-
-          map.setCenter(userLocation);
-
-          map.setZoom(15);
-
-          // =========================
-          // LIST BÊN TRÁI
-          // =========================
-
-          renderResults(nearbyResults);
-        },
-      );
-    },
-
-    function (error) {
-      console.error("GPS Error:", error);
-
-      switch (error.code) {
-        case error.PERMISSION_DENIED:
-          alert("Bạn chưa cho phép website sử dụng vị trí.");
-          break;
-
-        case error.POSITION_UNAVAILABLE:
-          alert("Không lấy được vị trí hiện tại.");
-          break;
-
-        case error.TIMEOUT:
-          alert("Lấy GPS quá thời gian.");
-          break;
-
-        default:
-          alert("Không thể lấy vị trí.");
-      }
-    },
-
+  placesService.textSearch(
     {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0,
+      query: keyword,
+      location: currentCenter,
+      radius: 5000,
     },
+    function (results, status) {
+      if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+        console.error("Places Error:", status);
+        renderResults([]);
+        return;
+      }
+
+      clearMarkers();
+
+      const nearbyResults = results.filter((p) => p.geometry && p.geometry.location);
+
+      nearbyResults.forEach((place) => {
+        const itemMarker = new google.maps.Marker({
+          position: place.geometry.location,
+          map: map,
+          title: place.name,
+        });
+
+        markers.push(itemMarker);
+        itemMarker.addListener("click", () => {
+          loadPlaceDetails(place.place_id, itemMarker);
+        });
+      });
+
+      renderResults(nearbyResults);
+    }
   );
 }
-
-// function searchPlaces() {
-//   const keyword = document.getElementById("pac-input").value.trim();
-
-//   if (!keyword) {
-//     return;
-//   }
-
-//   const service = new google.maps.places.PlacesService(map);
-
-//   service.textSearch(
-//     {
-//       query: keyword,
-//     },
-//     function (results, status) {
-//       if (status !== google.maps.places.PlacesServiceStatus.OK) {
-//         console.error("Places Error:", status);
-//         return;
-//       }
-
-//       // Xóa marker cũ
-//       markers.forEach((marker) => {
-//         marker.setMap(null);
-//       });
-
-//       markers = [];
-
-//       const bounds = new google.maps.LatLngBounds();
-
-//       results.forEach((place) => {
-//         if (!place.geometry) {
-//           return;
-//         }
-
-//         const marker = new google.maps.Marker({
-//           position: place.geometry.location,
-//           map: map,
-//           title: place.name,
-//         });
-
-//         markers.push(marker);
-
-//         bounds.extend(place.geometry.location);
-
-//         marker.addListener("click", () => {
-//           loadPlaceDetails(place.place_id);
-//         });
-//       });
-
-//       // Zoom về khu vực kết quả
-//       if (results.length > 1) {
-//         map.fitBounds(bounds);
-//       } else {
-//         map.setCenter(results[0].geometry.location);
-
-//         map.setZoom(16);
-//       }
-
-//       // Render list bên trái
-//       renderResults(results);
-//     },
-//   );
-// }
 
 function renderResults(results) {
   clearMarkers();
 
-  document.getElementById("result-panel").classList.add("show");
-  document.getElementById("toggle-results").classList.add("show");
-
-  const bounds = new google.maps.LatLngBounds();
-
+  const resultPanel = document.getElementById("result-panel");
+  const toggleBtn = document.getElementById("toggle-results");
   const panel = document.getElementById("results");
 
-  panel.innerHTML = "";
+  if (resultPanel) {
+    resultPanel.classList.add("show");
+    resultPanel.style.display = "block";
+  }
+  if (toggleBtn) toggleBtn.classList.add("show");
+  if (!panel) return;
 
-  document.getElementById("result-panel").style.display = "block";
+  panel.innerHTML = "";
+  if (!results.length) {
+    panel.innerHTML = '<div class="gm-empty">No results found</div>';
+    return;
+  }
+
+  const bounds = new google.maps.LatLngBounds();
 
   results.forEach((place) => {
     const position = place.geometry.location;
@@ -1125,92 +306,57 @@ function renderResults(results) {
 
     mapMarker.addListener("click", function () {
       loadPlaceDetails(place.place_id, mapMarker);
-
-      console.log("click vao pin");
-
       setTimeout(function () {
-        const toggleBtn = document.getElementById("toggle-results");
-
-        if (!toggleBtn) {
-          return;
+        if (toggleBtn) {
+          toggleBtn.style.position = "fixed";
+          toggleBtn.style.setProperty("left", "765px", "important");
+          toggleBtn.style.transform = "none";
         }
-
-        toggleBtn.style.position = "fixed";
-
-        toggleBtn.style.setProperty("left", "765px", "important");
-
-        toggleBtn.style.transform = "none";
       }, 100);
     });
 
     markers.push(mapMarker);
-
     bounds.extend(position);
 
-    const photo =
-      place.photos?.[0]?.getUrl({
-        maxWidth: 300,
-      }) || "";
+    const photo = place.photos?.[0]?.getUrl({ maxWidth: 300 }) || "";
 
     panel.innerHTML += `
-
-            <div class="place-card"
-                data-placeid="${place.place_id || ""}"
-                data-name="${place.name}"
-                data-rating="${place.rating || "-"}"
-                data-address="${place.formatted_address || ""}"
-                data-photo="${photo}"
-                data-lat="${position.lat()}"
-                data-lng="${position.lng()}">
-
-                <div class="place-info">
-
-                    <h3>${place.name}</h3>
-
-                    <div class="rating">
-                        <i class="fa-solid fa-star" style="color: #ff7200;"></i> ${
-                          place.rating || "-"
-                        }
-                    </div>
-
-                    <div class="address">
-                        ${place.formatted_address || ""}
-                    </div>
-
-                </div>
-
-                ${photo ? `<img src="${photo}" class="place-thumb">` : ""}
-
-            </div>
-
-            `;
+      <div class="place-card"
+          data-placeid="${escapeHtml(place.place_id || "")}"
+          data-name="${escapeHtml(place.name || "")}"
+          data-rating="${place.rating || "-"}"
+          data-address="${escapeHtml(place.formatted_address || "")}"
+          data-photo="${escapeHtml(photo)}"
+          data-lat="${position.lat()}"
+          data-lng="${position.lng()}">
+          <div class="place-info">
+              <h3>${escapeHtml(place.name)}</h3>
+              <div class="rating">
+                  <i class="fa-solid fa-star" style="color: #ff7200;"></i> ${place.rating || "-"}
+              </div>
+              <div class="address">${escapeHtml(place.formatted_address || "")}</div>
+          </div>
+          ${photo ? `<img src="${escapeHtml(photo)}" class="place-thumb" alt="${escapeHtml(place.name)}">` : ""}
+      </div>
+    `;
   });
 
-  map.fitBounds(bounds);
+  if (map) map.fitBounds(bounds);
   bindPlaces();
-}
-
-function clearMarkers() {
-  markers.forEach((marker) => marker.setMap(null));
-  markers = [];
 }
 
 function bindPlaces() {
   document.querySelectorAll(".place-card").forEach(function (item) {
     item.addEventListener("click", function () {
       const placeId = this.dataset.placeid;
-
       const lat = parseFloat(this.dataset.lat);
-
       const lng = parseFloat(this.dataset.lng);
+      const position = { lat: lat || 0, lng: lng || 0 };
 
-      const position = {
-        lat: lat ?? 0,
-        lng: lng ?? 0,
-      };
-
-      map.setCenter(position);
-      map.setZoom(18);
+      if (map) {
+        map.setCenter(position);
+        map.setZoom(18);
+      }
 
       if (selectedMarker) {
         selectedMarker.setMap(null);
@@ -1224,7 +370,6 @@ function bindPlaces() {
 
       if (!placeId) {
         alert("Unable to find the Place ID.");
-
         return;
       }
 
@@ -1233,1781 +378,206 @@ function bindPlaces() {
   });
 }
 
-function searchByType(type) {
-  const service = new google.maps.places.PlacesService(map);
+function loadPlaceDetails(placeId, clickedMarker) {
+  if (!map) return;
+  const placesService = service || new google.maps.places.PlacesService(map);
 
-  service.nearbySearch(
-    {
-      location: map.getCenter(),
-      radius: 50000,
-      type: type,
-    },
-    function (results, status) {
-      if (status === google.maps.places.PlacesServiceStatus.OK) {
-        renderResults(results);
-      }
-    },
-  );
-}
-
-document.querySelectorAll(".cat-btn[data-type]").forEach((btn) => {
-  btn.addEventListener("click", function () {
-    const type = this.dataset.type;
-
-    searchByType(type);
-  });
-});
-
-function loadPlaceDetails(placeId, marker) {
-  const service = new google.maps.places.PlacesService(map);
-
-  service.getDetails(
+  placesService.getDetails(
     {
       placeId: placeId,
-
       fields: [
-        "name",
-        "formatted_address",
-        "formatted_phone_number",
-        "website",
-        "rating",
-        "user_ratings_total",
-        "opening_hours",
-        "photos",
-        "url",
-        "types",
-        "reviews",
+        "name", "formatted_address", "formatted_phone_number",
+        "website", "rating", "user_ratings_total", "opening_hours",
+        "photos", "url", "types", "reviews"
       ],
     },
-
     function (place, status) {
-      if (status !== google.maps.places.PlacesServiceStatus.OK) {
+      if (status !== google.maps.places.PlacesServiceStatus.OK || !place) {
         console.error("Place details error:", status);
-
         return;
       }
 
-      /*
-       * RESULT PANEL
-       */
       const resultPanel = document.querySelector(".result-wrapper");
+      if (!resultPanel) return;
 
-      if (!resultPanel) {
-        console.error(".result-wrapper not found");
-
-        return;
-      }
-
-      /*
-       * LẤY / TẠO POPUP
-       */
       let popup = document.getElementById("gm-place-popup");
-
       if (!popup) {
         popup = document.createElement("div");
-
         popup.id = "gm-place-popup";
-
         popup.className = "gm-place-popup";
-
         resultPanel.appendChild(popup);
       }
 
-      /*
-       * PHOTO
-       */
-      const photo = place.photos?.[0]
-        ? place.photos[0].getUrl({
-            maxWidth: 800,
-            maxHeight: 500,
-          })
-        : "";
+      const photo = place.photos?.[0] ? place.photos[0].getUrl({ maxWidth: 800, maxHeight: 500 }) : "";
 
-      /*
-       * TYPE
-       */
       let placeType = "Place";
-
       if (place.types?.length) {
-        const type = place.types.find(
-          (t) => !["point_of_interest", "establishment"].includes(t),
-        );
-
+        const type = place.types.find((t) => !["point_of_interest", "establishment"].includes(t));
         if (type) {
-          placeType = type
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase());
+          placeType = type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
         }
       }
 
-      /*
-       * REVIEWS
-       */
+      // Reviews
       let reviewsHTML = "";
-
       if (place.reviews && place.reviews.length) {
         reviewsHTML = `
-        <div class="gm-popup-reviews">
-
-            <div class="gm-reviews-header">
-
-                <div class="gm-reviews-title">
-                    <i class="fa-solid fa-star"></i>
-                    Reviews
-                </div>
-
-                <div class="gm-reviews-summary">
-
-                    <strong>
-                        ${place.rating ? place.rating.toFixed(1) : "-"}
-                    </strong>
-
-                    <span class="gm-review-stars">
-                        ★
-                    </span>
-
-                    <span>
-                        (${place.user_ratings_total || 0})
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <div class="gm-reviews-list">
-
-                ${place.reviews
-                  .map(function (review) {
-                    const authorName = review.author_name || "Google User";
-
-                    const authorPhoto = review.profile_photo_url || "";
-
-                    const authorUrl = review.author_url || "#";
-
-                    const rating = review.rating || 0;
-
-                    const reviewText = review.text || "";
-
-                    const relativeTime = review.relative_time_description || "";
+          <div class="gm-popup-reviews">
+              <div class="gm-reviews-header">
+                  <div class="gm-reviews-title"><i class="fa-solid fa-star"></i> Reviews</div>
+                  <div class="gm-reviews-summary">
+                      <strong>${place.rating ? place.rating.toFixed(1) : "-"}</strong>
+                      <span class="gm-review-stars">★</span>
+                      <span>(${place.user_ratings_total || 0})</span>
+                  </div>
+              </div>
+              <div class="gm-reviews-list">
+                  ${place.reviews.map(function (rev) {
+                    const authorName = escapeHtml(rev.author_name || "Google User");
+                    const authorPhoto = rev.profile_photo_url || "";
+                    const rating = rev.rating || 0;
+                    const reviewText = escapeHtml(rev.text || "");
+                    const relativeTime = escapeHtml(rev.relative_time_description || "");
 
                     return `
-
-                        <div class="gm-review">
-
-                            <div class="gm-review-author">
-
-                                ${
-                                  authorPhoto
-                                    ? `
-                                            <img
-                                                class="gm-review-avatar"
-                                                src="${authorPhoto}"
-                                                alt="${authorName}">
-                                        `
-                                    : `
-                                            <div class="gm-review-avatar gm-review-avatar-default">
-                                                ${authorName.charAt(0)}
-                                            </div>
-                                        `
-                                }
-
-
-                                <div class="gm-review-author-info">
-
-                                    <a
-                                        href="${authorUrl}"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="gm-review-author-name">
-
-                                        ${authorName}
-
-                                    </a>
-
-
-                                    <div class="gm-review-meta">
-
-                                        <span class="gm-review-stars">
-                                            ${"★".repeat(rating)}
-                                        </span>
-
-                                        <span class="gm-review-time">
-                                            ${relativeTime}
-                                        </span>
-
-                                    </div>
-
-                                </div>
-
-                            </div>
-
-
-                            ${
-                              reviewText
-                                ? `
-                                        <div class="gm-review-text">
-                                            ${reviewText}
-                                        </div>
-                                    `
-                                : ""
-                            }
-
-                        </div>
-
+                      <div class="gm-review">
+                          <div class="gm-review-author">
+                              ${authorPhoto ? `<img class="gm-review-avatar" src="${escapeHtml(authorPhoto)}" alt="${authorName}">` : `<div class="gm-review-avatar gm-review-avatar-default">${authorName.charAt(0)}</div>`}
+                              <div class="gm-review-author-info">
+                                  <div class="gm-review-author-name">${authorName}</div>
+                                  <div class="gm-review-meta">
+                                      <span class="gm-review-stars">${"★".repeat(rating)}</span>
+                                      <span class="gm-review-time">${relativeTime}</span>
+                                  </div>
+                              </div>
+                          </div>
+                          ${reviewText ? `<div class="gm-review-text">${reviewText}</div>` : ""}
+                      </div>
                     `;
-                  })
-                  .join("")}
-
-            </div>
-
-
-            <div class="gm-google-attribution">
-
-                Reviews from Google
-
-            </div>
-
-        </div>
-    `;
+                  }).join("")}
+              </div>
+              <div class="gm-google-attribution">Reviews from Google</div>
+          </div>
+        `;
       }
 
-      /*
-       * OPENING HOURS
-       */
+      // Hours
       let hoursHTML = "";
-
       if (place.opening_hours && place.opening_hours.weekday_text) {
         hoursHTML = `
-                    <div class="gm-popup-row">
-
-                        <i class="fa-regular fa-clock"></i>
-
-                        <div>
-
-                            ${place.opening_hours.weekday_text
-                              .map(
-                                (day) => `
-                                    <div>
-                                        ${day}
-                                    </div>
-                                `,
-                              )
-                              .join("")}
-
-                        </div>
-
-                    </div>
-                `;
+          <div class="gm-popup-row">
+              <i class="fa-regular fa-clock"></i>
+              <div>${place.opening_hours.weekday_text.map((day) => `<div>${escapeHtml(day)}</div>`).join("")}</div>
+          </div>
+        `;
       }
 
-      /*
-       * WEBSITE
-       */
-      const websiteHTML = place.website
-        ? `
-                    <div class="gm-popup-row">
-
-                        <i class="fa-solid fa-globe"></i>
-
-                        <div>
-
-                            <a
-                                href="${place.website}"
-                                target="_blank"
-                                rel="noopener">
-                                ${place.website}
-                            </a>
-
-                        </div>
-
-                    </div>
-                    `
-        : "";
-
-      /*
-       * PHONE
-       */
-      const phoneHTML = place.formatted_phone_number
-        ? `
-                    <div class="gm-popup-row">
-
-                        <i class="fa-solid fa-phone"></i>
-
-                        <div>
-                            ${place.formatted_phone_number}
-                        </div>
-
-                    </div>
-                    `
-        : "";
-
-      /*
-       * RENDER POPUP
-       */
       popup.innerHTML = `
+        <button type="button" class="gm-popup-close" id="gm-popup-close" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        ${photo ? `<div class="gm-popup-cover"><img src="${escapeHtml(photo)}" alt="${escapeHtml(place.name)}"></div>` : ""}
+        <div class="gm-popup-body">
+            <h2 class="gm-popup-title">${escapeHtml(place.name)}</h2>
+            <div class="gm-popup-rating">
+                <span>${place.rating || "-"}</span>
+                <i class="fa-solid fa-star"></i>
+                <span>${place.user_ratings_total || 0}</span>
+            </div>
+            <div class="gm-popup-type">${escapeHtml(placeType)}</div>
+            <div class="gm-popup-tabs">
+                <button type="button" class="gm-popup-tab active" data-popup-tab="overview">Overview</button>
+                <button type="button" class="gm-popup-tab gm-picture-btn" data-tab="picture" data-placeid="${placeId}">Picture</button>
+                <button type="button" class="gm-popup-tab gm-video-btn" data-tab="video" data-placeid="${placeId}">Video</button>
+            </div>
+            <div class="gm-popup-info">
+                <div class="gm-popup-row"><i class="fa-solid fa-location-dot"></i><div>${escapeHtml(place.formatted_address || "")}</div></div>
+                ${place.formatted_phone_number ? `<div class="gm-popup-row"><i class="fa-solid fa-phone"></i><div>${escapeHtml(place.formatted_phone_number)}</div></div>` : ""}
+                ${place.website ? `<div class="gm-popup-row"><i class="fa-solid fa-globe"></i><div><a href="${escapeHtml(place.website)}" target="_blank" rel="noopener">${escapeHtml(place.website)}</a></div></div>` : ""}
+                ${hoursHTML}
+                ${reviewsHTML}
+                ${place.url ? `<div class="gm-popup-row"><i class="fa-solid fa-map"></i><div><a href="${escapeHtml(place.url)}" target="_blank" rel="noopener">View on Google Maps</a></div></div>` : ""}
+            </div>
+        </div>
+      `;
 
-                <button
-                    type="button"
-                    class="gm-popup-close"
-                    id="gm-popup-close">
-
-                    <i class="fa-solid fa-xmark"></i>
-
-                </button>
-
-
-                ${
-                  photo
-                    ? `
-                        <div class="gm-popup-cover">
-
-                            <img
-                                src="${photo}"
-                                alt="${place.name}">
-
-                        </div>
-                        `
-                    : ""
-                }
-
-
-                <div class="gm-popup-body">
-
-
-                    <!-- TITLE -->
-
-                    <h2 class="gm-popup-title">
-                        ${place.name}
-                    </h2>
-
-
-                    <!-- RATING -->
-
-                    <div class="gm-popup-rating">
-
-                        <span>
-                            ${place.rating || "-"}
-                        </span>
-
-                        <i class="fa-solid fa-star"></i>
-
-                        <span>
-                            ${place.user_ratings_total || 0}
-                        </span>
-
-                    </div>
-
-
-                    <!-- TYPE -->
-
-                    <div class="gm-popup-type">
-                        ${placeType}
-                    </div>
-
-
-                    <!-- TABS -->
-
-                    <div class="gm-popup-tabs">
-
-                        <button
-                            class="gm-popup-tab active"
-                            data-popup-tab="overview">
-
-                            Messege
-
-                        </button>
-
-                        <button
-                            class="gm-popup-tab"
-                            data-popup-tab="live">
-
-                            Live
-
-                        </button>
-
-                      <button
-                          class="gm-popup-tab gm-picture-btn"
-                          data-tab="picture"
-                          data-placeid="${placeId}">
-                          Picture
-                      </button>
-
-                        <button
-                            class="gm-popup-tab gm-video-btn"
-                            data-popup-tab="video"
-                            data-tab="video"
-                            data-placeid="${placeId}" >
-                            Video
-
-                        </button>
-
-
-
-                    </div>
-
-
-                    <!-- ACTIONS -->
-
-                    <div class="gm-popup-actions">
-
-
-                        <div class="gm-popup-action">
-
-                            <div class="gm-popup-action-icon">
-
-                                <i class="fa-solid fa-diamond-turn-right"></i>
-
-                            </div>
-
-                            Directions
-
-                        </div>
-
-
-                        <div class="gm-popup-action">
-
-                            <div class="gm-popup-action-icon">
-
-                                <i class="fa-regular fa-bookmark"></i>
-
-                            </div>
-
-                            Save
-
-                        </div>
-
-
-                        <div class="gm-popup-action">
-
-                            <div class="gm-popup-action-icon">
-
-                                <i class="fa-solid fa-location-crosshairs"></i>
-
-                            </div>
-
-                            Nearby
-
-                        </div>
-
-
-                        <div class="gm-popup-action">
-
-                            <div class="gm-popup-action-icon">
-
-                                <i class="fa-solid fa-share-nodes"></i>
-
-                            </div>
-
-                            Share
-
-                        </div>
-
-
-                    </div>
-
-
-                    <!-- INFO -->
-
-                    <div class="gm-popup-info">
-
-
-                        <!-- ADDRESS -->
-
-                        <div class="gm-popup-row">
-
-                            <i class="fa-solid fa-location-dot"></i>
-
-                            <div>
-                                ${place.formatted_address || ""}
-                            </div>
-
-                        </div>
-
-
-                        <!-- PHONE -->
-
-                        ${phoneHTML}
-
-
-                        <!-- WEBSITE -->
-
-                        ${websiteHTML}
-
-
-                        <!-- HOURS -->
-
-                        ${hoursHTML}
-
-
-                        <!-- REVIEWS -->
-
-                        ${reviewsHTML}
-
-                        <!-- GOOGLE MAP -->
-
-                        ${
-                          place.url
-                            ? `
-                                <div class="gm-popup-row">
-
-                                    <i class="fa-solid fa-map"></i>
-
-                                    <div>
-
-                                        <a
-                                            href="${place.url}"
-                                            target="_blank"
-                                            rel="noopener">
-
-                                            View on Google Maps
-
-                                        </a>
-
-                                    </div>
-
-                                </div>
-                                `
-                            : ""
-                        }
-
-
-                    </div>
-
-                </div>
-
-            `;
-
-      /*
-       * HIỆN POPUP
-       */
       popup.classList.add("show");
 
-      /*
-       * CLOSE
-       */
       const closeBtn = document.getElementById("gm-popup-close");
-
       if (closeBtn) {
         closeBtn.addEventListener("click", function () {
           popup.classList.remove("show");
-
           const toggleBtn = document.getElementById("toggle-results");
-
           if (toggleBtn) {
             toggleBtn.style.position = "fixed";
-
             toggleBtn.style.setProperty("left", "400px", "important");
-
             toggleBtn.style.transform = "none";
           }
         });
       }
 
-      /*
-       * TAB
-       */
-      popup.querySelectorAll(".gm-popup-tab").forEach(function (tab) {
-        tab.addEventListener("click", function () {
-          popup
-            .querySelectorAll(".gm-popup-tab")
-            .forEach((t) => t.classList.remove("active"));
-
-          this.classList.add("active");
-
-          const tabName = this.dataset.popupTab;
-
-          console.log("Selected tab:", tabName);
-        });
-      });
-
-      /*
-       * CENTER MAP VÀO MARKER
-       */
-      if (marker) {
-        map.panTo(marker.getPosition());
-      }
-    },
-  );
-}
-// function loadPlaceDetails(placeId, marker) {
-//   const service = new google.maps.places.PlacesService(map);
-
-//   service.getDetails(
-//     {
-//       placeId: placeId,
-
-//       fields: [
-//         "name",
-//         "formatted_address",
-//         "formatted_phone_number",
-//         "website",
-//         "rating",
-//         "user_ratings_total",
-//         "opening_hours",
-//         "photos",
-//         "url",
-//       ],
-//     },
-//     function (place, status) {
-//       if (status !== google.maps.places.PlacesServiceStatus.OK) {
-//         return;
-//       }
-
-//       const photo = place.photos?.[0]
-//         ? place.photos[0].getUrl({
-//             maxWidth: 800,
-//             maxHeight: 400,
-//           })
-//         : "";
-
-//       if (infoWindow) {
-//         infoWindow.close();
-//       }
-
-//       infoWindow = new google.maps.InfoWindow({
-//         maxWidth: 700,
-//         content: `
-//       <div class="gm-place-card">
-
-//     ${
-//       photo
-//         ? `
-//     <div class="gm-cover">
-//         <img src="${photo}">
-//     </div>
-//     `
-//         : ""
-//     }
-
-//     <div class="gm-body">
-
-//         <h2 class="gm-title">
-//             ${place.name}
-//         </h2>
-
-//         <div class="gm-rating">
-//             <i class="fa-solid fa-star"></i>
-//             <span>${place.rating || "-"}</span>
-//             <small>
-//                 (${place.user_ratings_total || 0} reviews)
-//             </small>
-//         </div>
-
-//         <div class="gm-address">
-//             <i class="fa-solid fa-location-dot"></i>
-//             <span>${place.formatted_address || ""}</span>
-//         </div>
-
-//         <div class="gm-tabs">
-
-//             <button
-//                 class="gm-tab active"
-//                 data-tab="info">
-//                 Info
-//             </button>
-
-//             <button
-//                 class="gm-tab gm-picture-btn"
-//                 data-tab="picture"
-//                 data-placeid="${placeId}">
-//                 Picture
-//             </button>
-
-//             <button
-//                 class="gm-tab"
-//                 data-tab="video"
-//                 data-placeid="${placeId}">
-//                 Video
-//             </button>
-
-//             <button
-//                 class="gm-tab"
-//                 data-tab="live"
-//                 data-placeid="${placeId}">
-//                 Live
-//             </button>
-
-//         </div>
-
-//         <div class="gm-tab-content">
-
-//             <div id="tab-info" class="gm-pane active">
-
-//                 ${
-//                   place.website
-//                     ? `
-//                     <div class="gm-link">
-//                         <i class="fa-solid fa-globe"></i>
-//                         <a href="${place.website}" target="_blank">
-//                             Website
-//                         </a>
-//                     </div>
-//                     `
-//                     : ""
-//                 }
-
-//                 ${
-//                   place.opening_hours
-//                     ? `
-//                     <div class="gm-hours">
-//                         ${place.opening_hours.weekday_text
-//                           .map(
-//                             (item) => `
-//                             <div class="gm-hour-row">
-//                                 ${item}
-//                             </div>
-//                             `,
-//                           )
-//                           .join("")}
-//                     </div>
-//                     `
-//                     : ""
-//                 }
-
-//                 <div class="gm-map-link">
-//                     <a href="${place.url}" target="_blank">
-//                         View on Google Maps
-//                     </a>
-//                 </div>
-
-//             </div>
-
-//             <div id="tab-picture" class="gm-pane">
-//                 <div class="gm-loading">
-//                     Click Picture to load photos
-//                 </div>
-//             </div>
-
-//             <div id="tab-video" class="gm-pane">
-//                 <div class="gm-loading">
-//                     No videos yet
-//                 </div>
-//             </div>
-
-//             <div id="tab-live" class="gm-pane">
-//                 <div class="gm-loading">
-//                     No livestream
-//                 </div>
-//             </div>
-
-//         </div>
-
-//     </div>
-
-// </div>
-// `,
-//       });
-
-//       infoWindow.open({
-//         anchor: marker,
-//         map: map,
-//       });
-//     },
-//   );
-// }
-
-document.querySelectorAll('input[name="maptype"]').forEach((radio) => {
-  radio.addEventListener("change", function () {
-    map.setMapTypeId(this.value);
-
-    document.getElementById("current-layer").textContent =
-      this.nextSibling.textContent.trim();
-  });
-});
-
-/* insert Videos */
-document.addEventListener("click", function (e) {
-  const uploadBtn = e.target.closest("#gmUploadVideoBtn");
-
-  if (!uploadBtn) {
-    return;
-  }
-
-  // Chưa đăng nhập
-  if (!gmUserLoggedIn) {
-    showLoginRequiredDialog();
-    return;
-  }
-
-  const fileInput = document.getElementById("gmUploadVideoFile");
-
-  if (!fileInput) {
-    console.error("gmUploadVideoFile not found");
-    return;
-  }
-
-  fileInput.click();
-});
-
-document.addEventListener("change", function (e) {
-  const button = e.target.closest("#gmUploadVideoFile");
-
-  if (!button) {
-    return;
-  }
-
-  console.log("gmUploadVideoFile");
-  if (e.target.id !== "gmUploadVideoFile") {
-    return;
-  }
-
-  const file = e.target.files[0];
-
-  if (!file) {
-    return;
-  }
-
-  const uploadBtn = document.getElementById("gmUploadVideoBtn");
-  const dialog = document.getElementById("gmVideoDialog");
-
-  if (!uploadBtn || !dialog) {
-    console.error("Video upload elements not found");
-    return;
-  }
-
-  // Lấy Place ID
-  const placeId = dialog.dataset.placeid;
-
-  if (!placeId) {
-    alert("Place ID not found");
-    return;
-  }
-
-  // Kiểm tra video
-  if (!file.type.startsWith("video/")) {
-    alert("Please select a video file.");
-    e.target.value = "";
-    return;
-  }
-
-  console.log("Upload video:", file.name);
-  console.log("Place ID:", placeId);
-
-  // Disable button
-  uploadBtn.disabled = true;
-
-  uploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Uploading...';
-
-  // FormData
-  const formData = new FormData();
-
-  formData.append("action", "upload_place_video");
-
-  formData.append("place_id", placeId);
-
-  formData.append("video", file);
-
-  fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-    method: "POST",
-    body: formData,
-    credentials: "same-origin",
-  })
-    .then(async (response) => {
-      const text = await response.text();
-
-      console.log("HTTP Status:", response.status);
-
-      console.log("Response:", text);
-
-      if (!response.ok) {
-        throw new Error("HTTP " + response.status + ": " + text);
-      }
-
-      return JSON.parse(text);
-    })
-
-    .then((res) => {
-      console.log("Upload video result:", res);
-
-      if (res.success) {
-        alert("Video upload success!");
-
-        // Reset file input
-        e.target.value = "";
-
-        // Reload video
-        loadPlaceVideos(placeId);
-      } else {
-        console.error("Upload error:", res.data);
-
-        alert(typeof res.data === "string" ? res.data : "Upload failed");
-      }
-    })
-
-    .catch((error) => {
-      console.error("Video upload error:", error);
-
-      alert("Upload failed: " + error.message);
-    })
-
-    .finally(() => {
-      uploadBtn.disabled = false;
-
-      uploadBtn.innerHTML = '<i class="fa fa-upload"></i> Upload';
-    });
-});
-
-/* insert Photo */
-document.addEventListener("change", function (e) {
-  if (e.target.id !== "photo-upload") {
-    return;
-  }
-
-  const file = e.target.files[0];
-
-  if (!file) {
-    return;
-  }
-
-  const uploadBtn = document.getElementById("btn-upload");
-  const photoBtn = e.target.closest("#photo-modal-content");
-  const placeId = photoBtn.dataset.placeid;
-
-  uploadBtn.disabled = true;
-  uploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Loading...';
-  const formData = new FormData();
-
-  formData.append("action", "upload_place_photo");
-  if (photoBtn) {
-    formData.append("place_id", placeId);
-  }
-  formData.append("photo", file);
-  fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-    method: "POST",
-    body: formData,
-  })
-    .then((response) => response.json())
-    .then((res) => {
-      if (res.success) {
-        // reload
-        loadUserPhotos(placeId);
-
-        // reset file input
-        document.getElementById("photo-upload").value = "";
-
-        // thông báo
-        alert("Upload success!");
-      } else {
-        console.log(res.data);
-        alert(res.data || "Upload fail");
-      }
-    })
-    .catch((error) => {
-      console.error(error);
-      alert("Upload fail");
-    })
-    .finally(() => {
-      uploadBtn.disabled = false;
-      uploadBtn.innerHTML = '<i class="fa fa-upload"></i> Uploading';
-    });
-});
-
-document.addEventListener("click", function (e) {
-  const photoBtn = e.target.closest("#photo-btn");
-
-  if (photoBtn) {
-    const placeId11 = photoBtn.dataset.placeid;
-
-    console.log(placeId11);
-
-    let dialog = document.getElementById("photo-dialog");
-
-    if (!dialog) {
-      document.body.insertAdjacentHTML(
-        "beforeend",
-        `
-                <div id="photo-dialog" class="photo-modal" >
-
-                    <div class="photo-modal-content" id="photo-modal-content" data-placeid="${placeId11}">
-
-                        <div class="modal-header">
-
-                            <h3>Pictures</h3>
-
-                            <button id="close-photo-dialog">
-                                ✕
-                            </button>
-
-                        </div>
-
-                        <div id="photo-list"
-                             class="photo-grid">
-                        </div>
-
-                        <div class="modal-footer">
-
-                            <button id="btn-upload">
-                                📤 Upload
-                            </button>
-
-                            <input
-                                type="file"
-                                id="photo-upload"
-                                hidden
-                                accept="image/*">
-
-                        </div>
-
-                    </div>
-
-                </div>
-                `,
-      );
-    }
-
-    const placeId = photoBtn.dataset.placeid;
-
-    document.getElementById("photo-dialog").classList.add("show");
-
-    loadUserPhotos(placeId);
-
-    return;
-  }
-
-  if (e.target.closest("#close-photo-dialog")) {
-    document.getElementById("photo-dialog")?.classList.remove("show");
-
-    return;
-  }
-
-  if (e.target.closest("#btn-upload")) {
-    document.getElementById("photo-upload")?.click();
-  }
-});
-
-function loadUserPhotos(placeId) {
-  fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      action: "get_user_photos",
-      place_id: placeId,
-    }),
-  })
-    .then((response) => response.json())
-    .then((res) => {
-      if (!res.success) {
-        return;
-      }
-
-      let html = "";
-
-      res.data.forEach((photo) => {
-        html += `
-                <div class="photo-item">
-                    <img src="${photo.url}"
-                         data-url="${photo.url}">
-                </div>
-            `;
-      });
-
-      document.getElementById("photo-list").innerHTML = html;
-    });
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  const wrapper = document.querySelector(".search-wrapper");
-
-  document.getElementById("result-panel").classList.remove("show");
-  document.getElementById("toggle-results").classList.remove("show");
-
-  const btn = document.getElementById("toggle-results");
-
-  if (!btn) {
-    return;
-  }
-
-  btn.addEventListener("click", function () {
-    wrapper.classList.toggle("collapsed");
-
-    const icon = this.querySelector("i");
-
-    const toggleResults = document.getElementById("toggle-results");
-
-    if (wrapper.classList.contains("collapsed")) {
-      icon.className = "fa-solid fa-chevron-right";
-
-      // Panel thu gọn → left = 0px
-      if (toggleResults) {
-        toggleResults.style.setProperty("left", "0px", "important");
-      }
-    } else {
-      icon.className = "fa-solid fa-chevron-left";
-
-      // Panel mở lại
-      if (toggleResults) {
-        toggleResults.style.setProperty("left", "400px", "important");
+      if (clickedMarker && map) {
+        map.panTo(clickedMarker.getPosition());
       }
     }
-  });
-});
-
-/* Load Place Video */
-function loadPlaceVideos(placeId) {
-  fetch(
-    "https://dev.pt-solution.vn/wp-admin/admin-ajax.php?action=get_place_uploads_videos&place_id=" +
-      placeId,
-  )
-    .then((r) => r.json())
-    .then((res) => {
-      console.log("Place videos:", res);
-
-      if (!res.success || !res.data) {
-        return;
-      }
-
-      renderVideos(res.data);
-    })
-    .catch((error) => {
-      console.error("Load videos error:", error);
-    });
-}
-
-/* Load Place Photo */
-function loadPlacePhotos(placeId) {
-  const service = new google.maps.places.PlacesService(map);
-
-  service.getDetails(
-    {
-      placeId: placeId,
-
-      fields: ["name", "photos"],
-    },
-    function (place, status) {
-      if (status !== google.maps.places.PlacesServiceStatus.OK) {
-        return;
-      }
-
-      fetch(
-        "https://dev.pt-solution.vn/wp-admin/admin-ajax.php?action=get_place_uploads&place_id=" +
-          placeId,
-      )
-        .then((r) => r.json())
-        .then((res) => {
-          renderPhotos(place, res.data || []);
-        });
-    },
   );
 }
 
-/* Render Video */
-function renderVideos(videos) {
-  const container = document.querySelector("#gmVideoContent");
-
-  if (!container) {
-    return;
+// Khởi tạo các sự kiện DOM
+document.addEventListener("DOMContentLoaded", function () {
+  // Lấy GPS ban đầu
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        if (map) {
+          map.setCenter({ lat, lng });
+          map.setZoom(15);
+        }
+      },
+      function (err) {
+        console.warn("GPS unavailable:", err.message);
+      },
+      { timeout: 10000 }
+    );
   }
 
-  if (!videos.length) {
-    container.innerHTML = "";
-    return;
-  }
-
-  container.innerHTML = videos
-    .map(
-      (video) => `
-        <div class="place-video">
-          <video
-            src="${video.url}"
-            controls
-            playsinline
-            preload="metadata"
-            style="width:100%; border-radius:12px;"
-          ></video>
-        </div>
-      `,
-    )
-    .join("");
-}
-
-/* Render Photo */
-function renderPhotos(place, uploads) {
-  const container = document.getElementById("gmPictureContent");
-
-  let html = "";
-
-  if (place.photos) {
-    place.photos.forEach((photo) => {
-      html += `
-                <div class="gm-photo-item">
-
-                    <img
-                        src="${photo.getUrl({
-                          maxWidth: 1200,
-                        })}">
-
-                    <span class="gm-badge">
-                        Google
-                    </span>
-
-                </div>
-            `;
+  // Nút tìm kiếm
+  const findBtn = document.getElementById("find-btn");
+  if (findBtn) {
+    findBtn.addEventListener("click", function () {
+      searchPlaces();
     });
   }
 
-  uploads.forEach((item) => {
-    html += `
-            <div class="gm-photo-item">
-
-                <img
-                    src="${item.url}">
-
-                <span
-                    class="gm-badge gm-user">
-
-                    User
-
-                </span>
-
-            </div>
-        `;
-  });
-
-  container.innerHTML = html;
-}
-function normalizeSearch() {
-  return document.getElementById("pac-input").value.trim();
-}
-
-/* Dialog Video */
-document.addEventListener("click", function (e) {
-  const videoBtn = e.target.closest(".gm-video-btn");
-
-  if (!videoBtn) {
-    return;
-  }
-
-  const placeId = videoBtn.dataset.placeid;
-
-  openPlaceVideoDialog(placeId);
-});
-
-/* Dialog Picture */
-document.addEventListener("click", function (e) {
-  const pictureBtn = e.target.closest(".gm-picture-btn");
-
-  if (!pictureBtn) {
-    return;
-  }
-
-  const placeId = pictureBtn.dataset.placeid;
-
-  openPlacePictureDialog(placeId);
-});
-
-/* Open Video */
-function openPlaceVideoDialog(placeId) {
-  const dialog = document.getElementById("gmVideoDialog");
-
-  dialog.dataset.placeid = placeId;
-
-  dialog.classList.add("show");
-
-  document.getElementById("gmVideoContent").innerHTML = `
-        <div class="gm-empty">
-            Loading videos...
-        </div>
-    `;
-
-  console.log("Open Video Dialog:", placeId);
-
-  loadPlaceVideos(placeId);
-}
-
-/* Open Picture */
-function openPlacePictureDialog(placeId) {
-  const dialog = document.getElementById("gmPictureDialog");
-
-  dialog.dataset.placeid = placeId;
-
-  dialog.classList.add("show");
-
-  document.getElementById("gmPictureContent").innerHTML = `
-        <div class="gm-empty">
-            Loading pictures...
-        </div>
-    `;
-
-  console.log("Open Picture Dialog:", placeId);
-
-  loadPlacePhotos(placeId);
-}
-document.addEventListener("click", function (e) {
-  if (e.target.id === "gmPictureClose" || e.target.closest("#gmPictureClose")) {
-    document.getElementById("gmPictureDialog").classList.remove("show");
-  }
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-  document
-    .getElementById("pac-input")
-    .addEventListener("keypress", function (e) {
+  // Enter trong input search
+  const pacInput = document.getElementById("pac-input");
+  if (pacInput) {
+    pacInput.addEventListener("keypress", function (e) {
       if (e.key === "Enter") {
         searchPlaces();
       }
     });
-});
-
-/* Upload file */
-document.addEventListener("click", function (e) {
-  if (
-    e.target.id === "gmUploadPhotoBtn" ||
-    e.target.closest("#gmUploadPhotoBtn")
-  ) {
-    // Chưa đăng nhập
-    if (!gmUserLoggedIn) {
-      showLoginRequiredDialog();
-      return;
-    }
-
-    // Đã đăng nhập
-    const fileInput = document.getElementById("gmUploadPhotoFile");
-
-    if (!fileInput) {
-      console.error("gmUploadPhotoFile not found");
-      return;
-    }
-
-    fileInput.click();
-  }
-});
-
-const uploadInput = document.getElementById("gmUploadPhotoFile");
-if (uploadInput) {
-  document
-    .getElementById("gmUploadPhotoFile")
-    .addEventListener("change", function () {
-      const file = this.files[0];
-
-      if (!file) {
-        return;
-      }
-
-      const placeId =
-        document.getElementById("gmPictureDialog").dataset.placeid;
-
-      const formData = new FormData();
-
-      formData.append("action", "upload_place_photo");
-
-      formData.append("place_id", placeId);
-
-      formData.append("photo", file);
-
-      fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-        method: "POST",
-        body: formData,
-      })
-        .then((r) => r.json())
-        .then((res) => {
-          if (res.success) {
-            loadPlacePhotos(placeId);
-          } else {
-            alert(res.data);
-          }
-        });
-    });
-}
-
-// document.getElementById("ai-close").addEventListener("click", function () {
-
-//     document.getElementById("ai-result-panel").style.display = "none";
-
-//     document.getElementById("ai-loading").style.display = "none";
-
-//     document.getElementById("ai-result-content").innerHTML = "";
-
-// });
-
-document.addEventListener("DOMContentLoaded", function () {
-  const aiButton = document.getElementById("ai-search-btn");
-  const searchInput = document.getElementById("pac-input");
-  const query = searchInput?.value.trim() || "";
-
-  const aiPanel = document.getElementById("ai-result-panel");
-  const aiContent = document.getElementById("ai-result-content");
-  const closeButton = document.getElementById("close-ai-result");
-
-  if (!searchInput) {
-    return;
   }
 
-  searchInput.focus();
-
-  if (!aiButton) {
-    console.warn("ai-search-btn not found");
-    return;
-  }
-
-  /*
-   * CLICK SEARCH WITH GEMINI
-   */
-  aiButton.addEventListener("click", function (e) {
-    e.preventDefault();
-
-    const searchInput = document.getElementById("pac-input");
-
-    const checksearchInput = searchInput?.value?.trim() || "";
-
-    /*
-     * Không có nội dung
-     */
-    if (!checksearchInput) {
-      alert("Please enter search content.");
-
-      if (searchInput) {
-        searchInput.focus();
-      }
-
-      // Không hiện Gemini AI panel
-      return;
-    }
-
-    const resultWrapper = document.querySelector(".result-wrapper");
-
-    if (resultWrapper) {
-      resultWrapper.style.display = "none";
-    }
-
-    if (aiPanel) {
-      aiPanel.style.display = "block";
-    }
-
-    console.log("Gemini button clicked");
-
-    /*
-     * Lấy nội dung từ Search Google Maps
-     */
-    const query = searchInput ? searchInput.value.trim() : "";
-
-    console.log("AI Search:", query);
-
-    /*
-     * Không có nội dung
-     */
-    if (!query) {
-      if (searchInput) {
-        searchInput.focus();
-      }
-
-      return;
-    }
-
-    /*
-     * Hiện AI result panel
-     */
-    if (aiPanel) {
-      aiPanel.style.display = "block";
-    }
-
-    /*
-     * Loading
-     */
-    if (aiContent) {
-      aiContent.innerHTML = `
-                <div class="ai-loading">
-
-                    <i class="fa-solid fa-spinner fa-spin"></i>
-
-                    <span>
-                        Gemini is searching...
-                    </span>
-
-                </div>
-            `;
-    }
-
-    /*
-     * Disable button
-     */
-    aiButton.disabled = true;
-
-    /*
-     * CALL WORDPRESS AJAX
-     */
-    fetch("https://dev.pt-solution.vn/wp-admin/admin-ajax.php", {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-      },
-
-      body: new URLSearchParams({
-        action: "pt_ai_search",
-        query: query,
-      }),
-    })
-      /*
-       * Response
-       */
-      .then(function (response) {
-        return response.json();
-      })
-
-      /*
-       * Gemini result
-       */
-      .then(function (data) {
-        console.log("Gemini result:", data);
-
-        /*
-         * ERROR
-         */
-        if (!data.success) {
-          aiContent.innerHTML = `
-            <div class="ai-error">
-                <i class="fa-solid fa-circle-exclamation"></i>
-
-                <span>
-                    ${data.data?.message || "Gemini search failed."}
-                </span>
-            </div>
-        `;
-
-          // Đảm bảo panel vẫn hiện để thấy lỗi
-          if (aiPanel) {
-            aiPanel.style.display = "block";
-          }
-
-          return;
-        }
-
-        /*
-         * LẤY CONTENT GEMINI
-         */
-        const html = data.data?.html || "No result.";
-
-        /*
-         * HIỂN THỊ CONTENT
-         */
-        aiContent.innerHTML = html;
-
-        /*
-         * HIỆN PANEL
-         */
-        if (aiPanel) {
-          aiPanel.style.display = "block";
-        }
-      })
-
-      /*
-       * Network error
-       */
-      .catch(function (error) {
-        console.error("Gemini AJAX error:", error);
-
-        aiContent.innerHTML = `
-                <div class="ai-error">
-
-                    <i class="fa-solid fa-circle-exclamation"></i>
-
-                    <span>
-                        Unable to connect to Gemini.
-                    </span>
-
-                </div>
-            `;
-      })
-
-      /*
-       * Finish
-       */
-      .finally(function () {
-        aiButton.disabled = false;
-      });
-  });
-
-  /*
-   * CLOSE AI RESULT
-   */
-  if (closeButton) {
-    closeButton.addEventListener("click", function () {
-      if (aiPanel) {
-        aiPanel.style.display = "none";
-      }
+  // Đóng dialog Video an toàn
+  const videoCloseBtn = document.getElementById("gmVideoClose");
+  if (videoCloseBtn) {
+    videoCloseBtn.addEventListener("click", function () {
+      const dialog = document.getElementById("gmVideoDialog");
+      if (dialog) dialog.classList.remove("show");
+      const videoContent = document.getElementById("gmVideoContent");
+      if (videoContent) videoContent.innerHTML = "";
     });
   }
-});
-/* END GEMINI SEARCH */
 
-/* Close Dialog Video */
-document.getElementById("gmVideoClose").addEventListener("click", function () {
-  const dialog = document.getElementById("gmVideoDialog");
-
-  dialog.classList.remove("show");
-
-  // Xóa nội dung video khi đóng
-  document.getElementById("gmVideoContent").innerHTML = "";
-});
-
-/* Auto Load Image TODO*/
-
-function normalizeSearchQuery(query) {
-  if (!query) {
-    return "";
+  // Đóng dialog Picture an toàn
+  const pictureCloseBtn = document.getElementById("gmPictureClose");
+  if (pictureCloseBtn) {
+    pictureCloseBtn.addEventListener("click", function () {
+      const dialog = document.getElementById("gmPictureDialog");
+      if (dialog) dialog.classList.remove("show");
+    });
   }
-
-  let q = query.trim();
-
-  // =====================================================
-  // TP HỒ CHÍ MINH
-  // tphcm
-  // tp hcm
-  // tp. hcm
-  // hcmc
-  // =====================================================
-
-  q = q.replace(/\b(tp\.?\s*hcm|tphcm|hcmc)\b/gi, "TP Hồ Chí Minh");
-
-  // =====================================================
-  // QUẬN 1 -> 12
-  //
-  // q1
-  // q.1
-  // q 1
-  // =====================================================
-
-  for (let i = 1; i <= 12; i++) {
-    const regex = new RegExp(`\\bq\\.?\\s*${i}\\b`, "gi");
-
-    q = q.replace(regex, `Quận ${i}`);
-  }
-
-  // =====================================================
-  // QUẬN
-  //
-  // quan 1 -> Quận 1
-  // =====================================================
-
-  q = q.replace(/\bquan\s+(\d+)\b/gi, "Quận $1");
-
-  // =====================================================
-  // PHƯỜNG
-  //
-  // p1
-  // p.1
-  // p 1
-  // phuong 1
-  // =====================================================
-
-  q = q.replace(/\bp\.?\s*(\d+)\b/gi, "Phường $1");
-
-  q = q.replace(/\bphuong\s+(\d+)\b/gi, "Phường $1");
-
-  // =====================================================
-  // HUYỆN
-  //
-  // h1
-  // h.1
-  // h 1
-  // huyen 1
-  // =====================================================
-
-  q = q.replace(/\bh\.?\s*(\d+)\b/gi, "Huyện $1");
-
-  q = q.replace(/\bhuyen\s+(\d+)\b/gi, "Huyện $1");
-
-  // =====================================================
-  // THÀNH PHỐ THỦ ĐỨC
-  // =====================================================
-
-  q = q.replace(/\btp\.?\s*thu\s*duc\b/gi, "Thành phố Thủ Đức");
-
-  // =====================================================
-  // XÃ
-  // =====================================================
-
-  q = q.replace(/\bxa\s+/gi, "Xã ");
-
-  q = q.replace(/\bx\.\s+/gi, "Xã ");
-
-  // =====================================================
-  // THỊ TRẤN
-  // tt / tt.
-  // =====================================================
-
-  q = q.replace(/\btt\.?\s+/gi, "Thị trấn ");
-
-  // =====================================================
-  // THỊ XÃ
-  // tx / tx.
-  // =====================================================
-
-  q = q.replace(/\btx\.?\s+/gi, "Thị xã ");
-
-  // =====================================================
-  // MỘT SỐ THÀNH PHỐ VIẾT TẮT
-  // =====================================================
-
-  const cityAliases = {
-    hn: "Hà Nội",
-    hanoi: "Hà Nội",
-
-    dn: "Đà Nẵng",
-    danang: "Đà Nẵng",
-
-    hp: "Hải Phòng",
-    haiphong: "Hải Phòng",
-
-    ct: "Cần Thơ",
-    cantho: "Cần Thơ",
-  };
-
-  // Chỉ thay khi toàn bộ query là alias
-
-  const lower = q.toLowerCase();
-
-  if (cityAliases[lower]) {
-    q = cityAliases[lower];
-  }
-
-  // =====================================================
-  // CLEAN
-  // =====================================================
-
-  q = q.replace(/\s+/g, " ").trim();
-
-  return q;
-}
-
-function showLoginRequiredDialog() {
-  const dialog = document.getElementById("gmLoginRequiredDialog");
-
-  if (!dialog) {
-    console.error("gmLoginRequiredDialog not found");
-    return;
-  }
-
-  // Lưu trạng thái trước khi login
-  sessionStorage.setItem("gm_login_from_upload", "1");
-  sessionStorage.setItem("gm_upload_modal_open", "1");
-
-  dialog.style.display = "flex";
-}
-
-
-function hideLoginRequiredDialog() {
-  const dialog = document.getElementById("gmLoginRequiredDialog");
-
-  if (!dialog) {
-    return;
-  }
-
-  dialog.style.display = "none";
-}
-
-
-document.addEventListener("click", function (e) {
-
-  if (e.target.closest("#gmLoginDialogClose")) {
-    hideLoginRequiredDialog();
-  }
-
-  if (e.target.closest("#gmLoginDialogCancel")) {
-    hideLoginRequiredDialog();
-  }
-
 });
