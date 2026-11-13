@@ -171,7 +171,7 @@
 
     async function startLocalCameraPreview() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showToast('Trình duyệt không hỗ trợ truy cập Camera/Microphone.');
+            showToast('Your browser does not support Camera/Microphone access.');
             return null;
         }
         try {
@@ -194,7 +194,7 @@
             return stream;
         } catch (err) {
             console.error('Camera preview error:', err);
-            showToast('Không thể mở Camera/Mic: ' + (err.message || 'Vui lòng cấp quyền truy cập'));
+            showToast('Cannot access Camera/Microphone: ' + (err.message || 'Please grant permission'));
             return null;
         }
     }
@@ -235,7 +235,7 @@
 
         const res = await fetch(url.toString(), { credentials: 'same-origin' });
         if (!res.ok) {
-            throw new Error('Không lấy được LiveKit token (' + res.status + ')');
+            throw new Error('Failed to fetch LiveKit token (' + res.status + ')');
         }
         return await res.json();
     }
@@ -245,7 +245,7 @@
             if (typeof window.openLoginModal === 'function') {
                 window.openLoginModal();
             } else {
-                showToast('Vui lòng đăng nhập để bắt đầu phát trực tiếp (Go Live).');
+                showToast('Please log in to start a livestream (Go Live).');
             }
             return;
         }
@@ -253,11 +253,11 @@
         const myRoom = cfg.userRoom || ('channel-' + (cfg.userId || 'host'));
         state.roomName = myRoom;
 
-        const streamTitle = (els.streamTitleInput && els.streamTitleInput.value.trim()) || (cfg.userName + ' đang phát trực tiếp');
-        const streamCategory = (els.streamCategorySelect && els.streamCategorySelect.value) || 'Giao lưu';
+        const streamTitle = (els.streamTitleInput && els.streamTitleInput.value.trim()) || ((cfg.userName || 'Host') + ' is live now');
+        const streamCategory = (els.streamCategorySelect && els.streamCategorySelect.value) || 'Talk & Hangout';
 
         if (els.startLiveBtn) els.startLiveBtn.disabled = true;
-        updateStatusUI(false, 'ĐANG KẾT NỐI...');
+        updateStatusUI(false, 'CONNECTING...');
 
         // Ensure local camera stream is ready first so broadcaster always sees video immediately
         if (!state.localStream) {
@@ -352,10 +352,10 @@
 
         appendSystemChatMessage(
             connectedToLiveKit
-                ? '🎥 Bạn đã bắt đầu phát trực tiếp qua LiveKit Server!'
-                : '🎥 Bạn đang phát trực tiếp (Chế độ Camera Studio Trực Tiếp)!'
+                ? '🎥 You are now live via LiveKit Server!'
+                : '🎥 You are now live (Direct Camera Studio Mode)!'
         );
-        showToast('Đã bắt đầu phát trực tiếp!');
+        showToast('Livestream started!');
 
         startHeartbeat();
     }
@@ -400,13 +400,13 @@
             }
         } catch (e) {}
 
-        appendSystemChatMessage('⏹ Phiên phát trực tiếp đã kết thúc.');
-        showToast('Đã kết thúc phát trực tiếp.');
+        appendSystemChatMessage('⏹ The livestream session has ended.');
+        showToast('Livestream ended.');
     }
 
     async function joinRoomAsViewer(roomName, streamMeta = null) {
         if (state.isLive && state.mode === 'host') {
-            showToast('Hãy kết thúc phiên Live của bạn trước khi chuyển kênh.');
+            showToast('Please end your active livestream before switching channels.');
             return;
         }
 
@@ -416,7 +416,7 @@
 
         if (streamMeta) {
             state.currentHostInfo = streamMeta;
-            if (els.streamTitleDisplay) els.streamTitleDisplay.textContent = streamMeta.title || 'Kênh Livestream';
+            if (els.streamTitleDisplay) els.streamTitleDisplay.textContent = streamMeta.title || 'Livestream Channel';
             if (els.streamerName) els.streamerName.textContent = streamMeta.host_name || 'Streamer';
             if (els.streamCategoryDisplay) els.streamCategoryDisplay.textContent = streamMeta.category || 'Livestream';
             if (els.streamerAvatar && streamMeta.host_avatar) els.streamerAvatar.src = streamMeta.host_avatar;
@@ -429,7 +429,7 @@
         if (els.chatMessages) {
             els.chatMessages.innerHTML = '';
         }
-        appendSystemChatMessage(`👋 Đã tham gia phòng chat #${roomName}`);
+        appendSystemChatMessage(`👋 Joined chat room #${roomName}`);
         fetchChatMessages(true);
 
         // Highlight active card
@@ -554,9 +554,9 @@
             els.toggleCamBtn.classList.toggle('is-off', !state.camEnabled);
             els.toggleCamBtn.innerHTML = state.camEnabled
                 ? '<i class="fa-solid fa-video"></i> <span>Camera</span>'
-                : '<i class="fa-solid fa-video-slash"></i> <span>Tắt Cam</span>';
+                : '<i class="fa-solid fa-video-slash"></i> <span>Camera Off</span>';
         }
-        showToast(state.camEnabled ? 'Đã bật Camera' : 'Đã tạm tắt Camera');
+        showToast(state.camEnabled ? 'Camera turned on' : 'Camera turned off');
     }
 
     async function toggleMicrophone() {
@@ -569,15 +569,15 @@
         if (els.toggleMicBtn) {
             els.toggleMicBtn.classList.toggle('is-off', !state.micEnabled);
             els.toggleMicBtn.innerHTML = state.micEnabled
-                ? '<i class="fa-solid fa-microphone"></i> <span>Micro</span>'
-                : '<i class="fa-solid fa-microphone-slash"></i> <span>Tắt Mic</span>';
+                ? '<i class="fa-solid fa-microphone"></i> <span>Microphone</span>'
+                : '<i class="fa-solid fa-microphone-slash"></i> <span>Muted</span>';
         }
-        showToast(state.micEnabled ? 'Đã bật Microphone' : 'Đã tắt tiếng Microphone');
+        showToast(state.micEnabled ? 'Microphone unmuted' : 'Microphone muted');
     }
 
     async function toggleScreenShare() {
         if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-            showToast('Trình duyệt của bạn không hỗ trợ chia sẻ màn hình.');
+            showToast('Your browser does not support screen sharing.');
             return;
         }
 
@@ -591,7 +591,7 @@
             if (state.localStream) {
                 attachMediaStreamToStage(state.localStream, true, false);
             }
-            showToast('Đã dừng chia sẻ màn hình.');
+            showToast('Screen sharing stopped.');
             return;
         }
 
@@ -622,7 +622,7 @@
                 await state.lkRoom.localParticipant.publishTrack(videoTrack);
             }
 
-            showToast('Đang chia sẻ màn hình!');
+            showToast('Sharing screen!');
         } catch (err) {
             console.warn('Screen share cancelled:', err);
         }
@@ -652,13 +652,13 @@
 
             if (!state.isLive && !state.isPreviewing) {
                 if (els.standbyOverlay) els.standbyOverlay.classList.remove('is-hidden');
-                if (els.standbyTitle) els.standbyTitle.textContent = 'Phòng Studio Phát Trực Tiếp (Go Live)';
+                if (els.standbyTitle) els.standbyTitle.textContent = 'Livestream Studio (Go Live)';
                 if (els.standbyDesc) {
                     els.standbyDesc.textContent =
-                        'Kiểm tra Camera & Microphone với nút "Xem trước Camera" hoặc bấm "Bắt đầu Phát Trực Tiếp" để lên sóng ngay.';
+                        'Test your Camera & Microphone with "Camera Preview" or click "Start Live" to begin broadcasting right away.';
                 }
                 if (els.standbyPrimaryBtn) {
-                    els.standbyPrimaryBtn.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Bắt đầu Phát Trực Tiếp';
+                    els.standbyPrimaryBtn.innerHTML = '<i class="fa-solid fa-tower-broadcast"></i> Start Livestream';
                 }
             }
             populateDevices();
@@ -667,13 +667,13 @@
                 stopLocalStreams();
                 if (els.videoMount) els.videoMount.innerHTML = '';
                 if (els.standbyOverlay) els.standbyOverlay.classList.remove('is-hidden');
-                if (els.standbyTitle) els.standbyTitle.textContent = 'Chào mừng đến với Kênh Livestream Video';
+                if (els.standbyTitle) els.standbyTitle.textContent = 'Welcome to the Video Livestream Channel';
                 if (els.standbyDesc) {
                     els.standbyDesc.textContent =
-                        'Chọn một kênh đang phát trực tiếp bên dưới để xem hoặc chuyển sang chế độ "Phát Trực Tiếp (Go Live)" để tạo phòng live của bạn.';
+                        'Select an active channel below to watch, or switch to "Go Live" mode to start your own broadcast.';
                 }
                 if (els.standbyPrimaryBtn) {
-                    els.standbyPrimaryBtn.innerHTML = '<i class="fa-solid fa-video"></i> Phát Trực Tiếp Ngay';
+                    els.standbyPrimaryBtn.innerHTML = '<i class="fa-solid fa-video"></i> Go Live Now';
                 }
             }
         }
@@ -726,7 +726,7 @@
             id: msgId,
             type: 'chat',
             room: state.roomName,
-            user: cfg.userName || 'Khách',
+            user: cfg.userName || 'Guest',
             avatar: cfg.userAvatar || '',
             text: trimmed,
             time: nowStr,
@@ -833,7 +833,7 @@
         if (list.length === 0) {
             els.streamsGrid.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align:center; padding: 28px; color: var(--ptlive-muted);">
-                    Chưa có kênh nào thuộc danh mục này. Hãy bấm <b>Phát Trực Tiếp (Go Live)</b> để mở kênh đầu tiên!
+                    No channels found in this category yet. Click <b>Go Live</b> to start the first broadcast!
                 </div>
             `;
             return;
@@ -874,7 +874,7 @@
                     switchMode('watch');
                 }
                 joinRoomAsViewer(targetRoom, found || null);
-                showToast('Đang chuyển tới kênh: ' + ((found && found.title) || targetRoom));
+                showToast('Switched to channel: ' + ((found && found.title) || targetRoom));
             });
         });
     }
@@ -940,7 +940,7 @@
         if (els.previewBtn) {
             els.previewBtn.addEventListener('click', async () => {
                 await startLocalCameraPreview();
-                showToast('Đang hiển thị Camera xem trước.');
+                showToast('Camera preview started.');
             });
         }
         if (els.startLiveBtn) {
@@ -990,8 +990,8 @@
                 shareUrl.searchParams.set('room', state.roomName);
                 navigator.clipboard
                     .writeText(shareUrl.toString())
-                    .then(() => showToast('Đã sao chép đường dẫn kênh Livestream!'))
-                    .catch(() => showToast('Link phòng: ' + shareUrl.toString()));
+                    .then(() => showToast('Livestream channel link copied to clipboard!'))
+                    .catch(() => showToast('Channel link: ' + shareUrl.toString()));
             });
         }
 
@@ -999,9 +999,9 @@
             els.followBtn.addEventListener('click', () => {
                 const isFollowing = els.followBtn.classList.toggle('btn-accent');
                 els.followBtn.innerHTML = isFollowing
-                    ? '<i class="fa-solid fa-check"></i> Đang theo dõi'
-                    : '<i class="fa-solid fa-heart"></i> Theo dõi';
-                showToast(isFollowing ? 'Đã theo dõi kênh Livestream!' : 'Đã bỏ theo dõi kênh.');
+                    ? '<i class="fa-solid fa-check"></i> Following'
+                    : '<i class="fa-solid fa-heart"></i> Follow';
+                showToast(isFollowing ? 'Following this channel!' : 'Unfollowed channel.');
             });
         }
 

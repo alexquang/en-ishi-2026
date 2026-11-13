@@ -2145,12 +2145,12 @@ function pt_get_active_livestreams_list()
 
     $result = array_values($cleaned);
 
-    // Bổ sung các kênh cộng đồng mặc định để người xem luôn có phòng giao lưu
+    // Default community channels so viewers always have active rooms to explore
     $default_channels = [
         [
             'room'        => 'enishi-main',
-            'title'       => 'En-Ishi Official Live - Giao lưu & Kết nối Cộng đồng',
-            'category'    => 'Giao lưu',
+            'title'       => 'En-Ishi Official Live - Community & Discovery',
+            'category'    => 'Talk & Hangout',
             'host_name'   => 'En-Ishi Official',
             'host_avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&auto=format&fit=crop&q=80',
             'thumb'       => 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=640&auto=format&fit=crop&q=80',
@@ -2159,7 +2159,7 @@ function pt_get_active_livestreams_list()
         ],
         [
             'room'        => 'tokyo-cafe-tour',
-            'title'       => 'Review Quán Cafe Acoustic & Không Gian Đẹp Cuối Tuần',
+            'title'       => 'Weekend Acoustic Cafe & Cozy Place Review',
             'category'    => 'Cafe & Review',
             'host_name'   => 'Hana Cafe Vlog',
             'host_avatar' => 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=160&auto=format&fit=crop&q=80',
@@ -2169,8 +2169,8 @@ function pt_get_active_livestreams_list()
         ],
         [
             'room'        => 'acoustic-night-live',
-            'title'       => 'Đêm Nhạc Acoustic Live & Yêu Cầu Bài Hát Trực Tiếp',
-            'category'    => 'Âm nhạc',
+            'title'       => 'Live Acoustic Music Night & Song Requests',
+            'category'    => 'Music',
             'host_name'   => 'Kenji Music',
             'host_avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&auto=format&fit=crop&q=80',
             'thumb'       => 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=640&auto=format&fit=crop&q=80',
@@ -2179,8 +2179,8 @@ function pt_get_active_livestreams_list()
         ],
         [
             'room'        => 'street-food-discovery',
-            'title'       => 'Khám Phá Ẩm Thực Đường Phố & Quán Ngon Quanh Đây',
-            'category'    => 'Ẩm thực',
+            'title'       => 'Street Food Discovery & Best Local Spots',
+            'category'    => 'Food & Life',
             'host_name'   => 'Minh Foodie',
             'host_avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&auto=format&fit=crop&q=80',
             'thumb'       => 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=640&auto=format&fit=crop&q=80',
@@ -2208,8 +2208,8 @@ function pt_live_start_stream_ajax()
 
     $user     = wp_get_current_user();
     $room     = sanitize_text_field(wp_unslash($_POST['room'] ?? ('channel-' . $user->ID)));
-    $title    = sanitize_text_field(wp_unslash($_POST['title'] ?? ($user->display_name . ' đang phát trực tiếp')));
-    $category = sanitize_text_field(wp_unslash($_POST['category'] ?? 'Giao lưu'));
+    $title    = sanitize_text_field(wp_unslash($_POST['title'] ?? ($user->display_name . ' is live now')));
+    $category = sanitize_text_field(wp_unslash($_POST['category'] ?? 'Talk & Hangout'));
     $avatar   = get_avatar_url($user->ID, ['size' => 128]);
 
     $stored = get_option('pt_active_livestreams', []);
@@ -2296,7 +2296,7 @@ function pt_live_send_chat_ajax()
         $author = $u->display_name ?: $u->user_login;
         $avatar = get_avatar_url($u->ID, ['size' => 64]);
     } else {
-        $author = 'Khách';
+        $author = 'Guest';
         $avatar = 'https://www.gravatar.com/avatar/?d=mp&s=64';
     }
 

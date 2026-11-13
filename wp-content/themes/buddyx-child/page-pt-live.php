@@ -1,7 +1,7 @@
 <?php
 /**
  * Template Name: Live Stream
- * Description: Trang Livestream cho menu Channel -> Video (En-Ishi Live Studio & Viewer)
+ * Description: Livestream page for Channel -> Video (En-Ishi Live Studio & Viewer)
  */
 
 defined('ABSPATH') || exit;
@@ -11,7 +11,7 @@ get_header();
 $is_logged_in = is_user_logged_in();
 $current_user = wp_get_current_user();
 $user_id      = $is_logged_in ? (int) $current_user->ID : 0;
-$user_name    = $is_logged_in ? ($current_user->display_name ?: $current_user->user_login) : 'Khách';
+$user_name    = $is_logged_in ? ($current_user->display_name ?: $current_user->user_login) : 'Guest';
 $user_avatar  = $is_logged_in ? get_avatar_url($user_id, ['size' => 96]) : 'https://www.gravatar.com/avatar/?d=mp&s=96';
 $user_room    = $is_logged_in ? ('channel-' . sanitize_key($current_user->user_login ?: $user_id)) : 'enishi-main';
 
@@ -28,8 +28,8 @@ if ($requested_room === '') {
 
 $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
     'room'        => $requested_room,
-    'title'       => 'En-Ishi Official Live Channel - Giao lưu & Khám phá',
-    'category'    => 'Giao lưu',
+    'title'       => 'En-Ishi Official Live Channel - Community & Discovery',
+    'category'    => 'Talk & Hangout',
     'host_name'   => 'En-Ishi Channel',
     'host_avatar' => $user_avatar,
     'viewers'     => 1,
@@ -52,25 +52,25 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                 </span>
                 <div class="ptlive-brand-title">
                     <h1>Channel &rarr; Video Livestream</h1>
-                    <p>Phát trực tiếp &amp; giao lưu thời gian thực cùng cộng đồng En-Ishi</p>
+                    <p>Real-time livestreaming &amp; community interaction on En-Ishi</p>
                 </div>
             </div>
 
             <div class="ptlive-mode-tabs" role="tablist">
                 <button type="button" id="ptlive-mode-watch" class="ptlive-mode-btn <?php echo $requested_mode !== 'host' ? 'is-active' : ''; ?>">
                     <i class="fa-solid fa-tv"></i>
-                    <span>Xem Livestream</span>
+                    <span>Watch Livestream</span>
                 </button>
                 <button type="button" id="ptlive-mode-host" class="ptlive-mode-btn mode-host <?php echo $requested_mode === 'host' ? 'is-active' : ''; ?>">
                     <i class="fa-solid fa-tower-broadcast"></i>
-                    <span>Phát Trực Tiếp (Go Live)</span>
+                    <span>Go Live</span>
                 </button>
             </div>
 
             <div class="ptlive-top-stats">
                 <div class="ptlive-stat-pill">
                     <i class="fa-solid fa-signal"></i>
-                    <span>Đang phát: <strong id="ptlive-active-total-count"><?php echo count($active_streams); ?></strong> kênh</span>
+                    <span>Live Now: <strong id="ptlive-active-total-count"><?php echo count($active_streams); ?></strong> channels</span>
                 </div>
                 <div class="ptlive-stat-pill">
                     <i class="fa-solid fa-hashtag"></i>
@@ -92,17 +92,17 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                             <span id="ptlive-status-badge" class="ptlive-status-badge">
                                 <i class="fa-solid fa-circle-pause"></i> OFFLINE
                             </span>
-                            <span class="ptlive-hud-pill" title="Số người đang xem">
+                            <span class="ptlive-hud-pill" title="Viewers">
                                 <i class="fa-solid fa-eye"></i>
                                 <span id="ptlive-viewer-count"><?php echo esc_html((string) ($initial_host['viewers'] ?? 1)); ?></span>
                             </span>
-                            <span class="ptlive-hud-pill" title="Thời lượng phát">
+                            <span class="ptlive-hud-pill" title="Stream Duration">
                                 <i class="fa-regular fa-clock"></i>
                                 <span id="ptlive-uptime">00:00</span>
                             </span>
                         </div>
                         <div class="ptlive-hud-right">
-                            <button type="button" id="ptlive-btn-fullscreen" class="ptlive-hud-pill" style="cursor:pointer;" title="Toàn màn hình">
+                            <button type="button" id="ptlive-btn-fullscreen" class="ptlive-hud-pill" style="cursor:pointer;" title="Fullscreen">
                                 <i class="fa-solid fa-expand"></i>
                             </button>
                         </div>
@@ -116,13 +116,13 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                         <div class="ptlive-standby-icon">
                             <i class="fa-solid fa-tower-broadcast"></i>
                         </div>
-                        <h3 id="ptlive-standby-title">Chào mừng đến với Kênh Livestream Video</h3>
+                        <h3 id="ptlive-standby-title">Welcome to the Video Livestream Channel</h3>
                         <p id="ptlive-standby-desc">
-                            Chọn một kênh đang phát trực tiếp bên dưới để xem hoặc bấm <strong>Phát Trực Tiếp (Go Live)</strong> để bắt đầu buổi phát sóng của riêng bạn.
+                            Select an active channel below to watch, or click <strong>Go Live</strong> to start your own broadcast.
                         </p>
                         <div class="ptlive-standby-actions">
                             <button type="button" id="ptlive-standby-primary-btn" class="ptlive-btn btn-primary">
-                                <i class="fa-solid fa-video"></i> Phát Trực Tiếp Ngay
+                                <i class="fa-solid fa-video"></i> Go Live Now
                             </button>
                         </div>
                     </div>
@@ -137,15 +137,15 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                     <div id="ptlive-host-controls" class="ptlive-controls-group" style="display: none;">
                         <button type="button" id="ptlive-btn-preview" class="ptlive-btn">
                             <i class="fa-solid fa-camera"></i>
-                            <span>Xem trước Camera</span>
+                            <span>Camera Preview</span>
                         </button>
                         <button type="button" id="ptlive-btn-start" class="ptlive-btn btn-primary">
                             <i class="fa-solid fa-tower-broadcast"></i>
-                            <span>Bắt đầu Live</span>
+                            <span>Start Live</span>
                         </button>
                         <button type="button" id="ptlive-btn-stop" class="ptlive-btn btn-danger" style="display: none;">
                             <i class="fa-solid fa-stop"></i>
-                            <span>Kết thúc Live</span>
+                            <span>End Live</span>
                         </button>
                         <button type="button" id="ptlive-btn-cam" class="ptlive-btn">
                             <i class="fa-solid fa-video"></i>
@@ -153,22 +153,22 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                         </button>
                         <button type="button" id="ptlive-btn-mic" class="ptlive-btn">
                             <i class="fa-solid fa-microphone"></i>
-                            <span>Micro</span>
+                            <span>Microphone</span>
                         </button>
                         <button type="button" id="ptlive-btn-screen" class="ptlive-btn">
                             <i class="fa-solid fa-desktop"></i>
-                            <span>Chia sẻ màn hình</span>
+                            <span>Share Screen</span>
                         </button>
                     </div>
 
                     <!-- Quick Reactions Bar (Available to both Viewers & Host) -->
                     <div class="ptlive-reaction-bar">
-                        <span style="font-size:12px; color:var(--ptlive-muted); margin-right:4px;">Thả cảm xúc:</span>
-                        <button type="button" class="ptlive-react-btn" data-emoji="❤️" title="Thả tim">❤️</button>
-                        <button type="button" class="ptlive-react-btn" data-emoji="🔥" title="Cháy quá">🔥</button>
-                        <button type="button" class="ptlive-react-btn" data-emoji="👏" title="Vỗ tay">👏</button>
-                        <button type="button" class="ptlive-react-btn" data-emoji="🎉" title="Chúc mừng">🎉</button>
-                        <button type="button" class="ptlive-react-btn" data-emoji="☕" title="Cafe">☕</button>
+                        <span style="font-size:12px; color:var(--ptlive-muted); margin-right:4px;">Reactions:</span>
+                        <button type="button" class="ptlive-react-btn" data-emoji="❤️" title="Love">❤️</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="🔥" title="Fire">🔥</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="👏" title="Clap">👏</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="🎉" title="Party">🎉</button>
+                        <button type="button" class="ptlive-react-btn" data-emoji="☕" title="Coffee">☕</button>
                     </div>
                 </div>
 
@@ -189,10 +189,10 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
 
                     <div class="ptlive-info-actions">
                         <button type="button" id="ptlive-btn-follow" class="ptlive-btn">
-                            <i class="fa-solid fa-heart"></i> Theo dõi
+                            <i class="fa-solid fa-heart"></i> Follow
                         </button>
                         <button type="button" id="ptlive-btn-share-link" class="ptlive-btn">
-                            <i class="fa-solid fa-share-nodes"></i> Chia sẻ
+                            <i class="fa-solid fa-share-nodes"></i> Share
                         </button>
                     </div>
                 </div>
@@ -200,33 +200,33 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                 <!-- BROADCASTER STUDIO SETUP (Visible in Host Mode) -->
                 <div id="ptlive-studio-setup" class="ptlive-studio-setup" style="display: none;">
                     <div class="ptlive-studio-setup-head">
-                        <h4><i class="fa-solid fa-sliders"></i> Cấu hình Phòng Phát Trực Tiếp (Livestream Studio)</h4>
+                        <h4><i class="fa-solid fa-sliders"></i> Livestream Studio Setup</h4>
                     </div>
                     <div class="ptlive-setup-grid">
                         <div class="ptlive-field">
-                            <label for="ptlive-input-title">Tiêu đề buổi phát trực tiếp</label>
-                            <input type="text" id="ptlive-input-title" placeholder="Nhập tiêu đề livestream của bạn..." value="<?php echo esc_attr($user_name . ' đang phát trực tiếp'); ?>" />
+                            <label for="ptlive-input-title">Stream Title</label>
+                            <input type="text" id="ptlive-input-title" placeholder="Enter your livestream title..." value="<?php echo esc_attr($user_name . ' is live now'); ?>" />
                         </div>
                         <div class="ptlive-field">
-                            <label for="ptlive-input-category">Chủ đề / Danh mục</label>
+                            <label for="ptlive-input-category">Category / Topic</label>
                             <select id="ptlive-input-category">
-                                <option value="Giao lưu">Giao lưu &amp; Trò chuyện</option>
-                                <option value="Cafe & Review">Cafe &amp; Review Địa điểm</option>
-                                <option value="Âm nhạc">Âm nhạc &amp; Giải trí</option>
-                                <option value="Ẩm thực">Ẩm thực &amp; Đời sống</option>
-                                <option value="Sự kiện">Sự kiện nổi bật</option>
+                                <option value="Talk & Hangout">Talk &amp; Hangout</option>
+                                <option value="Cafe & Review">Cafe &amp; Place Review</option>
+                                <option value="Music">Music &amp; Entertainment</option>
+                                <option value="Food & Life">Food &amp; Lifestyle</option>
+                                <option value="Events">Featured Events</option>
                             </select>
                         </div>
                         <div class="ptlive-field">
-                            <label for="ptlive-select-camera">Thiết bị Camera</label>
+                            <label for="ptlive-select-camera">Camera Device</label>
                             <select id="ptlive-select-camera">
-                                <option value="">Camera mặc định</option>
+                                <option value="">Default Camera</option>
                             </select>
                         </div>
                         <div class="ptlive-field">
-                            <label for="ptlive-select-mic">Thiết bị Microphone</label>
+                            <label for="ptlive-select-mic">Microphone Device</label>
                             <select id="ptlive-select-mic">
-                                <option value="">Microphone mặc định</option>
+                                <option value="">Default Microphone</option>
                             </select>
                         </div>
                     </div>
@@ -236,13 +236,13 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
             <!-- RIGHT: REAL-TIME LIVE CHAT -->
             <aside class="ptlive-chat-card">
                 <div class="ptlive-chat-header">
-                    <h3><i class="fa-regular fa-comments"></i> Trò chuyện trực tiếp</h3>
+                    <h3><i class="fa-regular fa-comments"></i> Live Chat</h3>
                     <span id="ptlive-chat-room-tag" class="ptlive-chat-room-tag">#<?php echo esc_html($requested_room); ?></span>
                 </div>
 
                 <div id="ptlive-chat-messages" class="ptlive-chat-messages">
                     <div class="ptlive-chat-system">
-                        Chào mừng bạn đến với phòng chat trực tiếp! Hãy giữ thái độ văn minh, lịch sự.
+                        Welcome to the live chat room! Please be respectful and friendly.
                     </div>
                 </div>
 
@@ -252,7 +252,7 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                             type="text"
                             id="ptlive-chat-input"
                             class="ptlive-chat-input"
-                            placeholder="Nhập tin nhắn trò chuyện..."
+                            placeholder="Send a chat message..."
                             maxlength="300"
                         />
                         <button type="submit" class="ptlive-btn btn-accent">
@@ -267,14 +267,14 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
         <!-- DISCOVER ACTIVE LIVESTREAMS & CHANNELS -->
         <section class="ptlive-directory-section">
             <div class="ptlive-section-head">
-                <h2><i class="fa-solid fa-fire" style="color:var(--ptlive-red);"></i> Danh sách Kênh Video &amp; Livestream</h2>
+                <h2><i class="fa-solid fa-fire" style="color:var(--ptlive-red);"></i> Live Video &amp; Stream Channels</h2>
                 <div class="ptlive-filter-pills">
-                    <button type="button" class="ptlive-filter-pill is-active" data-category="all">Tất cả</button>
-                    <button type="button" class="ptlive-filter-pill" data-category="Giao lưu">Giao lưu</button>
+                    <button type="button" class="ptlive-filter-pill is-active" data-category="all">All</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Talk & Hangout">Talk &amp; Hangout</button>
                     <button type="button" class="ptlive-filter-pill" data-category="Cafe & Review">Cafe &amp; Review</button>
-                    <button type="button" class="ptlive-filter-pill" data-category="Âm nhạc">Âm nhạc</button>
-                    <button type="button" class="ptlive-filter-pill" data-category="Ẩm thực">Ẩm thực</button>
-                    <button type="button" class="ptlive-filter-pill" data-category="Sự kiện">Sự kiện</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Music">Music</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Food & Life">Food &amp; Life</button>
+                    <button type="button" class="ptlive-filter-pill" data-category="Events">Events</button>
                 </div>
             </div>
 
