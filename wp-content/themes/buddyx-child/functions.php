@@ -1492,6 +1492,19 @@ function pt_gtranslate_scripts() {
         'before'
     );
 
+    $server_country = '';
+    if (!empty($_SERVER['HTTP_CF_IPCOUNTRY'])) {
+        $server_country = strtoupper(sanitize_text_field(wp_unslash($_SERVER['HTTP_CF_IPCOUNTRY'])));
+    }
+
+    wp_localize_script(
+        'gtranslate-dropdown',
+        'ptGTranslateData',
+        [
+            'serverCountry' => $server_country,
+            'ajaxUrl'       => admin_url('admin-ajax.php')
+        ]
+    );
 
     /*
      * =====================================================
