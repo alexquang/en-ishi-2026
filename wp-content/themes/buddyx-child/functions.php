@@ -1489,7 +1489,7 @@ function pt_gtranslate_scripts() {
         get_stylesheet_directory_uri() .
         '/assets-enishi/js/dropdown.js',
         array(),
-        null,
+        filemtime(get_stylesheet_directory() . '/assets-enishi/js/dropdown.js'),
         true
     );
 
@@ -1536,7 +1536,7 @@ function pt_gtranslate_scripts() {
         get_stylesheet_directory_uri() .
         '/assets-enishi/js/gtranslate-gps.js',
         array('gtranslate-dropdown'),
-        null,
+        filemtime(get_stylesheet_directory() . '/assets-enishi/js/gtranslate-gps.js'),
         true
     );
 }

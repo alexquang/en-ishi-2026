@@ -159,16 +159,28 @@
             var teCombo;
             var sel=document.getElementsByTagName('select');
             for(var i=0;i<sel.length;i++)if(sel[i].className.indexOf('goog-te-combo')!=-1){teCombo=sel[i];break;}
-            if(document.getElementById('google_translate_element2')==null||document.getElementById('google_translate_element2').innerHTML.length==0||teCombo.length==0||teCombo.innerHTML.length==0){
-                setTimeout(function(){doGTranslate(lang_pair)},500)
+            if(document.getElementById('google_translate_element2')==null||document.getElementById('google_translate_element2').innerHTML.length==0||!teCombo||teCombo.length==0||teCombo.innerHTML.length==0){
+                setTimeout(function(){doGTranslate(lang_pair)},300)
             } else {
+                // Force Google Translate to re-translate if DOM is still in default language
+                if (teCombo.value === lang) {
+                    teCombo.value = default_language;
+                    fire_event(teCombo,'change');
+                }
                 teCombo.value=lang;
                 fire_event(teCombo,'change');
-                fire_event(teCombo,'change')
+                fire_event(teCombo,'change');
             }
         }
 
-        window.googleTranslateElementInit2=function(){new google.translate.TranslateElement({pageLanguage:default_language,autoDisplay:false},'google_translate_element2')};
+        window.googleTranslateElementInit2=function(){
+            new google.translate.TranslateElement({pageLanguage:default_language,autoDisplay:false},'google_translate_element2');
+            if(current_lang && current_lang != default_language) {
+                setTimeout(function(){
+                    doGTranslate(default_language + '|' + current_lang);
+                }, 150);
+            }
+        };
 
         if(current_lang != default_language)
             load_tlib();
