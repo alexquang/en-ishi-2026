@@ -13,7 +13,8 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 
 <div class="google-map-section">
 
-    <div class="google-map-container">
+    <div class="google-map-container" id="google-map-container">
+        <!-- Bộ lọc danh mục nhanh kiểu Google Maps -->
         <div class="top-categories">
 
             <button type="button" class="cat-btn" data-type="restaurant">
@@ -32,6 +33,22 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
                 🛍 Shopping
             </button>
 
+            <button type="button" class="cat-btn" data-type="gas_station">
+                ⛽ Gas
+            </button>
+
+            <button type="button" class="cat-btn" data-type="pharmacy">
+                💊 Pharmacy
+            </button>
+
+            <button type="button" class="cat-btn" data-type="atm">
+                🏧 ATM
+            </button>
+
+            <button type="button" class="cat-btn" data-type="parking">
+                🅿️ Parking
+            </button>
+
         </div>
 
         <div class="search-wrapper" id="search-wrapper">
@@ -41,8 +58,14 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
                     type="text"
                     placeholder="Search Google Maps"
                     autocomplete="off">
-                <button type="button" class="find-btn" id="find-btn" aria-label="Search">
+                <button type="button" class="clear-search-btn" id="clear-search-btn" title="Clear search" aria-label="Clear search" style="display: none;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <button type="button" class="find-btn" id="find-btn" title="Search" aria-label="Search">
                     <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+                <button type="button" class="directions-open-btn" id="directions-open-btn" title="Directions" aria-label="Directions">
+                    <i class="fa-solid fa-diamond-turn-right"></i>
                 </button>
                 <button type="button" class="ai-search-btn" id="ai-search-btn" title="Search with Gemini" aria-label="Search with Gemini">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -61,6 +84,66 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
                 <div id="gm-place-popup" class="gm-place-popup"></div>
 
                 <div id="result-panel">
+
+                    <!-- Bảng Chỉ đường (Directions Panel) kiểu Google Maps -->
+                    <div id="gm-directions-panel" class="gm-directions-panel" style="display: none;">
+                        <div class="gm-dir-header">
+                            <div class="gm-dir-modes">
+                                <button type="button" class="gm-dir-mode active" data-mode="DRIVING" title="Driving">
+                                    <i class="fa-solid fa-car"></i>
+                                </button>
+                                <button type="button" class="gm-dir-mode" data-mode="TWO_WHEELER" title="Motorcycle">
+                                    <i class="fa-solid fa-motorcycle"></i>
+                                </button>
+                                <button type="button" class="gm-dir-mode" data-mode="TRANSIT" title="Transit">
+                                    <i class="fa-solid fa-bus"></i>
+                                </button>
+                                <button type="button" class="gm-dir-mode" data-mode="WALKING" title="Walking">
+                                    <i class="fa-solid fa-person-walking"></i>
+                                </button>
+                                <button type="button" class="gm-dir-mode" data-mode="BICYCLING" title="Cycling">
+                                    <i class="fa-solid fa-bicycle"></i>
+                                </button>
+                            </div>
+                            <button type="button" id="gm-dir-close" class="gm-dir-close" title="Close directions" aria-label="Close directions">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <div class="gm-dir-inputs">
+                            <div class="gm-dir-icons">
+                                <i class="fa-regular fa-circle gm-dir-start-icon"></i>
+                                <span class="gm-dir-dots"></span>
+                                <i class="fa-solid fa-location-dot gm-dir-end-icon"></i>
+                            </div>
+                            <div class="gm-dir-fields">
+                                <div class="gm-dir-field-row">
+                                    <input type="text" id="gm-dir-origin" placeholder="Choose starting point, or click on the map..." autocomplete="off">
+                                    <button type="button" id="gm-dir-use-gps" class="gm-dir-gps-btn" title="Use my current location">
+                                        <i class="fa-solid fa-location-crosshairs"></i>
+                                    </button>
+                                </div>
+                                <div class="gm-dir-field-row">
+                                    <input type="text" id="gm-dir-dest" placeholder="Choose destination..." autocomplete="off">
+                                </div>
+                            </div>
+                            <button type="button" id="gm-dir-swap" class="gm-dir-swap-btn" title="Reverse starting point and destination">
+                                <i class="fa-solid fa-arrow-right-arrow-left fa-rotate-90"></i>
+                            </button>
+                        </div>
+
+                        <div class="gm-dir-actions">
+                            <button type="button" id="gm-dir-search-btn" class="gm-dir-submit-btn">
+                                <i class="fa-solid fa-route"></i> Get Directions
+                            </button>
+                            <button type="button" id="gm-dir-clear-btn" class="gm-dir-clear-route-btn">
+                                Clear
+                            </button>
+                        </div>
+
+                        <div id="gm-dir-summary" class="gm-dir-summary" style="display: none;"></div>
+                        <div id="gm-dir-steps" class="gm-dir-steps"></div>
+                    </div>
 
                     <div id="results" class="results-style"></div>
 
@@ -101,53 +184,74 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
             <!-- END GEMINI RESULT -->
 
         </div>
-    </div>
 
-    <div id="map"></div>
+        <div id="map"></div>
 
-    <div class="map-layers-control">
-        <button type="button" id="layers-toggle">
-            <i class="fa-solid fa-layer-group"></i>
-            Layers
-        </button>
+        <!-- Cụm nút điều khiển kiểu Google Maps góc phải dưới -->
+        <div class="gm-map-controls">
+            <button type="button" id="gm-my-location-btn" class="gm-control-btn" title="Your Location" aria-label="Your Location">
+                <i class="fa-solid fa-location-crosshairs"></i>
+            </button>
+            <div class="gm-zoom-group">
+                <button type="button" id="gm-zoom-in-btn" class="gm-control-btn" title="Zoom in" aria-label="Zoom in">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <button type="button" id="gm-zoom-out-btn" class="gm-control-btn" title="Zoom out" aria-label="Zoom out">
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+            </div>
+            <button type="button" id="gm-streetview-btn" class="gm-control-btn" title="Toggle Street View" aria-label="Toggle Street View">
+                <i class="fa-solid fa-street-view"></i>
+            </button>
+            <button type="button" id="gm-fullscreen-btn" class="gm-control-btn" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </div>
 
-        <div id="layers-menu">
-            <label>
-                <input type="checkbox" id="traffic-layer">
-                Traffic
-            </label>
+        <div class="map-layers-control">
+            <button type="button" id="layers-toggle">
+                <i class="fa-solid fa-layer-group"></i>
+                Layers
+            </button>
 
-            <label>
-                <input type="checkbox" id="transit-layer">
-                Transit
-            </label>
+            <div id="layers-menu">
+                <label>
+                    <input type="checkbox" id="traffic-layer">
+                    Traffic
+                </label>
 
-            <label>
-                <input type="checkbox" id="bike-layer">
-                Bicycle
-            </label>
+                <label>
+                    <input type="checkbox" id="transit-layer">
+                    Transit
+                </label>
 
-            <hr>
+                <label>
+                    <input type="checkbox" id="bike-layer">
+                    Bicycle
+                </label>
 
-            <label>
-                <input type="radio" name="maptype" value="roadmap" checked>
-                Roadmap
-            </label>
+                <hr>
 
-            <label>
-                <input type="radio" name="maptype" value="satellite">
-                Satellite
-            </label>
+                <label>
+                    <input type="radio" name="maptype" value="roadmap" checked>
+                    Roadmap
+                </label>
 
-            <label>
-                <input type="radio" name="maptype" value="hybrid">
-                Hybrid
-            </label>
+                <label>
+                    <input type="radio" name="maptype" value="satellite">
+                    Satellite
+                </label>
 
-            <label>
-                <input type="radio" name="maptype" value="terrain">
-                Terrain
-            </label>
+                <label>
+                    <input type="radio" name="maptype" value="hybrid">
+                    Hybrid
+                </label>
+
+                <label>
+                    <input type="radio" name="maptype" value="terrain">
+                    Terrain
+                </label>
+            </div>
         </div>
     </div>
 
@@ -199,6 +303,23 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 
     </div>
 
+</div>
+
+<!-- Lightbox xem ảnh phóng to -->
+<div id="gmLightboxDialog" class="gm-lightbox-dialog">
+    <button type="button" id="gmLightboxClose" class="gm-lightbox-close" aria-label="Close Lightbox">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
+    <button type="button" id="gmLightboxPrev" class="gm-lightbox-nav gm-lightbox-prev" aria-label="Previous Image">
+        <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <div class="gm-lightbox-content">
+        <img id="gmLightboxImg" src="" alt="Place photo">
+        <div id="gmLightboxCaption" class="gm-lightbox-caption"></div>
+    </div>
+    <button type="button" id="gmLightboxNext" class="gm-lightbox-nav gm-lightbox-next" aria-label="Next Image">
+        <i class="fa-solid fa-chevron-right"></i>
+    </button>
 </div>
 
 <!-- Dialog Video -->
