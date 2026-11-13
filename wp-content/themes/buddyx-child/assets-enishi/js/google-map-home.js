@@ -276,15 +276,37 @@ function searchPlaces(overrideKeyword) {
 function renderResults(results) {
   clearMarkers();
 
+  const searchWrapper = document.querySelector(".search-wrapper");
+  const resultWrapper = document.querySelector(".result-wrapper");
   const resultPanel = document.getElementById("result-panel");
   const toggleBtn = document.getElementById("toggle-results");
   const panel = document.getElementById("results");
+  const popup = document.getElementById("gm-place-popup");
 
+  if (searchWrapper) {
+    searchWrapper.classList.remove("collapsed");
+  }
+  if (resultWrapper) {
+    resultWrapper.style.display = "block";
+    resultWrapper.style.width = "400px";
+    resultWrapper.style.maxWidth = "400px";
+  }
+  if (popup) {
+    popup.classList.remove("show");
+    popup.style.display = "";
+  }
   if (resultPanel) {
     resultPanel.classList.add("show");
     resultPanel.style.display = "block";
   }
-  if (toggleBtn) toggleBtn.classList.add("show");
+  if (toggleBtn) {
+    toggleBtn.classList.add("show");
+    toggleBtn.style.position = "fixed";
+    toggleBtn.style.setProperty("left", "400px", "important");
+    toggleBtn.style.transform = "none";
+    const icon = toggleBtn.querySelector("i");
+    if (icon) icon.className = "fa-solid fa-chevron-left";
+  }
   if (!panel) return;
 
   panel.innerHTML = "";
@@ -306,13 +328,6 @@ function renderResults(results) {
 
     mapMarker.addListener("click", function () {
       loadPlaceDetails(place.place_id, mapMarker);
-      setTimeout(function () {
-        if (toggleBtn) {
-          toggleBtn.style.position = "fixed";
-          toggleBtn.style.setProperty("left", "765px", "important");
-          toggleBtn.style.transform = "none";
-        }
-      }, 100);
     });
 
     markers.push(mapMarker);
@@ -501,17 +516,43 @@ function loadPlaceDetails(placeId, clickedMarker) {
         </div>
       `;
 
+      const searchWrapper = document.querySelector(".search-wrapper");
+      if (searchWrapper) {
+        searchWrapper.classList.remove("collapsed");
+      }
+
+      resultPanel.style.display = "block";
+      resultPanel.style.width = "400px";
+      resultPanel.style.maxWidth = "400px";
+
+      popup.style.display = "";
       popup.classList.add("show");
+
+      const toggleBtn = document.getElementById("toggle-results");
+      if (toggleBtn) {
+        toggleBtn.classList.add("show");
+        toggleBtn.style.position = "fixed";
+        toggleBtn.style.setProperty("left", "765px", "important");
+        toggleBtn.style.transform = "none";
+        const icon = toggleBtn.querySelector("i");
+        if (icon) icon.className = "fa-solid fa-chevron-left";
+      }
 
       const closeBtn = document.getElementById("gm-popup-close");
       if (closeBtn) {
         closeBtn.addEventListener("click", function () {
           popup.classList.remove("show");
-          const toggleBtn = document.getElementById("toggle-results");
-          if (toggleBtn) {
-            toggleBtn.style.position = "fixed";
-            toggleBtn.style.setProperty("left", "400px", "important");
-            toggleBtn.style.transform = "none";
+          popup.style.display = "";
+          const toggleBtnEl = document.getElementById("toggle-results");
+          const resultPanelEl = document.getElementById("result-panel");
+          if (toggleBtnEl) {
+            if (resultPanelEl && resultPanelEl.classList.contains("show")) {
+              toggleBtnEl.style.position = "fixed";
+              toggleBtnEl.style.setProperty("left", "400px", "important");
+              toggleBtnEl.style.transform = "none";
+            } else {
+              toggleBtnEl.classList.remove("show");
+            }
           }
         });
       }
@@ -525,6 +566,50 @@ function loadPlaceDetails(placeId, clickedMarker) {
 
 // Khởi tạo các sự kiện DOM
 document.addEventListener("DOMContentLoaded", function () {
+  // Khởi tạo trạng thái ban đầu và sự kiện nút thu gọn / mở rộng kết quả (collapse)
+  const wrapper = document.querySelector(".search-wrapper");
+  const resultPanelEl = document.getElementById("result-panel");
+  const toggleResultsBtn = document.getElementById("toggle-results");
+
+  if (resultPanelEl) resultPanelEl.classList.remove("show");
+  if (toggleResultsBtn) toggleResultsBtn.classList.remove("show");
+
+  if (toggleResultsBtn && wrapper) {
+    toggleResultsBtn.addEventListener("click", function () {
+      wrapper.classList.toggle("collapsed");
+
+      const icon = this.querySelector("i");
+      const popup = document.getElementById("gm-place-popup");
+      const resultWrapper = document.querySelector(".result-wrapper");
+
+      this.style.position = "fixed";
+      this.style.transform = "none";
+
+      if (wrapper.classList.contains("collapsed")) {
+        if (icon) icon.className = "fa-solid fa-chevron-right";
+        this.style.setProperty("left", "0px", "important");
+        if (popup && popup.classList.contains("show")) {
+          popup.style.display = "none";
+        }
+        if (resultWrapper) {
+          resultWrapper.style.width = "0px";
+        }
+      } else {
+        if (icon) icon.className = "fa-solid fa-chevron-left";
+        if (resultWrapper) {
+          resultWrapper.style.width = "400px";
+          resultWrapper.style.maxWidth = "400px";
+        }
+        if (popup && popup.classList.contains("show")) {
+          popup.style.display = "";
+          this.style.setProperty("left", "765px", "important");
+        } else {
+          this.style.setProperty("left", "400px", "important");
+        }
+      }
+    });
+  }
+
   // Lấy GPS ban đầu
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
