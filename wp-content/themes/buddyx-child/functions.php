@@ -1992,3 +1992,26 @@ function pt_save_user_profile_place_fields($user_id)
     }
 }
 
+/**
+ * Kiểm tra trạng thái đăng nhập sau khi hoàn tất Google Login bằng Popup (không reload trang Maps)
+ */
+add_action('wp_ajax_pt_check_login_status', 'pt_check_login_status_ajax');
+add_action('wp_ajax_nopriv_pt_check_login_status', 'pt_check_login_status_ajax');
+
+function pt_check_login_status_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_success([
+            'logged_in' => false,
+        ]);
+    }
+
+    $user = wp_get_current_user();
+    wp_send_json_success([
+        'logged_in'    => true,
+        'user_id'      => $user->ID,
+        'display_name' => $user->display_name ?: $user->user_login,
+        'avatar'       => get_avatar_url($user->ID, ['size' => 64]),
+        'ai_nonce'     => wp_create_nonce('pt_ai_search_nonce'),
+    ]);
+}

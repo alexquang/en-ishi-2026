@@ -8,7 +8,8 @@
 get_header();
 ?>
 <script>
-const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
+window.gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
+var gmUserLoggedIn = window.gmUserLoggedIn;
 </script>
 
 <div class="google-map-section">

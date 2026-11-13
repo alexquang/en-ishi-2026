@@ -24,6 +24,8 @@ let currentTravelMode = "DRIVING";
 let currentPlaceDetails = null;
 let lightboxImages = [];
 let lightboxIndex = 0;
+let pendingLoginAction = null;
+let mapRestoredFromState = false;
 
 // AJAX URL linh hoạt theo domain hiện tại
 const ajaxUrl =
@@ -416,11 +418,6 @@ function initMap(userLat, userLng) {
     });
   }
 
-  // Tự động load địa điểm xung quanh khi bản đồ sẵn sàng
-  google.maps.event.addListenerOnce(map, "idle", function () {
-    loadNearbyPlaces(defaultLat, defaultLng);
-  });
-
   trafficLayer = new google.maps.TrafficLayer();
   transitLayer = new google.maps.TransitLayer();
   bikeLayer = new google.maps.BicyclingLayer();
@@ -430,8 +427,20 @@ function initMap(userLat, userLng) {
     layerControlsInitialized = true;
   }
 
+  // Kiểm tra nếu vừa quay lại từ đăng nhập (fallback trên trình duyệt không hỗ trợ popup)
+  if (restoreMapStateIfAny()) {
+    return;
+  }
+
+  // Tự động load địa điểm xung quanh khi bản đồ sẵn sàng
+  google.maps.event.addListenerOnce(map, "idle", function () {
+    if (!mapRestoredFromState) {
+      loadNearbyPlaces(defaultLat, defaultLng);
+    }
+  });
+
   // Nếu đã lấy được GPS trước khi initMap chạy xong
-  if (userCoords) {
+  if (userCoords && !mapRestoredFromState) {
     map.setCenter(userCoords);
     map.setZoom(15);
     renderUserLocationDot(userCoords);
@@ -1435,7 +1444,10 @@ function renderVideos(videos) {
     .join("");
 }
 
-function showLoginRequiredDialog() {
+function showLoginRequiredDialog(actionInfo = null) {
+  if (actionInfo) {
+    pendingLoginAction = actionInfo;
+  }
   const dialog = document.getElementById("gmLoginRequiredDialog");
   if (dialog) {
     dialog.style.display = "flex";
@@ -1450,11 +1462,228 @@ function hideLoginRequiredDialog() {
 }
 
 /* =====================================================
+   ĐĂNG NHẬP GOOGLE KHÔNG RELOAD TRANG & GIỮ VỊ TRÍ BẢN ĐỒ
+===================================================== */
+const PT_MAPS_STATE_KEY = "pt_maps_login_state";
+
+function saveMapStateBeforeLogin() {
+  try {
+    if (!map) return;
+    const center = map.getCenter();
+    const pacInput = document.getElementById("pac-input");
+    const activeCatBtn = document.querySelector(".cat-btn.active");
+    const state = {
+      lat: center ? center.lat() : null,
+      lng: center ? center.lng() : null,
+      zoom: map.getZoom() || 15,
+      searchQuery: pacInput ? pacInput.value.trim() : "",
+      activeCategory: activeCatBtn ? activeCatBtn.dataset.type || "" : "",
+      selectedPlaceId: currentPlaceDetails?.place_id || "",
+      selectedPlaceLat: currentPlaceDetails?.geometry?.location
+        ? currentPlaceDetails.geometry.location.lat()
+        : null,
+      selectedPlaceLng: currentPlaceDetails?.geometry?.location
+        ? currentPlaceDetails.geometry.location.lng()
+        : null,
+      pendingAction: pendingLoginAction || null,
+      timestamp: Date.now(),
+    };
+    sessionStorage.setItem(PT_MAPS_STATE_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+function restoreMapStateIfAny() {
+  try {
+    const raw = sessionStorage.getItem(PT_MAPS_STATE_KEY);
+    if (!raw) return false;
+    sessionStorage.removeItem(PT_MAPS_STATE_KEY);
+
+    const state = JSON.parse(raw);
+    if (!state || !state.timestamp || Date.now() - state.timestamp > 300000) {
+      return false;
+    }
+
+    if (typeof state.lat === "number" && typeof state.lng === "number" && map) {
+      mapRestoredFromState = true;
+      map.setCenter({ lat: state.lat, lng: state.lng });
+      if (state.zoom) {
+        map.setZoom(state.zoom);
+      }
+    }
+
+    const pacInput = document.getElementById("pac-input");
+    if (state.searchQuery && pacInput) {
+      pacInput.value = state.searchQuery;
+      searchPlaces(state.searchQuery);
+    } else if (state.activeCategory) {
+      const catBtn = document.querySelector(
+        `.cat-btn[data-type="${state.activeCategory}"]`
+      );
+      searchByType(state.activeCategory, catBtn);
+    }
+
+    if (state.selectedPlaceId && map) {
+      setTimeout(function () {
+        if (
+          typeof state.selectedPlaceLat === "number" &&
+          typeof state.selectedPlaceLng === "number"
+        ) {
+          if (selectedMarker) selectedMarker.setMap(null);
+          selectedMarker = new google.maps.Marker({
+            position: {
+              lat: state.selectedPlaceLat,
+              lng: state.selectedPlaceLng,
+            },
+            map: map,
+          });
+        }
+        loadPlaceDetails(state.selectedPlaceId, selectedMarker);
+      }, 450);
+    }
+
+    if (state.pendingAction && gmUserLoggedIn) {
+      pendingLoginAction = state.pendingAction;
+      setTimeout(function () {
+        resumePendingLoginAction();
+      }, 750);
+    }
+
+    return mapRestoredFromState;
+  } catch (e) {
+    return false;
+  }
+}
+
+function resumePendingLoginAction() {
+  if (!pendingLoginAction) return;
+  const action = pendingLoginAction;
+  pendingLoginAction = null;
+
+  if (action.type === "message" && action.placeData) {
+    openPlaceMessageDialog(action.placeData);
+  } else if (action.type === "upload_photo") {
+    document.getElementById("gmUploadPhotoFile")?.click();
+  } else if (action.type === "upload_video") {
+    document.getElementById("gmUploadVideoFile")?.click();
+  }
+}
+
+function refreshHeaderAuthArea() {
+  fetch(window.location.href, {
+    method: "GET",
+    credentials: "include",
+  })
+    .then((r) => r.text())
+    .then((html) => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const selectors = [
+        ".site-header .user-notifications",
+        ".site-header .bp-msg-Log",
+        "#masthead .site-header-wrapper",
+        ".buddynext-rail",
+      ];
+      for (const sel of selectors) {
+        const newEl = doc.querySelector(sel);
+        const curEl = document.querySelector(sel);
+        if (newEl && curEl) {
+          curEl.innerHTML = newEl.innerHTML;
+          break;
+        }
+      }
+    })
+    .catch(() => {});
+}
+
+function handleSeamlessGoogleLogin(redirectUrl) {
+  const loginTextEl = document.getElementById("gmLoginRequiredText");
+  const originalText = loginTextEl ? loginTextEl.innerHTML : "";
+  if (loginTextEl) {
+    loginTextEl.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Signing in with Google...';
+  }
+
+  const targetUrl = redirectUrl || "/wp-login.php?loginSocial=google";
+
+  fetch(targetUrl, {
+    method: "GET",
+    credentials: "include",
+  })
+    .catch(() => {})
+    .finally(() => {
+      fetch(`${ajaxUrl}?action=pt_check_login_status`, {
+        method: "GET",
+        credentials: "include",
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          gmUserLoggedIn = true;
+          window.gmUserLoggedIn = true;
+          if (typeof ptMap !== "undefined") {
+            ptMap.isLoggedIn = true;
+            if (res?.data?.ai_nonce) {
+              ptMap.ai_nonce = res.data.ai_nonce;
+            }
+          }
+
+          try {
+            sessionStorage.removeItem(PT_MAPS_STATE_KEY);
+          } catch (e) {}
+
+          if (loginTextEl && originalText) {
+            loginTextEl.innerHTML = originalText;
+          }
+
+          // Xóa overlay redirect của Nextend nếu có
+          const nslOverlay = document.getElementById("nsl-redirect-overlay");
+          if (nslOverlay) nslOverlay.remove();
+
+          hideLoginRequiredDialog();
+          showToast("Logged in successfully!");
+          refreshHeaderAuthArea();
+          resumePendingLoginAction();
+        })
+        .catch(() => {
+          gmUserLoggedIn = true;
+          window.gmUserLoggedIn = true;
+          hideLoginRequiredDialog();
+          resumePendingLoginAction();
+        });
+    });
+}
+
+function installSeamlessGoogleLoginHook() {
+  const customRedirect = function (url) {
+    handleSeamlessGoogleLogin(url);
+  };
+
+  try {
+    Object.defineProperty(window, "nslRedirect", {
+      configurable: true,
+      enumerable: true,
+      get: function () {
+        return customRedirect;
+      },
+      set: function () {
+        // Giữ nguyên customRedirect để chặn Nextend reload trang Maps
+      },
+    });
+  } catch (e) {
+    window.nslRedirect = customRedirect;
+  }
+}
+
+installSeamlessGoogleLoginHook();
+
+/* =====================================================
    GỬI TIN NHẮN CHO CHỦ QUÁN (BUDDYPRESS / BUDDYX MESSAGE)
 ===================================================== */
 function openPlaceMessageDialog(placeData) {
   if (typeof gmUserLoggedIn !== "undefined" && !gmUserLoggedIn) {
-    showLoginRequiredDialog();
+    showLoginRequiredDialog({
+      type: "message",
+      placeData: placeData,
+    });
     return;
   }
 
@@ -1606,6 +1835,8 @@ function closePlaceMessageDialog() {
    KHỞI TẠO SỰ KIỆN DOM
 ===================================================== */
 document.addEventListener("DOMContentLoaded", function () {
+  installSeamlessGoogleLoginHook();
+
   const wrapper = document.querySelector(".search-wrapper");
   const resultPanelEl = document.getElementById("result-panel");
   const toggleResultsBtn = document.getElementById("toggle-results");
@@ -1660,9 +1891,11 @@ document.addEventListener("DOMContentLoaded", function () {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
         };
-        if (map) {
+        if (map && !mapRestoredFromState) {
           map.setCenter(userCoords);
           map.setZoom(15);
+          renderUserLocationDot(userCoords);
+        } else if (map) {
           renderUserLocationDot(userCoords);
         }
       },
@@ -2319,7 +2552,7 @@ document.addEventListener("click", function (e) {
   // Click nút Upload Photo
   if (e.target.closest("#gmUploadPhotoBtn")) {
     if (typeof gmUserLoggedIn !== "undefined" && !gmUserLoggedIn) {
-      showLoginRequiredDialog();
+      showLoginRequiredDialog({ type: "upload_photo" });
       return;
     }
     document.getElementById("gmUploadPhotoFile")?.click();
@@ -2329,7 +2562,7 @@ document.addEventListener("click", function (e) {
   // Click nút Upload Video
   if (e.target.closest("#gmUploadVideoBtn")) {
     if (typeof gmUserLoggedIn !== "undefined" && !gmUserLoggedIn) {
-      showLoginRequiredDialog();
+      showLoginRequiredDialog({ type: "upload_video" });
       return;
     }
     document.getElementById("gmUploadVideoFile")?.click();
@@ -2344,3 +2577,19 @@ document.addEventListener("click", function (e) {
     hideLoginRequiredDialog();
   }
 });
+
+// Lưu trạng thái bản đồ trước khi mở popup đăng nhập Google
+document.addEventListener(
+  "click",
+  function (e) {
+    if (
+      e.target.closest('a[data-plugin="nsl"]') ||
+      e.target.closest("#gmNextendGoogleLogin a") ||
+      e.target.closest(".gm-login-btn")
+    ) {
+      installSeamlessGoogleLoginHook();
+      saveMapStateBeforeLogin();
+    }
+  },
+  true
+);
