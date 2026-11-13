@@ -210,6 +210,17 @@ bp_nouveau_before_groups_directory_content();
         margin: 0 !important;
         padding: 0 !important;
         list-style: none !important;
+        width: 100% !important;
+    }
+
+    #groups-list.pt-fc2-groups-grid::before,
+    #groups-list.pt-fc2-groups-grid::after,
+    #groups-list.pt-fc2-groups-grid > li.pt-fc2-card-item::before,
+    #groups-list.pt-fc2-groups-grid > li.pt-fc2-card-item::after,
+    #groups-list.pt-fc2-groups-grid > li.pt-fc2-card-item > .list-wrap.pt-fc2-card::before,
+    #groups-list.pt-fc2-groups-grid > li.pt-fc2-card-item > .list-wrap.pt-fc2-card::after {
+        content: none !important;
+        display: none !important;
     }
 
     #groups-list.pt-fc2-groups-grid > li.pt-fc2-card-item {
