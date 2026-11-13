@@ -1,7 +1,7 @@
 <?php
 
 /**
- * BuddyPress - Groups Loop (FC2 / Live Channel Card Style)
+ * BuddyPress - Groups Loop (BuddyPress / BuddyMeet Data + FC2 Live Card Style)
  *
  * @since 3.0.0
  * @version 12.0.0
@@ -16,9 +16,9 @@ bp_nouveau_before_loop(); ?>
 	<?php
 	global $groups_template, $wpdb;
 
-	$user_id       = get_current_user_id();
-	$user_fav_ids  = $user_id ? (array) get_user_meta($user_id, 'pt_favorite_groups', true) : [];
-	$user_fav_ids  = array_map('intval', array_filter($user_fav_ids));
+	$user_id      = get_current_user_id();
+	$user_fav_ids = $user_id ? (array) get_user_meta($user_id, 'pt_favorite_groups', true) : [];
+	$user_fav_ids = array_map('intval', array_filter($user_fav_ids));
 
 	$live_table_name = $wpdb->prefix . 'group_live_status';
 	$has_live_table  = ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $live_table_name)) === $live_table_name);
@@ -28,16 +28,68 @@ bp_nouveau_before_loop(); ?>
 	}
 
 	/**
-	 * Tính toán trạng thái Live & Số người xem cho từng Group trước khi sort & render
+	 * Lấy dữ liệu thực tế từ BuddyPress & BuddyMeet cho từng Group:
+	 * - Trạng thái phòng Meet (`buddymeet_is_enabled`, `buddymeet_room_members_*`, `group_live_status`, `pt_active_livestreams`)
+	 * - Số người đang tham gia / thành viên của Group (`total_member_count` từ BuddyPress `groups_get_groupmeta($gid, 'total_member_count')`)
+	 * - Hoạt động gần đây của Group (`last_activity` từ BuddyPress)
 	 */
-	$group_live_map = [];
+	$group_buddy_data = [];
 	if (! empty($groups_template->groups)) {
 		foreach ($groups_template->groups as $g_obj) {
-			$gid        = (int) $g_obj->id;
-			$live_count = 0;
+			$gid = (int) $g_obj->id;
 
+			// 1. Lấy tổng số thành viên thực tế của Group từ BuddyPress
+			$bp_member_count = 0;
+			if (isset($g_obj->total_member_count) && (int) $g_obj->total_member_count > 0) {
+				$bp_member_count = (int) $g_obj->total_member_count;
+			} elseif (function_exists('groups_get_total_member_count')) {
+				$bp_member_count = (int) groups_get_total_member_count($gid);
+			} elseif (function_exists('groups_get_groupmeta')) {
+				$bp_member_count = (int) groups_get_groupmeta($gid, 'total_member_count', true);
+			}
+
+			// 2. Lấy số người đang trong phòng BuddyMeet của Group (nếu có)
+			$buddymeet_members_count = 0;
+			$buddymeet_enabled       = false;
+			if (function_exists('buddymeet_is_enabled')) {
+				$buddymeet_enabled = (bool) buddymeet_is_enabled($gid);
+			} elseif (function_exists('groups_get_groupmeta')) {
+				$bm_meta           = groups_get_groupmeta($gid, 'buddymeet_enabled', true);
+				$buddymeet_enabled = ($bm_meta === '1' || $bm_meta === 1 || $bm_meta === true);
+			}
+
+			if (function_exists('groups_get_groupmeta')) {
+				$bm_room = groups_get_groupmeta($gid, 'buddymeet_room', true);
+				if (! empty($bm_room)) {
+					$bm_room_members = groups_get_groupmeta($gid, 'buddymeet_room_members_' . $bm_room, true);
+					if (is_array($bm_room_members)) {
+						$buddymeet_members_count = count(array_filter($bm_room_members));
+					}
+				}
+
+				// Kiểm tra toàn bộ các room buddymeet_room_members_* của group trong bảng bp_groups_groupmeta
+				$bp_groupmeta_table = $wpdb->prefix . 'bp_groups_groupmeta';
+				$room_rows          = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT meta_value FROM {$bp_groupmeta_table} WHERE group_id = %d AND meta_key LIKE %s",
+						$gid,
+						$wpdb->esc_like('buddymeet_room_members_') . '%'
+					)
+				);
+				if (! empty($room_rows)) {
+					foreach ($room_rows as $serialized_members) {
+						$arr = maybe_unserialize($serialized_members);
+						if (is_array($arr)) {
+							$buddymeet_members_count = max($buddymeet_members_count, count(array_filter($arr)));
+						}
+					}
+				}
+			}
+
+			// 3. Lấy số người đang live trong bảng group_live_status
+			$live_table_count = 0;
 			if ($has_live_table) {
-				$live_count = (int) $wpdb->get_var(
+				$live_table_count = (int) $wpdb->get_var(
 					$wpdb->prepare(
 						"SELECT COUNT(*) FROM {$live_table_name} WHERE group_id = %d AND status = 1",
 						$gid
@@ -45,33 +97,37 @@ bp_nouveau_before_loop(); ?>
 				);
 			}
 
-			// Kiểm tra trong pt_active_livestreams theo room group-{id} hoặc slug
-			$room_key_id   = 'group-' . $gid;
-			$room_key_slug = isset($g_obj->slug) ? (string) $g_obj->slug : '';
+			// 4. Kiểm tra trong pt_active_livestreams
+			$stream_viewers = 0;
+			$room_key_id    = 'group-' . $gid;
+			$room_key_slug  = isset($g_obj->slug) ? (string) $g_obj->slug : '';
 			if (isset($active_streams[$room_key_id]) && ! empty($active_streams[$room_key_id]['is_live'])) {
-				$live_count = max($live_count, (int) ($active_streams[$room_key_id]['viewers'] ?? 1));
+				$stream_viewers = (int) ($active_streams[$room_key_id]['viewers'] ?? 1);
 			} elseif ($room_key_slug !== '' && isset($active_streams[$room_key_slug]) && ! empty($active_streams[$room_key_slug]['is_live'])) {
-				$live_count = max($live_count, (int) ($active_streams[$room_key_slug]['viewers'] ?? 1));
+				$stream_viewers = (int) ($active_streams[$room_key_slug]['viewers'] ?? 1);
 			}
 
-			// Kiểm tra groupmeta nếu có cài đặt live_viewers / is_live
-			if (function_exists('groups_get_groupmeta')) {
-				$meta_viewers = groups_get_groupmeta($gid, 'pt_live_viewers', true);
-				if ($meta_viewers !== '' && (int) $meta_viewers > 0) {
-					$live_count = max($live_count, (int) $meta_viewers);
-				}
-			}
+			// 5. Tổng hợp trạng thái Live & Số người xem từ dữ liệu BuddyPress / BuddyMeet
+			$active_live_viewers = max($live_table_count, $buddymeet_members_count, $stream_viewers);
+			$viewer_count        = $active_live_viewers > 0 ? $active_live_viewers : $bp_member_count;
+			$is_live_active      = ($active_live_viewers > 0 || $buddymeet_enabled || $bp_member_count > 0);
 
-			$group_live_map[$gid] = $live_count;
+			$group_buddy_data[$gid] = [
+				'is_live'          => $is_live_active,
+				'active_live'      => $active_live_viewers,
+				'viewer_count'     => $viewer_count,
+				'bp_member_count'  => $bp_member_count,
+				'buddymeet_active' => $buddymeet_enabled,
+			];
 		}
 
-		// Sắp xếp: Group đang có người xem (Live > 0) lên trước theo số người xem giảm dần, sau đó tới Group đã tham gia
-		usort($groups_template->groups, function ($a, $b) use ($user_id, $group_live_map) {
-			$a_live = $group_live_map[(int) $a->id] ?? 0;
-			$b_live = $group_live_map[(int) $b->id] ?? 0;
+		// Sắp xếp: Group đang có phiên Live/Meet trực tiếp lên trước, tiếp theo theo số lượng thành viên/người xem BuddyPress giảm dần, và ưu tiên Group user đã tham gia
+		usort($groups_template->groups, function ($a, $b) use ($user_id, $group_buddy_data) {
+			$a_data = $group_buddy_data[(int) $a->id] ?? ['active_live' => 0, 'viewer_count' => 0];
+			$b_data = $group_buddy_data[(int) $b->id] ?? ['active_live' => 0, 'viewer_count' => 0];
 
-			if ($a_live !== $b_live) {
-				return $b_live <=> $a_live;
+			if ($a_data['active_live'] !== $b_data['active_live']) {
+				return $b_data['active_live'] <=> $a_data['active_live'];
 			}
 
 			if ($user_id) {
@@ -82,10 +138,14 @@ bp_nouveau_before_loop(); ?>
 				}
 			}
 
+			if ($a_data['viewer_count'] !== $b_data['viewer_count']) {
+				return $b_data['viewer_count'] <=> $a_data['viewer_count'];
+			}
+
 			return 0;
 		});
 
-		// Reset lại vòng lặp
+		// Reset lại vòng lặp BuddyPress
 		$groups_template->current_group = -1;
 		$groups_template->group         = null;
 	}
@@ -113,32 +173,57 @@ bp_nouveau_before_loop(); ?>
 			$group_name   = bp_get_group_name();
 			$group_url    = bp_get_group_url();
 			$group_status = bp_get_group_status(); // public, private, hidden
-			$live_count   = isset($group_live_map[$group_id]) ? (int) $group_live_map[$group_id] : 0;
 
-			// Nếu group có hoạt động hoặc member count, kiểm tra xem đang Live hay Standby
-			$is_live_active = ($live_count > 0);
+			$g_data         = $group_buddy_data[$group_id] ?? [
+				'is_live'          => false,
+				'active_live'      => 0,
+				'viewer_count'     => 0,
+				'bp_member_count'  => 0,
+				'buddymeet_active' => false,
+			];
+			$viewer_count   = (int) $g_data['viewer_count'];
+			$is_live_active = (bool) $g_data['is_live'] && $viewer_count > 0;
 			$is_fav         = in_array($group_id, $user_fav_ids, true);
 
-			// Quốc kỳ của group (lấy từ groupmeta 'country' hoặc mặc định JP như thiết kế)
+			// Quốc kỳ của group (lấy từ BuddyPress groupmeta 'country_code' / 'country' hoặc ngôn ngữ cài đặt trong BuddyMeet)
 			$country_code = '';
 			if (function_exists('groups_get_groupmeta')) {
 				$country_code = strtolower(trim((string) groups_get_groupmeta($group_id, 'country_code', true)));
+				if (empty($country_code)) {
+					$bm_lang = strtolower(trim((string) groups_get_groupmeta($group_id, 'buddymeet_default_language', true)));
+					$lang_to_flag = [
+						'ja' => 'jp',
+						'jp' => 'jp',
+						'vi' => 'vn',
+						'vn' => 'vn',
+						'en' => 'us',
+						'ru' => 'ru',
+						'ko' => 'kr',
+						'zh' => 'cn',
+					];
+					if (isset($lang_to_flag[$bm_lang])) {
+						$country_code = $lang_to_flag[$bm_lang];
+					}
+				}
 			}
 			if (empty($country_code) || ! preg_match('/^[a-z]{2}$/', $country_code)) {
 				$country_code = 'jp';
 			}
 			$flag_url = 'https://flagcdn.com/w40/' . $country_code . '.png';
 
-			// Mô tả ngắn của group (nếu trống hiển thị "Not specified")
+			// Mô tả ngắn của group lấy trực tiếp từ BuddyPress
 			$raw_desc = '';
 			if (! empty($groups_template->group->description)) {
 				$raw_desc = wp_strip_all_tags($groups_template->group->description);
+			} else {
+				$raw_desc = wp_strip_all_tags(bp_get_group_description_excerpt());
 			}
 			$desc_text = trim($raw_desc) !== '' ? wp_trim_words($raw_desc, 14, '...') : 'Not specified';
 
-			// Link khi click vào xem Live hoặc vào Group
-			$target_live_url = $is_live_active
-				? home_url('/video/?room=group-' . $group_id)
+			// Đường dẫn phòng Meet của Group trong BuddyMeet / BuddyPress
+			$meet_slug = function_exists('buddymeet_get_slug') ? buddymeet_get_slug() : 'buddymeet';
+			$group_meet_url = ! empty($g_data['buddymeet_active'])
+				? trailingslashit($group_url) . $meet_slug . '/'
 				: $group_url;
 			?>
 
@@ -147,11 +232,11 @@ bp_nouveau_before_loop(); ?>
 				data-bp-item-component="groups"
 				data-live-state="<?php echo $is_live_active ? 'live' : 'standby'; ?>"
 				data-fav="<?php echo $is_fav ? '1' : '0'; ?>"
-				data-viewers="<?php echo esc_attr($live_count); ?>">
+				data-viewers="<?php echo esc_attr($viewer_count); ?>">
 
 				<div class="list-wrap pt-fc2-card">
 
-					<!-- THUMBNAIL + COUNTRY FLAG -->
+					<!-- THUMBNAIL (BuddyPress Group Avatar / Cover) + COUNTRY FLAG -->
 					<div class="pt-fc2-thumb">
 						<a href="<?php echo esc_url($group_url); ?>" class="pt-fc2-thumb-link">
 							<?php if (! bp_disable_group_avatar_uploads()) : ?>
@@ -167,7 +252,7 @@ bp_nouveau_before_loop(); ?>
 					<!-- BODY: LIVE BADGE, GROUP TITLE, DESCRIPTION -->
 					<div class="pt-fc2-body">
 						<div class="pt-fc2-badges">
-							<a href="<?php echo esc_url($target_live_url); ?>" class="pt-fc2-badge-live" title="Live Stream">
+							<a href="<?php echo esc_url($group_meet_url); ?>" class="pt-fc2-badge-live" title="<?php esc_attr_e('Enter Group Live / Meet', 'buddyx-child'); ?>">
 								Live
 							</a>
 
@@ -176,23 +261,20 @@ bp_nouveau_before_loop(); ?>
 									<i class="fa-solid fa-lock"></i>
 								</span>
 							<?php elseif ($group_status === 'hidden') : ?>
-								<span class="pt-fc2-badge-extra is-p" title="<?php esc_attr_e('Premium / Hidden Group', 'buddyx-child'); ?>">
+								<span class="pt-fc2-badge-extra is-p" title="<?php esc_attr_e('Hidden / Premium Group', 'buddyx-child'); ?>">
 									P
 								</span>
 							<?php endif; ?>
 						</div>
 
 						<h2 class="pt-fc2-title list-title groups-title">
-							<a href="<?php echo esc_url($group_url); ?>" title="<?php echo esc_attr($group_name); ?>">
-								<?php echo esc_html($group_name); ?>
-							</a>
+							<?php bp_group_link(); ?>
 						</h2>
 
 						<div class="pt-fc2-desc" title="<?php echo esc_attr($raw_desc ?: 'Not specified'); ?>">
 							<?php echo esc_html($desc_text); ?>
 						</div>
 
-						<!-- Nút Join / Leave ẩn gọn hoặc hiển thị khi hover nếu cần -->
 						<?php if (bp_get_group_join_button()) : ?>
 							<div class="pt-fc2-join-wrap">
 								<?php bp_nouveau_groups_loop_buttons(); ?>
@@ -202,12 +284,13 @@ bp_nouveau_before_loop(); ?>
 						<?php bp_nouveau_groups_loop_item(); ?>
 					</div>
 
-					<!-- FOOTER: VIEWER COUNT / STANDBY + FAVORITE STAR -->
+					<!-- FOOTER: BUDDYPRESS MEMBER/VIEWER COUNT OR STANDBY + FAVORITE STAR -->
 					<div class="pt-fc2-footer">
-						<div class="pt-fc2-viewers <?php echo $is_live_active ? 'is-live' : 'is-standby'; ?>">
+						<div class="pt-fc2-viewers <?php echo $is_live_active ? 'is-live' : 'is-standby'; ?>"
+							title="<?php echo esc_attr(sprintf(__('%d members / viewers in group', 'buddyx-child'), $viewer_count)); ?>">
 							<i class="fa-solid fa-user"></i>
 							<span class="pt-fc2-viewer-text">
-								<?php echo $is_live_active ? esc_html(number_format_i18n($live_count)) : esc_html__('Standby', 'buddyx-child'); ?>
+								<?php echo $is_live_active ? esc_html(number_format_i18n($viewer_count)) : esc_html__('Standby', 'buddyx-child'); ?>
 							</span>
 						</div>
 
