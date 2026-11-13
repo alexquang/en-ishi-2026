@@ -1525,3 +1525,470 @@ add_action(
     'wp_enqueue_scripts',
     'pt_gtranslate_scripts'
 );
+
+/**
+ * =========================================================
+ * PLACE OWNER LOOKUP & BUDDYPRESS / BUDDYX MESSAGING
+ * =========================================================
+ */
+
+/**
+ * Tìm chủ quán cafe / địa điểm trong hệ thống dựa theo:
+ * 1. User Meta (place_id, gm_place_id, google_place_id, cafe_place_id, business_place_id)
+ * 2. Option mapping (pt_place_owners)
+ * 3. BuddyPress XProfile data khớp place_id, tên quán, số điện thoại hoặc website
+ * 4. BuddyPress Groups (groupmeta place_id hoặc tên group trùng tên quán -> creator_id)
+ * 5. Media / bài đăng đã upload cho place_id đó (post_author của attachment có meta place_id)
+ * 6. Thông tin user (display_name / user_url / phone trong usermeta) khớp với thông tin quán
+ */
+function pt_find_place_owner($place_id, $place_name = '', $phone = '', $website = '')
+{
+    global $wpdb;
+
+    $place_id   = sanitize_text_field($place_id);
+    $place_name = sanitize_text_field($place_name);
+    $phone      = sanitize_text_field($phone);
+    $website    = esc_url_raw($website);
+
+    $owner_id     = 0;
+    $match_source = '';
+
+    // 1. Kiểm tra trong option mapping pt_place_owners
+    if ($place_id !== '') {
+        $owners_map = get_option('pt_place_owners', []);
+        if (is_array($owners_map) && !empty($owners_map[$place_id])) {
+            $candidate_id = intval($owners_map[$place_id]);
+            if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                $owner_id     = $candidate_id;
+                $match_source = 'place_owners_option';
+            }
+        }
+    }
+
+    // 2. Kiểm tra User Meta theo place_id
+    if (!$owner_id && $place_id !== '') {
+        $meta_keys = ['place_id', 'gm_place_id', 'google_place_id', 'cafe_place_id', 'business_place_id'];
+        $placeholders = implode(',', array_fill(0, count($meta_keys), '%s'));
+        $sql = $wpdb->prepare(
+            "SELECT user_id FROM {$wpdb->usermeta}
+             WHERE meta_key IN ($placeholders)
+               AND (meta_value = %s OR meta_value LIKE %s)
+             ORDER BY umeta_id DESC LIMIT 1",
+            array_merge(
+                $meta_keys,
+                [$place_id, '%' . $wpdb->esc_like($place_id) . '%']
+            )
+        );
+        $candidate_id = intval($wpdb->get_var($sql));
+        if ($candidate_id > 0 && get_userdata($candidate_id)) {
+            $owner_id     = $candidate_id;
+            $match_source = 'user_meta_place_id';
+        }
+    }
+
+    // 3. Kiểm tra BuddyPress XProfile theo place_id
+    $bp_xprofile_table = $wpdb->prefix . 'bp_xprofile_data';
+    $has_xprofile_table = ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $bp_xprofile_table)) === $bp_xprofile_table);
+
+    if (!$owner_id && $place_id !== '' && $has_xprofile_table) {
+        $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT user_id FROM {$bp_xprofile_table}
+             WHERE value = %s OR value LIKE %s
+             ORDER BY id DESC LIMIT 1",
+            $place_id,
+            '%' . $wpdb->esc_like($place_id) . '%'
+        )));
+        if ($candidate_id > 0 && get_userdata($candidate_id)) {
+            $owner_id     = $candidate_id;
+            $match_source = 'bp_xprofile_place_id';
+        }
+    }
+
+    // 4. Kiểm tra BuddyPress Groups (groupmeta place_id hoặc tên Group trùng tên quán)
+    $bp_groups_table    = $wpdb->prefix . 'bp_groups';
+    $bp_groupmeta_table = $wpdb->prefix . 'bp_groups_groupmeta';
+    $has_groups_table   = ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $bp_groups_table)) === $bp_groups_table);
+
+    if (!$owner_id && $has_groups_table) {
+        if ($place_id !== '' && ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $bp_groupmeta_table)) === $bp_groupmeta_table)) {
+            $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+                "SELECT g.creator_id
+                 FROM {$bp_groups_table} g
+                 INNER JOIN {$bp_groupmeta_table} gm ON g.id = gm.group_id
+                 WHERE gm.meta_key IN ('place_id', 'gm_place_id', 'google_place_id')
+                   AND gm.meta_value = %s
+                 ORDER BY g.id DESC LIMIT 1",
+                $place_id
+            )));
+            if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                $owner_id     = $candidate_id;
+                $match_source = 'bp_group_place_id';
+            }
+        }
+
+        if (!$owner_id && $place_name !== '') {
+            $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+                "SELECT creator_id FROM {$bp_groups_table}
+                 WHERE LOWER(name) = LOWER(%s)
+                 ORDER BY id DESC LIMIT 1",
+                $place_name
+            )));
+            if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                $owner_id     = $candidate_id;
+                $match_source = 'bp_group_name';
+            }
+        }
+    }
+
+    // 5. Kiểm tra theo Số điện thoại hoặc Website hoặc Tên quán trong User / UserMeta / XProfile
+    if (!$owner_id && $phone !== '') {
+        $digits = preg_replace('/\D+/', '', $phone);
+        if (strlen($digits) >= 8) {
+            $tail = substr($digits, -8);
+            if ($has_xprofile_table) {
+                $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+                    "SELECT user_id FROM {$bp_xprofile_table}
+                     WHERE REPLACE(REPLACE(REPLACE(REPLACE(value, ' ', ''), '-', ''), '.', ''), '+', '') LIKE %s
+                     ORDER BY id DESC LIMIT 1",
+                    '%' . $wpdb->esc_like($tail)
+                )));
+                if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                    $owner_id     = $candidate_id;
+                    $match_source = 'bp_xprofile_phone';
+                }
+            }
+
+            if (!$owner_id) {
+                $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+                    "SELECT user_id FROM {$wpdb->usermeta}
+                     WHERE meta_key IN ('billing_phone', 'phone', 'phone_number', 'place_phone', 'cafe_phone')
+                       AND REPLACE(REPLACE(REPLACE(REPLACE(meta_value, ' ', ''), '-', ''), '.', ''), '+', '') LIKE %s
+                     ORDER BY umeta_id DESC LIMIT 1",
+                    '%' . $wpdb->esc_like($tail)
+                )));
+                if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                    $owner_id     = $candidate_id;
+                    $match_source = 'user_meta_phone';
+                }
+            }
+        }
+    }
+
+    if (!$owner_id && $place_name !== '') {
+        // Kiểm tra user_meta place_name / business_name / cafe_name
+        $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT user_id FROM {$wpdb->usermeta}
+             WHERE meta_key IN ('place_name', 'cafe_name', 'business_name', 'shop_name')
+               AND LOWER(TRIM(meta_value)) = LOWER(TRIM(%s))
+             ORDER BY umeta_id DESC LIMIT 1",
+            $place_name
+        )));
+        if ($candidate_id > 0 && get_userdata($candidate_id)) {
+            $owner_id     = $candidate_id;
+            $match_source = 'user_meta_place_name';
+        }
+
+        // Kiểm tra XProfile tên quán
+        if (!$owner_id && $has_xprofile_table) {
+            $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+                "SELECT user_id FROM {$bp_xprofile_table}
+                 WHERE LOWER(TRIM(value)) = LOWER(TRIM(%s))
+                 ORDER BY id DESC LIMIT 1",
+                $place_name
+            )));
+            if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                $owner_id     = $candidate_id;
+                $match_source = 'bp_xprofile_name';
+            }
+        }
+
+        // Kiểm tra display_name trong wp_users trùng tên quán
+        if (!$owner_id) {
+            $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+                "SELECT ID FROM {$wpdb->users}
+                 WHERE LOWER(TRIM(display_name)) = LOWER(TRIM(%s))
+                 LIMIT 1",
+                $place_name
+            )));
+            if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                $owner_id     = $candidate_id;
+                $match_source = 'user_display_name';
+            }
+        }
+    }
+
+    // 6. Kiểm tra post/attachment đã được người dùng trong hệ thống đăng tải cho place_id này
+    if (!$owner_id && $place_id !== '') {
+        $candidate_id = intval($wpdb->get_var($wpdb->prepare(
+            "SELECT p.post_author
+             FROM {$wpdb->posts} p
+             INNER JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id
+             WHERE pm.meta_key = 'place_id'
+               AND pm.meta_value = %s
+               AND p.post_author > 0
+             ORDER BY p.ID ASC LIMIT 1",
+            $place_id
+        )));
+        if ($candidate_id > 0 && get_userdata($candidate_id)) {
+            $owner_id     = $candidate_id;
+            $match_source = 'place_media_author';
+        }
+    }
+
+    if (!$owner_id) {
+        return [
+            'found' => false,
+        ];
+    }
+
+    $user = get_userdata($owner_id);
+    if (!$user) {
+        return [
+            'found' => false,
+        ];
+    }
+
+    $avatar_url = get_avatar_url($owner_id, ['size' => 96]);
+    if (function_exists('bp_core_fetch_avatar')) {
+        $bp_avatar = bp_core_fetch_avatar([
+            'item_id' => $owner_id,
+            'type'    => 'thumb',
+            'html'    => false,
+        ]);
+        if (!empty($bp_avatar)) {
+            $avatar_url = $bp_avatar;
+        }
+    }
+
+    $profile_url = function_exists('bp_core_get_user_domain')
+        ? bp_core_get_user_domain($owner_id)
+        : get_author_posts_url($owner_id);
+
+    $messages_url = home_url('/messages/');
+    if (function_exists('bp_loggedin_user_domain') && function_exists('bp_get_messages_slug') && is_user_logged_in()) {
+        $bp_msg_url = trailingslashit(bp_loggedin_user_domain() . bp_get_messages_slug());
+        if (!empty($bp_msg_url)) {
+            $messages_url = $bp_msg_url;
+        }
+    }
+
+    return [
+        'found'        => true,
+        'owner_id'     => $owner_id,
+        'display_name' => $user->display_name ?: $user->user_login,
+        'username'     => $user->user_nicename ?: $user->user_login,
+        'avatar'       => $avatar_url,
+        'profile_url'  => $profile_url,
+        'messages_url' => $messages_url,
+        'match_source' => $match_source,
+        'is_self'      => (is_user_logged_in() && get_current_user_id() === $owner_id),
+    ];
+}
+
+add_action('wp_ajax_pt_get_place_owner', 'pt_get_place_owner_ajax');
+add_action('wp_ajax_nopriv_pt_get_place_owner', 'pt_get_place_owner_ajax');
+
+function pt_get_place_owner_ajax()
+{
+    $place_id   = isset($_REQUEST['place_id']) ? sanitize_text_field(wp_unslash($_REQUEST['place_id'])) : '';
+    $place_name = isset($_REQUEST['place_name']) ? sanitize_text_field(wp_unslash($_REQUEST['place_name'])) : '';
+    $phone      = isset($_REQUEST['phone']) ? sanitize_text_field(wp_unslash($_REQUEST['phone'])) : '';
+    $website    = isset($_REQUEST['website']) ? esc_url_raw(wp_unslash($_REQUEST['website'])) : '';
+
+    if ($place_id === '' && $place_name === '') {
+        wp_send_json_error([
+            'message' => 'Missing place information.'
+        ], 400);
+    }
+
+    $owner_info = pt_find_place_owner($place_id, $place_name, $phone, $website);
+    wp_send_json_success($owner_info);
+}
+
+add_action('wp_ajax_pt_send_place_message', 'pt_send_place_message_ajax');
+
+function pt_send_place_message_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error([
+            'message' => 'Please log in to send a message.'
+        ], 403);
+    }
+
+    $sender_id  = get_current_user_id();
+    $place_id   = isset($_POST['place_id']) ? sanitize_text_field(wp_unslash($_POST['place_id'])) : '';
+    $place_name = isset($_POST['place_name']) ? sanitize_text_field(wp_unslash($_POST['place_name'])) : '';
+    $address    = isset($_POST['address']) ? sanitize_text_field(wp_unslash($_POST['address'])) : '';
+    $phone      = isset($_POST['phone']) ? sanitize_text_field(wp_unslash($_POST['phone'])) : '';
+    $website    = isset($_POST['website']) ? esc_url_raw(wp_unslash($_POST['website'])) : '';
+    $subject    = isset($_POST['subject']) ? sanitize_text_field(wp_unslash($_POST['subject'])) : '';
+    $message    = isset($_POST['message']) ? sanitize_textarea_field(wp_unslash($_POST['message'])) : '';
+
+    if (trim($message) === '') {
+        wp_send_json_error([
+            'message' => 'Please enter your message content.'
+        ], 400);
+    }
+
+    // Kiểm tra thông tin chủ quán trong hệ thống
+    $owner_info = pt_find_place_owner($place_id, $place_name, $phone, $website);
+
+    if (empty($owner_info['found']) || empty($owner_info['owner_id'])) {
+        wp_send_json_error([
+            'code'    => 'owner_not_found',
+            'message' => 'This place does not have owner information registered in the system yet.'
+        ], 404);
+    }
+
+    $owner_id = intval($owner_info['owner_id']);
+
+    if ($owner_id === $sender_id) {
+        wp_send_json_error([
+            'code'    => 'cannot_message_self',
+            'message' => 'You are the registered owner of this place.'
+        ], 400);
+    }
+
+    if ($subject === '') {
+        $subject = $place_name !== ''
+            ? sprintf('[Maps] Message regarding %s', $place_name)
+            : '[Maps] New message from Maps';
+    }
+
+    $formatted_content = $message;
+    if ($place_name !== '') {
+        $place_header = "📍 Place: " . $place_name;
+        if ($address !== '') {
+            $place_header .= " (" . $address . ")";
+        }
+        $formatted_content = $place_header . "\n\n" . $message;
+    }
+
+    $sent_bp        = false;
+    $sent_buddynext = false;
+    $thread_id      = 0;
+    $thread_url     = $owner_info['messages_url'] ?? home_url('/messages/');
+    $error_msg      = '';
+
+    // 1. Gửi qua BuddyPress Messages (messages_new_message)
+    if (!function_exists('messages_new_message') && defined('BP_PLUGIN_DIR')) {
+        $bp_msg_file = BP_PLUGIN_DIR . 'bp-messages/bp-messages-functions.php';
+        if (file_exists($bp_msg_file)) {
+            require_once $bp_msg_file;
+        }
+    }
+
+    if (function_exists('messages_new_message')) {
+        $bp_result = messages_new_message([
+            'sender_id'  => $sender_id,
+            'recipients' => [$owner_id],
+            'subject'    => $subject,
+            'content'    => wpautop(esc_html($formatted_content)),
+            'error_type' => 'wp_error',
+        ]);
+
+        if (!is_wp_error($bp_result) && !empty($bp_result)) {
+            $sent_bp   = true;
+            $thread_id = intval($bp_result);
+            if (function_exists('bp_loggedin_user_domain') && function_exists('bp_get_messages_slug')) {
+                $thread_url = trailingslashit(bp_loggedin_user_domain() . bp_get_messages_slug() . '/view/' . $thread_id);
+            }
+        } elseif (is_wp_error($bp_result)) {
+            $error_msg = $bp_result->get_error_message();
+        }
+    }
+
+    // 2. Đồng thời gửi qua BuddyNext / WPMediaVerse DM nếu đang kích hoạt
+    if (class_exists('\BuddyNext\Media\MediaClient') && method_exists('\BuddyNext\Media\MediaClient', 'messaging')) {
+        try {
+            $mvs_service = \BuddyNext\Media\MediaClient::messaging();
+            if (is_object($mvs_service) && method_exists($mvs_service, 'find_or_create_conversation') && method_exists($mvs_service, 'send_message')) {
+                $conv = $mvs_service->find_or_create_conversation($sender_id, $owner_id);
+                $conv_id = isset($conv['conversation_id']) ? intval($conv['conversation_id']) : 0;
+                if ($conv_id > 0) {
+                    $mvs_res = $mvs_service->send_message($conv_id, $sender_id, [
+                        'content'      => $formatted_content,
+                        'message_type' => 'text',
+                    ]);
+                    if (!empty($mvs_res['success'])) {
+                        $sent_buddynext = true;
+                        $thread_url     = home_url('/messages/?conv=' . $conv_id);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Bỏ qua nếu WPMediaVerse không khả dụng
+        }
+    }
+
+    if (!$sent_bp && !$sent_buddynext) {
+        wp_send_json_error([
+            'message' => $error_msg ?: 'Could not send message via BuddyPress. Please try again.'
+        ], 500);
+    }
+
+    wp_send_json_success([
+        'message'      => sprintf('Your message has been sent to %s!', $owner_info['display_name']),
+        'owner'        => $owner_info,
+        'thread_id'    => $thread_id,
+        'messages_url' => $thread_url,
+    ]);
+}
+
+/**
+ * Thêm trường Google Maps Place ID & Tên quán trong trang User Profile của WP Admin
+ * để Admin hoặc Chủ quán có thể gán trực tiếp tài khoản với địa điểm trên bản đồ.
+ */
+add_action('show_user_profile', 'pt_user_profile_place_fields');
+add_action('edit_user_profile', 'pt_user_profile_place_fields');
+
+function pt_user_profile_place_fields($user)
+{
+    $place_id   = get_user_meta($user->ID, 'place_id', true);
+    $place_name = get_user_meta($user->ID, 'place_name', true);
+    $place_phone = get_user_meta($user->ID, 'place_phone', true);
+    ?>
+    <h3><?php esc_html_e('Google Maps Place / Cafe Owner Info', 'buddyx-child'); ?></h3>
+    <table class="form-table">
+        <tr>
+            <th><label for="pt_place_id"><?php esc_html_e('Google Maps Place ID', 'buddyx-child'); ?></label></th>
+            <td>
+                <input type="text" name="pt_place_id" id="pt_place_id" value="<?php echo esc_attr($place_id); ?>" class="regular-text" />
+                <p class="description"><?php esc_html_e('Place ID của quán cafe / địa điểm trên Google Maps thuộc sở hữu của tài khoản này.', 'buddyx-child'); ?></p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="pt_place_name"><?php esc_html_e('Place / Cafe Name', 'buddyx-child'); ?></label></th>
+            <td>
+                <input type="text" name="pt_place_name" id="pt_place_name" value="<?php echo esc_attr($place_name); ?>" class="regular-text" />
+            </td>
+        </tr>
+        <tr>
+            <th><label for="pt_place_phone"><?php esc_html_e('Place Phone Number', 'buddyx-child'); ?></label></th>
+            <td>
+                <input type="text" name="pt_place_phone" id="pt_place_phone" value="<?php echo esc_attr($place_phone); ?>" class="regular-text" />
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+
+add_action('personal_options_update', 'pt_save_user_profile_place_fields');
+add_action('edit_user_profile_update', 'pt_save_user_profile_place_fields');
+
+function pt_save_user_profile_place_fields($user_id)
+{
+    if (!current_user_can('edit_user', $user_id)) {
+        return false;
+    }
+    if (isset($_POST['pt_place_id'])) {
+        update_user_meta($user_id, 'place_id', sanitize_text_field(wp_unslash($_POST['pt_place_id'])));
+    }
+    if (isset($_POST['pt_place_name'])) {
+        update_user_meta($user_id, 'place_name', sanitize_text_field(wp_unslash($_POST['pt_place_name'])));
+    }
+    if (isset($_POST['pt_place_phone'])) {
+        update_user_meta($user_id, 'place_phone', sanitize_text_field(wp_unslash($_POST['pt_place_phone'])));
+    }
+}
+

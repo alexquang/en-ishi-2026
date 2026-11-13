@@ -888,6 +888,13 @@ function loadPlaceDetails(placeId, clickedMarker) {
 
             <div class="gm-popup-tabs">
                 <button type="button" class="gm-popup-tab active" data-popup-tab="overview">Overview</button>
+                <button type="button" class="gm-popup-tab gm-message-btn"
+                    data-tab="message"
+                    data-placeid="${escapeHtml(placeId)}"
+                    data-placename="${escapeHtml(place.name || "")}"
+                    data-address="${escapeHtml(place.formatted_address || "")}"
+                    data-phone="${escapeHtml(place.formatted_phone_number || place.international_phone_number || "")}"
+                    data-website="${escapeHtml(place.website || "")}">Message</button>
                 <button type="button" class="gm-popup-tab gm-picture-btn" data-tab="picture" data-placeid="${escapeHtml(placeId)}">Picture</button>
                 <button type="button" class="gm-popup-tab gm-video-btn" data-tab="video" data-placeid="${escapeHtml(placeId)}">Video</button>
             </div>
@@ -1439,6 +1446,159 @@ function hideLoginRequiredDialog() {
   const dialog = document.getElementById("gmLoginRequiredDialog");
   if (dialog) {
     dialog.style.display = "none";
+  }
+}
+
+/* =====================================================
+   GỬI TIN NHẮN CHO CHỦ QUÁN (BUDDYPRESS / BUDDYX MESSAGE)
+===================================================== */
+function openPlaceMessageDialog(placeData) {
+  if (typeof gmUserLoggedIn !== "undefined" && !gmUserLoggedIn) {
+    showLoginRequiredDialog();
+    return;
+  }
+
+  const dialog = document.getElementById("gmMessageDialog");
+  if (!dialog) return;
+
+  const placeId = placeData.placeId || "";
+  const placeName = placeData.placeName || "Place";
+  const address = placeData.address || "";
+  const phone = placeData.phone || "";
+  const website = placeData.website || "";
+
+  dialog.dataset.placeid = placeId;
+  dialog.dataset.placename = placeName;
+  dialog.dataset.address = address;
+  dialog.dataset.phone = phone;
+  dialog.dataset.website = website;
+  dialog.dataset.ownerFound = "0";
+
+  const nameEl = document.getElementById("gmMessagePlaceName");
+  const addrEl = document.getElementById("gmMessagePlaceAddress");
+  const ownerBox = document.getElementById("gmMessageOwnerBox");
+  const subjectInput = document.getElementById("gmMessageSubject");
+  const messageInput = document.getElementById("gmMessageText");
+  const statusEl = document.getElementById("gmMessageStatus");
+  const sendBtn = document.getElementById("gmMessageSendBtn");
+
+  if (nameEl) nameEl.textContent = placeName;
+  if (addrEl) addrEl.textContent = address;
+  if (subjectInput) subjectInput.value = `Inquiry about ${placeName}`;
+  if (messageInput) messageInput.value = "";
+  if (statusEl) {
+    statusEl.style.display = "none";
+    statusEl.className = "gm-message-status";
+    statusEl.innerHTML = "";
+  }
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.innerHTML =
+      '<i class="fa-solid fa-paper-plane"></i> <span>Send Message</span>';
+  }
+
+  if (ownerBox) {
+    ownerBox.innerHTML = `
+      <div class="gm-message-owner-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <span>Checking place owner information in the system...</span>
+      </div>
+    `;
+  }
+
+  dialog.classList.add("show");
+
+  const params = new URLSearchParams({
+    action: "pt_get_place_owner",
+    place_id: placeId,
+    place_name: placeName,
+    phone: phone,
+    website: website,
+  });
+
+  fetch(`${ajaxUrl}?${params.toString()}`, {
+    method: "GET",
+    credentials: "same-origin",
+  })
+    .then((r) => r.json())
+    .then((res) => {
+      if (!ownerBox) return;
+
+      if (res && res.success && res.data && res.data.found) {
+        const owner = res.data;
+        dialog.dataset.ownerFound = "1";
+        dialog.dataset.ownerId = owner.owner_id || "";
+
+        ownerBox.innerHTML = `
+          <div class="gm-owner-card verified">
+            <img class="gm-owner-avatar" src="${escapeHtml(owner.avatar || "")}" alt="${escapeHtml(owner.display_name || "Owner")}">
+            <div class="gm-owner-info">
+              <div class="gm-owner-name-row">
+                <strong>${escapeHtml(owner.display_name || "Place Owner")}</strong>
+                <span class="gm-owner-badge"><i class="fa-solid fa-circle-check"></i> Verified in System</span>
+              </div>
+              <div class="gm-owner-username">@${escapeHtml(owner.username || "")}</div>
+            </div>
+            ${
+              owner.profile_url
+                ? `<a href="${escapeHtml(owner.profile_url)}" target="_blank" rel="noopener" class="gm-owner-profile-link" title="View BuddyPress Profile">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                   </a>`
+                : ""
+            }
+          </div>
+        `;
+
+        if (owner.is_self) {
+          if (sendBtn) sendBtn.disabled = true;
+          if (statusEl) {
+            statusEl.style.display = "block";
+            statusEl.className = "gm-message-status info";
+            statusEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> You are the registered owner of this place.`;
+          }
+        } else if (sendBtn) {
+          sendBtn.disabled = false;
+        }
+      } else {
+        dialog.dataset.ownerFound = "0";
+        ownerBox.innerHTML = `
+          <div class="gm-owner-card not-found">
+            <div class="gm-owner-not-found-icon">
+              <i class="fa-solid fa-user-slash"></i>
+            </div>
+            <div class="gm-owner-info">
+              <div class="gm-owner-name-row">
+                <strong>Owner not registered in system</strong>
+              </div>
+              <div class="gm-owner-note">
+                This place does not have owner information in the system yet. Messages can only be sent when the cafe owner has a registered account in the system.
+              </div>
+            </div>
+          </div>
+        `;
+        if (sendBtn) sendBtn.disabled = true;
+      }
+    })
+    .catch(() => {
+      if (ownerBox) {
+        ownerBox.innerHTML = `
+          <div class="gm-owner-card not-found">
+            <div class="gm-owner-not-found-icon">
+              <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <div class="gm-owner-info">
+              <div class="gm-owner-note">Unable to verify place owner right now. Please try again.</div>
+            </div>
+          </div>
+        `;
+      }
+    });
+}
+
+function closePlaceMessageDialog() {
+  const dialog = document.getElementById("gmMessageDialog");
+  if (dialog) {
+    dialog.classList.remove("show");
   }
 }
 
@@ -1998,10 +2158,148 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
   }
+  // Gửi form Message cho chủ quán qua BuddyPress / BuddyX
+  const messageForm = document.getElementById("gmMessageForm");
+  if (messageForm) {
+    messageForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const dialog = document.getElementById("gmMessageDialog");
+      if (!dialog) return;
+
+      const placeId = dialog.dataset.placeid || "";
+      const placeName = dialog.dataset.placename || "";
+      const address = dialog.dataset.address || "";
+      const phone = dialog.dataset.phone || "";
+      const website = dialog.dataset.website || "";
+
+      const subjectInput = document.getElementById("gmMessageSubject");
+      const messageInput = document.getElementById("gmMessageText");
+      const statusEl = document.getElementById("gmMessageStatus");
+      const sendBtn = document.getElementById("gmMessageSendBtn");
+
+      const subject = subjectInput ? subjectInput.value.trim() : "";
+      const message = messageInput ? messageInput.value.trim() : "";
+
+      if (!message) {
+        if (statusEl) {
+          statusEl.style.display = "block";
+          statusEl.className = "gm-message-status error";
+          statusEl.innerHTML =
+            '<i class="fa-solid fa-circle-exclamation"></i> Please enter your message.';
+        }
+        return;
+      }
+
+      if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML =
+          '<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending...</span>';
+      }
+
+      const formData = new FormData();
+      formData.append("action", "pt_send_place_message");
+      formData.append("place_id", placeId);
+      formData.append("place_name", placeName);
+      formData.append("address", address);
+      formData.append("phone", phone);
+      formData.append("website", website);
+      formData.append("subject", subject);
+      formData.append("message", message);
+
+      fetch(ajaxUrl, {
+        method: "POST",
+        body: formData,
+        credentials: "same-origin",
+      })
+        .then((r) => r.json())
+        .then((res) => {
+          if (res && res.success) {
+            if (messageInput) messageInput.value = "";
+            if (statusEl) {
+              const msgUrl = res.data?.messages_url || "";
+              statusEl.style.display = "block";
+              statusEl.className = "gm-message-status success";
+              statusEl.innerHTML = `
+                <div><i class="fa-solid fa-circle-check"></i> ${escapeHtml(
+                  res.data?.message || "Message sent successfully!"
+                )}</div>
+                ${
+                  msgUrl
+                    ? `<a href="${escapeHtml(msgUrl)}" class="gm-open-bp-messages-link" target="_blank" rel="noopener">
+                        <i class="fa-solid fa-comments"></i> Open in Messages
+                       </a>`
+                    : ""
+                }
+              `;
+            }
+            showToast(res.data?.message || "Message sent to place owner!");
+          } else {
+            const errMsg =
+              res?.data?.message ||
+              (typeof res?.data === "string" ? res.data : "") ||
+              "Unable to send message.";
+            if (statusEl) {
+              statusEl.style.display = "block";
+              statusEl.className = "gm-message-status error";
+              statusEl.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(errMsg)}`;
+            }
+          }
+        })
+        .catch(() => {
+          if (statusEl) {
+            statusEl.style.display = "block";
+            statusEl.className = "gm-message-status error";
+            statusEl.innerHTML =
+              '<i class="fa-solid fa-circle-exclamation"></i> Network error while sending message.';
+          }
+        })
+        .finally(() => {
+          if (sendBtn && dialog.dataset.ownerFound === "1") {
+            sendBtn.disabled = false;
+          }
+          if (sendBtn) {
+            sendBtn.innerHTML =
+              '<i class="fa-solid fa-paper-plane"></i> <span>Send Message</span>';
+          }
+        });
+    });
+  }
 });
 
 // Event delegation cho các nút trong Popup & Dialog
 document.addEventListener("click", function (e) {
+  // Mở dialog Message
+  const messageBtn = e.target.closest(".gm-message-btn");
+  if (messageBtn) {
+    openPlaceMessageDialog({
+      placeId: messageBtn.dataset.placeid || "",
+      placeName:
+        messageBtn.dataset.placename || currentPlaceDetails?.name || "Place",
+      address:
+        messageBtn.dataset.address ||
+        currentPlaceDetails?.formatted_address ||
+        "",
+      phone:
+        messageBtn.dataset.phone ||
+        currentPlaceDetails?.formatted_phone_number ||
+        currentPlaceDetails?.international_phone_number ||
+        "",
+      website: messageBtn.dataset.website || currentPlaceDetails?.website || "",
+    });
+    return;
+  }
+
+  // Đóng dialog Message
+  if (
+    e.target.closest("#gmMessageClose") ||
+    e.target.closest("#gmMessageCancelBtn") ||
+    e.target.id === "gmMessageDialog"
+  ) {
+    closePlaceMessageDialog();
+    return;
+  }
+
   // Mở dialog Picture
   const pictureBtn = e.target.closest(".gm-picture-btn");
   if (pictureBtn) {

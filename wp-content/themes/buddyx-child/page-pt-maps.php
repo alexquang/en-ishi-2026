@@ -257,6 +257,84 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 
 </div>
 
+<!-- Dialog Message (Gửi tin nhắn cho chủ quán qua BuddyPress / BuddyX) -->
+<div id="gmMessageDialog" class="gm-message-dialog">
+
+    <div class="gm-message-modal">
+
+        <div class="gm-message-header">
+
+            <h3>
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>Message Place Owner</span>
+            </h3>
+
+            <button type="button" id="gmMessageClose" aria-label="Close Message Dialog">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+        </div>
+
+        <div class="gm-message-body">
+
+            <div class="gm-message-place-summary">
+                <div class="gm-message-place-icon">
+                    <i class="fa-solid fa-mug-hot"></i>
+                </div>
+                <div class="gm-message-place-meta">
+                    <div id="gmMessagePlaceName" class="gm-message-place-name">Place Name</div>
+                    <div id="gmMessagePlaceAddress" class="gm-message-place-address"></div>
+                </div>
+            </div>
+
+            <!-- Trạng thái chủ quán trong hệ thống -->
+            <div id="gmMessageOwnerBox" class="gm-message-owner-box">
+                <div class="gm-message-owner-loading">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>Checking place owner in the system...</span>
+                </div>
+            </div>
+
+            <form id="gmMessageForm" class="gm-message-form">
+                <div class="gm-message-field">
+                    <label for="gmMessageSubject">Subject</label>
+                    <input
+                        type="text"
+                        id="gmMessageSubject"
+                        name="subject"
+                        placeholder="Enter message subject..."
+                        autocomplete="off">
+                </div>
+
+                <div class="gm-message-field">
+                    <label for="gmMessageText">Message <span class="required">*</span></label>
+                    <textarea
+                        id="gmMessageText"
+                        name="message"
+                        rows="4"
+                        placeholder="Write your message to the place owner..."
+                        required></textarea>
+                </div>
+
+                <div id="gmMessageStatus" class="gm-message-status" style="display: none;"></div>
+
+                <div class="gm-message-actions">
+                    <button type="button" id="gmMessageCancelBtn" class="gm-message-cancel-btn">
+                        Cancel
+                    </button>
+                    <button type="submit" id="gmMessageSendBtn" class="gm-message-send-btn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Send Message</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
 <!-- Dialog Picture -->
 <div id="gmPictureDialog" class="gm-picture-dialog">
 
@@ -390,8 +468,8 @@ const gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 
         <h3>Login Required</h3>
 
-        <p>
-            Please log in to upload a video or picture.
+        <p id="gmLoginRequiredText">
+            Please log in to send a message or upload a video or picture.
         </p>
 
         <div id="gmNextendGoogleLogin">
