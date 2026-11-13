@@ -2343,3 +2343,50 @@ function pt_live_get_state_ajax()
     ]);
 }
 
+/**
+ * Lưu / Bỏ lưu Group yêu thích (ngôi sao ★ trên danh sách Groups)
+ */
+add_action('wp_ajax_pt_toggle_favorite_group', 'pt_toggle_favorite_group_ajax');
+add_action('wp_ajax_nopriv_pt_toggle_favorite_group', 'pt_toggle_favorite_group_ajax');
+function pt_toggle_favorite_group_ajax()
+{
+    $group_id = isset($_POST['group_id']) ? intval($_POST['group_id']) : 0;
+    $fav      = !empty($_POST['fav']);
+
+    if ($group_id <= 0) {
+        wp_send_json_error(['message' => 'Invalid group ID'], 400);
+    }
+
+    if (!is_user_logged_in()) {
+        wp_send_json_success([
+            'group_id' => $group_id,
+            'fav'      => $fav,
+            'guest'    => true,
+        ]);
+    }
+
+    $user_id = get_current_user_id();
+    $favs    = get_user_meta($user_id, 'pt_favorite_groups', true);
+    if (!is_array($favs)) {
+        $favs = [];
+    }
+    $favs = array_map('intval', $favs);
+
+    if ($fav) {
+        if (!in_array($group_id, $favs, true)) {
+            $favs[] = $group_id;
+        }
+    } else {
+        $favs = array_values(array_diff($favs, [$group_id]));
+    }
+
+    update_user_meta($user_id, 'pt_favorite_groups', $favs);
+
+    wp_send_json_success([
+        'group_id' => $group_id,
+        'fav'      => $fav,
+        'favs'     => $favs,
+    ]);
+}
+
+
