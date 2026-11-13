@@ -2,12 +2,10 @@
  * GTranslate GPS & Country Language Auto-Detection + UI Dictionary Fallback
  * Automatically detects user country on page load, applies the corresponding language,
  * synchronizes the header dropdown selector (.gt_selector), and translates header menu
- * & Maps UI items immediately so menu items always change language reliably.
+ * & Maps UI items immediately without causing DOM mutation loops.
  */
 (function () {
   "use strict";
-
-  console.log("[GTranslate] Initializing country & language auto-detection...");
 
   // Country code -> GTranslate language code
   const languageMap = {
@@ -39,8 +37,6 @@
 
   /**
    * Từ điển dịch trực tiếp cho Menu Header & Giao diện Maps
-   * Đảm bảo các mục menu luôn đổi sang Tiếng Việt / Nhật / Hàn ngay lập tức
-   * kể cả khi Google Translate widget bỏ qua các cụm từ ngắn trên menu.
    */
   const uiDictionary = {
     "Business Matching": {
@@ -183,7 +179,6 @@
       "zh-CN": "注册",
       en: "Register",
     },
-    // Các nút trên trang Maps
     "🍜 Restaurants": {
       vi: "🍜 Nhà hàng",
       ja: "🍜 レストラン",
@@ -274,54 +269,61 @@
   };
 
   let activeLanguage = "en";
-  let isTranslateApplied = false;
+  let isUpdatingDOM = false;
+
+  /**
+   * Luôn gỡ class loading an toàn để không bao giờ chặn hiển thị trang
+   */
+  function removeLoadingState() {
+    document.documentElement.classList.remove("pt-gtranslate-loading");
+  }
+
+  // Failsafe: luôn gỡ class loading tối đa sau 1.2 giây
+  setTimeout(removeLoadingState, 1200);
 
   /**
    * Dịch trực tiếp các mục trên thanh Menu Header (#primary-menu, .main-navigation)
-   * và các nút công cụ trên trang Maps theo ngôn ngữ đã chọn
+   * và các nút công cụ trên trang Maps theo ngôn ngữ đã chọn.
+   * Chỉ cập nhật khi nội dung thực sự khác để tránh vòng lặp DOM.
    */
   function applyDirectMenuAndUITranslations(lang) {
-    if (!lang) return;
+    if (!lang || isUpdatingDOM) return;
+    isUpdatingDOM = true;
 
-    // 1. Dịch các mục trên thanh Menu (#primary-menu a, .mobile-user-profile-menu a, .user-profile-menu a, .top-categories .cat-btn, #layers-toggle)
-    const targetElements = document.querySelectorAll(
-      "#primary-menu a, .main-navigation ul.menu li > a, .top-categories .cat-btn, #layers-toggle"
-    );
+    try {
+      const targetElements = document.querySelectorAll(
+        "#primary-menu a, .main-navigation ul.menu li > a, .top-categories .cat-btn, #layers-toggle"
+      );
 
-    targetElements.forEach(function (el) {
-      // Bỏ qua nếu là bên trong gtranslate_wrapper
-      if (el.closest(".gtranslate_wrapper")) return;
+      targetElements.forEach(function (el) {
+        if (el.closest(".gtranslate_wrapper")) return;
 
-      // Tìm text node đầu tiên có nội dung chữ hoặc toàn bộ text
-      let textNodes = [];
-      for (let i = 0; i < el.childNodes.length; i++) {
-        const node = el.childNodes[i];
-        if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim() !== "") {
-          textNodes.push(node);
-        } else if (
-          node.nodeType === Node.ELEMENT_NODE &&
-          !node.classList.contains("dropdown-symbol") &&
-          !node.classList.contains("sub-arrow") &&
-          node.tagName !== "I" &&
-          node.tagName !== "SVG" &&
-          node.children.length === 0 &&
-          node.textContent.trim() !== ""
-        ) {
-          textNodes.push(node);
+        let textNodes = [];
+        for (let i = 0; i < el.childNodes.length; i++) {
+          const node = el.childNodes[i];
+          if (node.nodeType === Node.TEXT_NODE && node.nodeValue.trim() !== "") {
+            textNodes.push(node);
+          } else if (
+            node.nodeType === Node.ELEMENT_NODE &&
+            !node.classList.contains("dropdown-symbol") &&
+            !node.classList.contains("sub-arrow") &&
+            node.tagName !== "I" &&
+            node.tagName !== "SVG" &&
+            node.children.length === 0 &&
+            node.textContent.trim() !== ""
+          ) {
+            textNodes.push(node);
+          }
         }
-      }
 
-      if (textNodes.length > 0) {
         textNodes.forEach(function (tNode) {
           const currentRaw =
             tNode.nodeType === Node.TEXT_NODE
               ? tNode.nodeValue.trim()
               : tNode.textContent.trim();
 
-          // Lưu text gốc tiếng Anh vào thuộc tính của phần tử cha
           let origKey = el.getAttribute("data-pt-orig-text");
           if (!origKey) {
-            // Tìm xem currentRaw có khớp với key hoặc bất kỳ bản dịch nào trong uiDictionary không
             for (const key in uiDictionary) {
               if (key.toLowerCase() === currentRaw.toLowerCase()) {
                 origKey = key;
@@ -345,10 +347,11 @@
             const translated =
               uiDictionary[origKey][lang] ||
               (lang === "en" ? uiDictionary[origKey].en : null);
-            if (translated) {
+
+            if (translated && currentRaw !== translated) {
               if (tNode.nodeType === Node.TEXT_NODE) {
-                const leading = tNode.nodeValue.match(/^\s*/)[0];
-                const trailing = tNode.nodeValue.match(/\s*$/)[0];
+                const leading = (tNode.nodeValue.match(/^\s*/) || [""])[0];
+                const trailing = (tNode.nodeValue.match(/\s*$/) || [""])[0];
                 tNode.nodeValue = leading + translated + trailing;
               } else {
                 tNode.textContent = translated;
@@ -356,85 +359,72 @@
             }
           }
         });
-      }
-    });
+      });
 
-    // 2. Dịch placeholder của ô tìm kiếm Google Maps
-    const inputs = document.querySelectorAll(
-      "#pac-input, #gm-dir-origin, #gm-dir-dest"
-    );
-    inputs.forEach(function (inp) {
-      let origPh = inp.getAttribute("data-pt-orig-ph");
-      if (!origPh) {
+      const inputs = document.querySelectorAll(
+        "#pac-input, #gm-dir-origin, #gm-dir-dest"
+      );
+      inputs.forEach(function (inp) {
+        let origPh = inp.getAttribute("data-pt-orig-ph");
         const curPh = (inp.getAttribute("placeholder") || "").trim();
-        if (placeholderDictionary[curPh]) {
+        if (!origPh && placeholderDictionary[curPh]) {
           origPh = curPh;
           inp.setAttribute("data-pt-orig-ph", origPh);
         }
-      }
-      if (origPh && placeholderDictionary[origPh]) {
-        const nextPh =
-          placeholderDictionary[origPh][lang] ||
-          (lang === "en" ? placeholderDictionary[origPh].en : null);
-        if (nextPh) {
-          inp.setAttribute("placeholder", nextPh);
+        if (origPh && placeholderDictionary[origPh]) {
+          const nextPh =
+            placeholderDictionary[origPh][lang] ||
+            (lang === "en" ? placeholderDictionary[origPh].en : null);
+          if (nextPh && curPh !== nextPh) {
+            inp.setAttribute("placeholder", nextPh);
+          }
         }
-      }
-    });
+      });
+    } finally {
+      isUpdatingDOM = false;
+    }
   }
 
   /**
-   * Đồng bộ giá trị hiển thị trên dropdown menu (.gt_selector) và Google Translate combo
+   * Đồng bộ giá trị hiển thị trên dropdown menu (.gt_selector)
    */
   function syncDropdownAndCombo(lang) {
     if (!lang) return;
     const targetValue = "en|" + lang;
 
-    // 1. Cập nhật tất cả dropdown .gt_selector đang có trên trang
     const selectors = document.querySelectorAll(".gt_selector");
     selectors.forEach(function (sel) {
-      sel.value = targetValue;
+      if (sel.value !== targetValue) {
+        sel.value = targetValue;
+      }
       for (let i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === targetValue) {
-          sel.options[i].selected = true;
-          sel.selectedIndex = i;
+          if (!sel.options[i].selected) {
+            sel.options[i].selected = true;
+            sel.selectedIndex = i;
+          }
           break;
         }
       }
     });
 
-    // 2. Dịch trực tiếp các mục menu Header & UI Maps
     applyDirectMenuAndUITranslations(lang);
 
-    // 3. Cập nhật combo ẩn của Google Translate (nếu đã sẵn sàng)
     const combo = document.querySelector("select.goog-te-combo");
-    if (combo) {
-      const pageTranslated =
-        document.documentElement.classList.contains("translated-ltr") ||
-        document.documentElement.classList.contains("translated-rtl");
-
-      if (combo.value !== lang || (lang !== "en" && !pageTranslated)) {
-        if (combo.value === lang && !pageTranslated) {
-          combo.value = "en";
-          combo.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-        combo.value = lang;
-        combo.dispatchEvent(new Event("change", { bubbles: true }));
-      }
+    if (combo && combo.value !== lang) {
+      combo.value = lang;
+      combo.dispatchEvent(new Event("change", { bubbles: true }));
     }
   }
 
-  /**
-   * Chờ Google Translate sẵn sàng
-   */
   function waitForGoogleTranslate(resolve) {
     let attempts = 0;
-    const maxAttempts = 80;
+    const maxAttempts = 50;
 
     const timer = setInterval(function () {
       attempts++;
       const combo = document.querySelector("select.goog-te-combo");
-      if (combo && combo.options && combo.options.length > 0) {
+      if (combo) {
         clearInterval(timer);
         resolve(true);
         return;
@@ -446,17 +436,9 @@
     }, 150);
   }
 
-  /**
-   * Nạp script Google Translate nếu chưa có
-   */
   function loadGoogleTranslate() {
     return new Promise(function (resolve) {
-      const existingCombo = document.querySelector("select.goog-te-combo");
-      if (
-        existingCombo &&
-        existingCombo.options &&
-        existingCombo.options.length > 0
-      ) {
+      if (document.querySelector("select.goog-te-combo")) {
         resolve(true);
         return;
       }
@@ -475,7 +457,6 @@
       };
 
       window.gt_translate_script.onerror = function () {
-        console.warn("[GTranslate] Failed to load Google Translate engine");
         resolve(false);
       };
 
@@ -484,9 +465,6 @@
     });
   }
 
-  /**
-   * Lấy quốc gia từ GPS (Bounding box nhanh hoặc Reverse Geocoding)
-   */
   function getGPSCountry() {
     return new Promise(function (resolve, reject) {
       if (!navigator.geolocation) {
@@ -499,72 +477,29 @@
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
 
-          // Kiểm tra nhanh tọa độ nằm trong lãnh thổ Việt Nam
           if (lat >= 8.5 && lat <= 23.5 && lng >= 102.0 && lng <= 110.0) {
             resolve("VN");
             return;
           }
-
-          // Kiểm tra nhanh Nhật Bản
           if (lat >= 24.0 && lat <= 46.0 && lng >= 123.0 && lng <= 146.0) {
             resolve("JP");
             return;
           }
-
-          // Kiểm tra nhanh Hàn Quốc
           if (lat >= 33.0 && lat <= 39.0 && lng >= 124.0 && lng <= 131.0) {
             resolve("KR");
             return;
           }
 
-          const url =
-            "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
-            lat +
-            "&lon=" +
-            lng +
-            "&zoom=3&addressdetails=1";
-
-          const controller =
-            typeof AbortController !== "undefined"
-              ? new AbortController()
-              : null;
-          const timeoutId = setTimeout(function () {
-            if (controller) controller.abort();
-          }, 3500);
-
-          fetch(url, {
-            headers: { Accept: "application/json" },
-            signal: controller ? controller.signal : undefined,
-          })
-            .then(function (res) {
-              clearTimeout(timeoutId);
-              if (!res.ok) throw new Error("HTTP " + res.status);
-              return res.json();
-            })
-            .then(function (data) {
-              const code =
-                data.address && data.address.country_code
-                  ? data.address.country_code.toUpperCase()
-                  : null;
-              if (code) resolve(code);
-              else reject("Country not found");
-            })
-            .catch(function (err) {
-              clearTimeout(timeoutId);
-              reject(err);
-            });
+          reject("Outside quick bounds");
         },
         function (err) {
           reject(err);
         },
-        { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
+        { enableHighAccuracy: false, timeout: 3000, maximumAge: 300000 }
       );
     });
   }
 
-  /**
-   * Phát hiện quốc gia của người dùng qua nhiều nguồn tin cậy
-   */
   function detectCountry() {
     return new Promise(function (resolve) {
       if (
@@ -580,7 +515,14 @@
           ? ptGTranslateData.ajaxUrl
           : "/wp-admin/admin-ajax.php";
 
-      const ajaxPromise = fetch(ajaxUrl + "?action=pt_detect_country", {
+      let resolved = false;
+      function onCountrySuccess(country) {
+        if (resolved) return;
+        resolved = true;
+        resolve(country);
+      }
+
+      fetch(ajaxUrl + "?action=pt_detect_country", {
         credentials: "same-origin",
       })
         .then(function (res) {
@@ -588,23 +530,12 @@
         })
         .then(function (res) {
           if (res && res.success && res.data && res.data.country) {
-            return res.data.country;
+            onCountrySuccess(res.data.country);
           }
-          throw new Error("No country in AJAX");
-        });
+        })
+        .catch(function () {});
 
-      const gpsPromise = getGPSCountry();
-
-      let resolved = false;
-
-      function onCountrySuccess(country) {
-        if (resolved) return;
-        resolved = true;
-        resolve(country);
-      }
-
-      ajaxPromise.then(onCountrySuccess).catch(function () {});
-      gpsPromise.then(onCountrySuccess).catch(function () {});
+      getGPSCountry().then(onCountrySuccess).catch(function () {});
 
       setTimeout(function () {
         if (!resolved) {
@@ -623,18 +554,15 @@
 
           onCountrySuccess(fallbackCountry);
         }
-      }, 1500);
+      }, 1000);
     });
   }
 
-  /**
-   * Áp dụng ngôn ngữ vào GTranslate và cập nhật Dropdown + Menu
-   */
   function applyLanguage(language) {
     activeLanguage = language;
     const targetValue = "en|" + language;
 
-    // Cập nhật giao diện dropdown và dịch menu ngay lập tức
+    removeLoadingState();
     syncDropdownAndCombo(language);
 
     const cval = "/en/" + language;
@@ -647,23 +575,19 @@
     } catch (e) {}
 
     if (language === "en") {
-      isTranslateApplied = true;
-      document.documentElement.classList.remove("pt-gtranslate-loading");
       syncDropdownAndCombo("en");
       return;
     }
 
     loadGoogleTranslate().then(function (ready) {
-      document.documentElement.classList.remove("pt-gtranslate-loading");
+      removeLoadingState();
       if (!ready) return;
-
-      isTranslateApplied = true;
 
       if (typeof window.doGTranslate === "function") {
         window.doGTranslate(targetValue);
       }
 
-      [50, 150, 400, 800, 1500, 2500, 4000].forEach(function (delay) {
+      [150, 600, 1500].forEach(function (delay) {
         setTimeout(function () {
           syncDropdownAndCombo(language);
         }, delay);
@@ -671,10 +595,9 @@
     });
   }
 
-  /**
-   * Khởi động quá trình kiểm tra và chuyển đổi ngôn ngữ
-   */
   function initAutoLanguage() {
+    removeLoadingState();
+
     let storedLang = null;
     let isUserManual = false;
 
@@ -695,7 +618,6 @@
     });
   }
 
-  // Lắng nghe khi người dùng đổi ngôn ngữ thủ công từ dropdown .gt_selector
   document.addEventListener("change", function (e) {
     if (e.target && e.target.classList.contains("gt_selector")) {
       const val = e.target.value;
@@ -710,23 +632,6 @@
       }
     }
   });
-
-  if (typeof MutationObserver !== "undefined") {
-    const observer = new MutationObserver(function () {
-      if (activeLanguage) {
-        applyDirectMenuAndUITranslations(activeLanguage);
-      }
-    });
-
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
-
-    setTimeout(function () {
-      observer.disconnect();
-    }, 12000);
-  }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initAutoLanguage);

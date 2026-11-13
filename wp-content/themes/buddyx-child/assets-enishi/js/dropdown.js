@@ -133,6 +133,7 @@
         function get_current_lang() {var keyValue = document.cookie.match('(^|;) ?googtrans=([^;]*)(;|$)');return keyValue ? keyValue[2].split('/')[2] : null;}
         function fire_event(element,event){try{if(document.createEventObject){var evt=document.createEventObject();element.fireEvent('on'+event,evt)}else{var evt=document.createEvent('HTMLEvents');evt.initEvent(event,true,true);element.dispatchEvent(evt)}}catch(e){}}
         function load_tlib(){if(!window.gt_translate_script){window.gt_translate_script=document.createElement('script');gt_translate_script.src='https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2';document.body.appendChild(gt_translate_script);}}
+        var gtRetryCount = 0;
         window.doGTranslate = function(lang_pair){
             if(lang_pair.value)lang_pair=lang_pair.value;
             if(lang_pair=='')return;
@@ -140,7 +141,9 @@
 
             // Always synchronize all .gt_selector elements on the page
             document.querySelectorAll('.gt_selector').forEach(function(sel){
-                sel.value = lang_pair;
+                if (sel.value !== lang_pair) {
+                    sel.value = lang_pair;
+                }
                 for (var i = 0; i < sel.options.length; i++) {
                     if (sel.options[i].value === lang_pair) {
                         sel.options[i].selected = true;
@@ -160,26 +163,19 @@
             var sel=document.getElementsByTagName('select');
             for(var i=0;i<sel.length;i++)if(sel[i].className.indexOf('goog-te-combo')!=-1){teCombo=sel[i];break;}
             if(document.getElementById('google_translate_element2')==null||document.getElementById('google_translate_element2').innerHTML.length==0||!teCombo||teCombo.length==0||teCombo.innerHTML.length==0){
-                setTimeout(function(){doGTranslate(lang_pair)},300)
-            } else {
-                // Force Google Translate to re-translate if DOM is still in default language
-                if (teCombo.value === lang) {
-                    teCombo.value = default_language;
-                    fire_event(teCombo,'change');
+                if (gtRetryCount < 15) {
+                    gtRetryCount++;
+                    setTimeout(function(){doGTranslate(lang_pair)},400);
                 }
+            } else {
+                gtRetryCount = 0;
                 teCombo.value=lang;
-                fire_event(teCombo,'change');
                 fire_event(teCombo,'change');
             }
         }
 
         window.googleTranslateElementInit2=function(){
             new google.translate.TranslateElement({pageLanguage:default_language,autoDisplay:false},'google_translate_element2');
-            if(current_lang && current_lang != default_language) {
-                setTimeout(function(){
-                    doGTranslate(default_language + '|' + current_lang);
-                }, 150);
-            }
         };
 
         if(current_lang != default_language)
