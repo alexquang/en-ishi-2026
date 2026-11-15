@@ -829,6 +829,8 @@
     }
 
     function startPeerViewer(roomName) {
+        if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+        if (typeof setStatusBadge === 'function') setStatusBadge(true);
         if (els.videoMount && Array.isArray(state.channels)) {
             const ch = state.channels.find((c) => c && c.room === roomName);
             const poster = (ch && (ch.host_avatar || ch.thumb)) || '';
