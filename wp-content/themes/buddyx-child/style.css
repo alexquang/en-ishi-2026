@@ -208,9 +208,11 @@ textarea,
 .pt-header-language .gt_selector {
   border: none !important;
   background: #fff !important;
+  box-sizing: border-box !important;
+  padding: 4px 20px 4px 6px !important;
   min-width: 0 !important;
-  width: 88px;
-  max-width: 150px;
+  width: 105px;
+  max-width: 165px;
   font-size: 14px !important;
   font-weight: bold !important;
   color: #000 !important;

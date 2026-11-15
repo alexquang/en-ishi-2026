@@ -408,8 +408,16 @@
         (cs.fontFamily || "Poppins, sans-serif");
 
     const textWidth = Math.ceil(ctx.measureText(text).width);
-    const arrowAndPadding = 32;
-    const targetWidth = Math.max(70, Math.min(150, textWidth + arrowAndPadding));
+    const padLeft = parseFloat(cs.paddingLeft) || 0;
+    const padRight = parseFloat(cs.paddingRight) || 0;
+    const borderX =
+      (parseFloat(cs.borderLeftWidth) || 0) +
+      (parseFloat(cs.borderRightWidth) || 0);
+    const arrowReserve = padRight >= 18 ? 8 : 22 - padRight;
+    const targetWidth = Math.max(
+      75,
+      Math.min(165, textWidth + padLeft + padRight + borderX + arrowReserve)
+    );
     sel.style.width = targetWidth + "px";
   }
 
