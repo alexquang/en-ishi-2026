@@ -3324,13 +3324,23 @@ function refreshPlaceLiveStatus(placeId) {
       return;
     }
     fetchPlaceLivestreams(placeId).then((streams) => {
-      updateLiveTabUI(placeId, streams);
+      if (gmActiveLivePlaceId === placeId) {
+        updateLiveTabUI(placeId, streams);
+      }
     });
   };
 
   runCheck();
-  gmPlaceLivePollTimer = setInterval(runCheck, 15000);
+  gmPlaceLivePollTimer = setInterval(runCheck, 8000);
 }
+
+document.addEventListener("visibilitychange", function () {
+  if (document.visibilityState === "visible" && gmActiveLivePlaceId) {
+    fetchPlaceLivestreams(gmActiveLivePlaceId).then((streams) => {
+      updateLiveTabUI(gmActiveLivePlaceId, streams);
+    });
+  }
+});
 
 function openPlaceLiveListDialog(place, streams) {
   const dialog = document.getElementById("gmPlaceLiveDialog");

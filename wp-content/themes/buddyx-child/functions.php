@@ -1969,8 +1969,8 @@ function pt_get_active_livestreams_list()
             continue;
         }
         $updated = isset($info['updated_at']) ? (int) $info['updated_at'] : 0;
-        // Giữ các kênh còn heartbeat trong 10 phút gần nhất
-        if ($now - $updated <= 600) {
+        // Giữ các kênh còn heartbeat trong 45 giây gần nhất (heartbeat mỗi 15s)
+        if ($now - $updated <= 45) {
             $cleaned[$room] = $info;
         }
     }
@@ -2146,7 +2146,7 @@ function pt_get_place_livestreams_ajax()
             continue;
         }
         $updated = isset($info['updated_at']) ? (int) $info['updated_at'] : 0;
-        if ($now - $updated <= 600) {
+        if ($now - $updated <= 45) {
             $cleaned[$room] = $info;
             if (!empty($info['is_live']) && ($info['place_id'] ?? '') === $place_id) {
                 $matches[] = $info;

@@ -914,6 +914,36 @@
         }
     }
 
+    function sendStopBeacon() {
+        if (!state.isLive || !state.roomName) return;
+        const payload = new URLSearchParams({
+            action: 'pt_live_stop_stream',
+            nonce: cfg.nonce || '',
+            room: state.roomName,
+        });
+        try {
+            if (navigator.sendBeacon) {
+                const blob = new Blob([payload.toString()], {
+                    type: 'application/x-www-form-urlencoded; charset=UTF-8',
+                });
+                navigator.sendBeacon(ajaxUrl, blob);
+                return;
+            }
+        } catch (e) {}
+        try {
+            fetch(ajaxUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: payload.toString(),
+                credentials: 'same-origin',
+                keepalive: true,
+            });
+        } catch (e) {}
+    }
+
+    window.addEventListener('pagehide', sendStopBeacon);
+    window.addEventListener('beforeunload', sendStopBeacon);
+
     /* ----------------------------------------------------------------------
        INITIALIZATION & EVENT LISTENERS
        ---------------------------------------------------------------------- */
