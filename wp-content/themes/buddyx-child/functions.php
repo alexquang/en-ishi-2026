@@ -3052,6 +3052,19 @@ function pt_ajax_live_save_recording()
     ]);
 }
 
+add_action('wp_ajax_pt_get_place_inbox_messages', 'pt_get_place_inbox_messages_ajax');
+function pt_get_place_inbox_messages_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+    $inbox = get_user_meta(get_current_user_id(), 'pt_place_inbox_messages', true);
+    if (!is_array($inbox)) {
+        $inbox = [];
+    }
+    wp_send_json_success(['messages' => $inbox]);
+}
+
 add_action('wp_ajax_pt_get_user_shop_info', 'pt_get_user_shop_info_ajax');
 function pt_get_user_shop_info_ajax()
 {
