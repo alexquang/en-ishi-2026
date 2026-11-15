@@ -99,10 +99,10 @@ body.membership-account-page .site-sub-header {
   transform: translateY(-1px);
 }
 
-.pmpro .pmpro_btn-submit,
+.pmpro [class*="pmpro_btn-submit"],
 .pmpro .pmpro_btn-primary,
-.pmpro input[type="submit"].pmpro_btn-submit,
-.pmpro button.pmpro_btn-submit,
+.pmpro input[type="submit"][class*="pmpro_btn-submit"],
+.pmpro button[class*="pmpro_btn-submit"],
 .pmpro a.pmpro_btn-select {
   background: linear-gradient(135deg, #012068, #1a3a8f) !important;
   color: #ffffff !important;
@@ -110,7 +110,7 @@ body.membership-account-page .site-sub-header {
   box-shadow: 0 3px 10px rgba(1, 32, 104, 0.22);
 }
 
-.pmpro .pmpro_btn-submit:hover,
+.pmpro [class*="pmpro_btn-submit"]:hover,
 .pmpro .pmpro_btn-primary:hover,
 .pmpro a.pmpro_btn-select:hover {
   filter: brightness(1.08);
@@ -307,6 +307,61 @@ body.membership-account-page .site-sub-header {
 
 .pmpro .pmpro_list_item:last-child {
   border-bottom: none;
+}
+
+/* Your Profile Page */
+.pmpro .pmpro_form_fieldset {
+  border: none;
+  margin: 0 0 24px;
+  padding: 0;
+}
+
+.pmpro .pmpro_form_legend {
+  width: 100%;
+  padding: 0 0 12px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pmpro .pmpro_form_heading {
+  margin: 0;
+  font-size: 18px;
+}
+
+.pmpro .pmpro_form_hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pmpro .pmpro_form_submit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.pt-pmpro-profile-deposit-fieldset {
+  margin-top: 8px !important;
+  padding-top: 20px !important;
+  border-top: 1px solid #f1f5f9 !important;
+}
+
+.pt-pmpro-stat-box {
+  padding-top: 4px;
+}
+
+.pt-pmpro-stat-text {
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 /* Responsive */

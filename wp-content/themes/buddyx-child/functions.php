@@ -1300,7 +1300,21 @@ add_filter('body_class', function ($classes) {
     }
 
     $is_pmpro_page = (function_exists('pmpro_is_plugin_page') && pmpro_is_plugin_page())
-        || is_page(['membership-account', 'membership-levels', 'membership-checkout', 'membership-confirmation', 'confirmation', 'membership-billing', 'membership-cancel', 'membership-invoice', 'invoice', 'levels', 'checkout']);
+        || is_page([
+            'membership-account',
+            'membership-levels',
+            'membership-checkout',
+            'membership-confirmation',
+            'confirmation',
+            'membership-billing',
+            'membership-cancel',
+            'membership-invoice',
+            'your-profile',
+            'member-profile-edit',
+            'invoice',
+            'levels',
+            'checkout',
+        ]);
 
     if (!$is_pmpro_page && function_exists('pmpro_getOption')) {
         $pmpro_page_ids = array_filter([
@@ -1311,6 +1325,7 @@ add_filter('body_class', function ($classes) {
             (int) pmpro_getOption('confirmation_page_id'),
             (int) pmpro_getOption('invoice_page_id'),
             (int) pmpro_getOption('levels_page_id'),
+            (int) pmpro_getOption('member_profile_edit_page_id'),
         ]);
         if (!empty($pmpro_page_ids) && is_page($pmpro_page_ids)) {
             $is_pmpro_page = true;
@@ -2634,6 +2649,57 @@ function pt_render_wc_account_pmpro_summary()
             <span>Deposited: <strong><?php echo wp_kses_post($summary['formatted']); ?></strong></span>
         </span>
     </div>
+    <?php
+}
+
+/**
+ * Hiển thị tổng số tiền đã nạp trên trang PMPro Your Profile (/membership-account/your-profile/)
+ */
+add_action('pmpro_show_user_profile', 'pt_render_pmpro_your_profile_deposit_section');
+function pt_render_pmpro_your_profile_deposit_section($user)
+{
+    if (!($user instanceof WP_User) || empty($user->ID)) {
+        return;
+    }
+
+    $summary = pt_get_user_pmpro_deposit_summary((int) $user->ID);
+    $last_date = $summary['last_paid_at'] !== ''
+        ? date_i18n(get_option('date_format'), strtotime($summary['last_paid_at']))
+        : '—';
+    ?>
+    <fieldset class="pmpro_form_fieldset pt-pmpro-profile-deposit-fieldset">
+        <legend class="pmpro_form_legend">
+            <h2 class="pmpro_form_heading pmpro_font-large"><?php esc_html_e('Account Deposit & Membership', 'buddyx-child'); ?></h2>
+        </legend>
+        <div class="pmpro_form_fields pmpro_cols-2">
+            <div class="pmpro_form_field">
+                <span class="pmpro_form_label"><?php esc_html_e('Membership Level', 'buddyx-child'); ?></span>
+                <div class="pt-pmpro-stat-box">
+                    <span class="pt-pmpro-pill pt-pmpro-level">
+                        <i class="fa-solid fa-medal"></i>
+                        <span><?php echo esc_html($summary['level_name']); ?></span>
+                    </span>
+                </div>
+            </div>
+            <div class="pmpro_form_field">
+                <span class="pmpro_form_label"><?php esc_html_e('Total Deposited', 'buddyx-child'); ?></span>
+                <div class="pt-pmpro-stat-box">
+                    <span class="pt-pmpro-pill pt-pmpro-deposited">
+                        <i class="fa-solid fa-wallet"></i>
+                        <strong><?php echo wp_kses_post($summary['formatted']); ?></strong>
+                    </span>
+                </div>
+            </div>
+            <div class="pmpro_form_field">
+                <span class="pmpro_form_label"><?php esc_html_e('Completed Orders', 'buddyx-child'); ?></span>
+                <div class="pt-pmpro-stat-text"><?php echo esc_html((string) $summary['orders_count']); ?></div>
+            </div>
+            <div class="pmpro_form_field">
+                <span class="pmpro_form_label"><?php esc_html_e('Latest Payment', 'buddyx-child'); ?></span>
+                <div class="pt-pmpro-stat-text"><?php echo esc_html($last_date); ?></div>
+            </div>
+        </div>
+    </fieldset>
     <?php
 }
 
