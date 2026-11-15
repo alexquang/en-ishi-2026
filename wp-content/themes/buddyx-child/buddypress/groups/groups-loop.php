@@ -283,9 +283,7 @@ bp_nouveau_before_loop(); ?>
 			$meet_slug = function_exists('buddymeet_get_slug') ? buddymeet_get_slug() : 'buddymeet';
 			$group_meet_url = ! empty($g_data['live_url'])
 				? $g_data['live_url']
-				: (! empty($g_data['buddymeet_active'])
-					? trailingslashit($group_url) . $meet_slug . '/'
-					: $group_url);
+				: trailingslashit($group_url) . $meet_slug . '/';
 			$has_badges = ($is_live_active || $group_status === 'private' || $group_status === 'hidden');
 			?>
 
