@@ -945,9 +945,13 @@
         const baseFrameUrl = `/wp-content/uploads/pt-live-chunks/${safeRoom}/latest.jpg`;
 
         els.videoMount.innerHTML = '';
+        els.videoMount.style.display = 'flex';
+        els.videoMount.style.alignItems = 'center';
+        els.videoMount.style.justifyContent = 'center';
+        els.videoMount.style.background = '#0b1120';
         const img = document.createElement('img');
         img.alt = 'Live Stream';
-        img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;background:#0b1120;border-radius:12px;';
+        img.style.cssText = 'max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;border-radius:12px;';
         els.videoMount.appendChild(img);
 
         if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
@@ -985,7 +989,7 @@
                 return;
             }
             pingViewer();
-        }, 7000);
+        }, 2500);
 
         let stopped = false;
         const loadNext = () => {
@@ -1446,7 +1450,7 @@
                     els.viewerCount.textContent = json.data.viewers;
                 }
             } catch (e) {}
-        }, 7000);
+        }, 2500);
     }
 
     function stopHeartbeat() {
