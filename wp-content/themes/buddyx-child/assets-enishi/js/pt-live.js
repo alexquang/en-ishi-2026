@@ -433,12 +433,16 @@
                     return;
                 }
 
+                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+                if (typeof setStatusBadge === 'function') setStatusBadge(true);
+
                 const chunks = Array.isArray(json.data.chunks) ? json.data.chunks : [];
                 const mime = json.data.mime || 'video/webm;codecs=vp8,opus';
                 if (chunks.length === 0) return;
 
                 if (!mseInitialized && window.MediaSource && MediaSource.isTypeSupported(mime)) {
                     mseInitialized = true;
+                    video.muted = true;
                     mediaSource = new MediaSource();
                     video.src = URL.createObjectURL(mediaSource);
                     mediaSource.addEventListener('sourceopen', () => {
@@ -448,6 +452,7 @@
                             sourceBuffer.addEventListener('updateend', () => {
                                 appending = false;
                                 pumpQueue();
+                                video.play().catch(() => {});
                             });
                             pumpQueue();
                         } catch (e) {}
@@ -456,8 +461,6 @@
 
                 const newChunks = chunks.filter((c) => Number(c.seq) > state.lastChunkSeq);
                 if (newChunks.length === 0) return;
-
-                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
                 updateStatusUI(true, '🔴 LIVE');
                 if (!state.uptimeTimer) startUptimeClock(0);
 
