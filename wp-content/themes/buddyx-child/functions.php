@@ -1669,6 +1669,25 @@ function pt_find_place_owner($place_id, $place_name = '', $phone = '', $website 
         }
     }
 
+    // 7. Kiểm tra Company (Work Experience) trong BuddyNext profile data khớp với tên quán
+    if (!$owner_id && $place_name !== '') {
+        $bn_data_table = $wpdb->prefix . 'bn_profile_data';
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $bn_data_table)) === $bn_data_table) {
+            $candidate_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT user_id FROM {$bn_data_table}
+                 WHERE field_key = 'company'
+                   AND (LOWER(field_value) = LOWER(%s) OR field_value LIKE %s)
+                 ORDER BY id DESC LIMIT 1",
+                $place_name,
+                '%' . $wpdb->esc_like($place_name) . '%'
+            ));
+            if ($candidate_id > 0 && get_userdata($candidate_id)) {
+                $owner_id     = $candidate_id;
+                $match_source = 'buddynext_work_company';
+            }
+        }
+    }
+
     if (!$owner_id) {
         return [
             'found' => false,
