@@ -115,6 +115,16 @@ function buddyx_child_enqueue_styles()
         wp_get_theme()->get('Version')
     );
 
+    $pmpro_css_path = get_stylesheet_directory() . '/assets-enishi/css/pt-pmpro.css';
+    if (file_exists($pmpro_css_path)) {
+        wp_enqueue_style(
+            'pt-pmpro-style',
+            get_stylesheet_directory_uri() . '/assets-enishi/css/pt-pmpro.css',
+            array('buddyx-child-style'),
+            filemtime($pmpro_css_path)
+        );
+    }
+
     wp_enqueue_script(
         'pt-google-login',
         get_stylesheet_directory_uri() . '/assets-enishi/js/pt-google-login.js',
@@ -1289,8 +1299,9 @@ add_filter('body_class', function ($classes) {
         $classes[] = 'my-wallet-page';
     }
 
-    if (is_page('membership-account')) {
+    if (is_page(['membership-account', 'membership-levels', 'membership-checkout', 'membership-confirmation', 'membership-billing', 'membership-cancel', 'membership-invoice'])) {
         $classes[] = 'membership-account-page';
+        $classes[] = 'pmpro-page';
     }
 
     return $classes;
