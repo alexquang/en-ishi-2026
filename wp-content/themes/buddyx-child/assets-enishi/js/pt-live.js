@@ -962,7 +962,7 @@
             };
             nextImg.onerror = () => {
                 if (stopped || state.roomName !== roomName) return;
-                setTimeout(loadNext, 600);
+                setTimeout(loadNext, 2500);
             };
             nextImg.src = `${baseFrameUrl}?t=${Date.now()}`;
         };
