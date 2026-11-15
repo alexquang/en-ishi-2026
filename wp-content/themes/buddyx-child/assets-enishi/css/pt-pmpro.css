@@ -385,3 +385,264 @@ body.membership-account-page .site-sub-header {
     width: 100%;
   }
 }
+
+/* BuddyNext Profile - Balance Tab (Tailwind companion & zero-FOUC fallback) */
+.pt-bn-balance-panel {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+.pt-bn-balance-panel .pt-bal-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pt-bn-balance-panel .pt-bal-title-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.pt-bn-balance-panel .pt-bal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #012068, #1d4ed8);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(1, 32, 104, 0.22);
+}
+
+.pt-bn-balance-panel .pt-bal-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.pt-bn-balance-panel .pt-bal-subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.pt-bn-balance-panel .pt-bal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pt-bn-balance-panel .pt-bal-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff !important;
+  background: linear-gradient(90deg, #012068, #1a3a8f);
+  text-decoration: none !important;
+  box-shadow: 0 2px 6px rgba(1, 32, 104, 0.18);
+  transition: filter 0.15s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.pt-bn-balance-panel .pt-bal-btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.pt-bn-balance-panel .pt-bal-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155 !important;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-decoration: none !important;
+  transition: background-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.pt-bn-balance-panel .pt-bal-btn-secondary:hover {
+  background: #f1f5f9;
+}
+
+.pt-bn-balance-panel .pt-bal-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-card {
+  border-radius: 14px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-card--deposit {
+  background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+  border-color: #a7f3d0;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-card--level {
+  background: linear-gradient(135deg, #fffbeb, #fff7ed);
+  border-color: #fde68a;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-card--deposit .pt-bal-stat-label {
+  color: #047857;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-card--level .pt-bal-stat-label {
+  color: #b45309;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-badge {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.pt-bn-balance-panel .pt-bal-stat-card--deposit .pt-bal-stat-value {
+  color: #047857;
+  font-size: 22px;
+}
+
+.pt-bn-balance-panel .pt-bal-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.pt-bn-balance-panel .pt-bal-history-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pt-bn-balance-panel .pt-bal-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.pt-bn-balance-panel .pt-bal-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+  margin: 0;
+}
+
+.pt-bn-balance-panel .pt-bal-table thead tr {
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pt-bn-balance-panel .pt-bal-table th {
+  padding: 11px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border: none;
+}
+
+.pt-bn-balance-panel .pt-bal-table td {
+  padding: 12px 16px;
+  border-top: 1px solid #f1f5f9;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.pt-bn-balance-panel .pt-bal-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.pt-bn-balance-panel .pt-bal-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 1024px) {
+  .pt-bn-balance-panel .pt-bal-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pt-bn-balance-panel {
+    padding: 16px;
+  }
+  .pt-bn-balance-panel .pt-bal-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

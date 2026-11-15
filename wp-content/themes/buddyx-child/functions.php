@@ -126,7 +126,10 @@ function buddyx_child_enqueue_styles()
     }
 
     // Load Tailwind CSS (with preflight disabled so existing BuddyX/BuddyNext styles remain intact)
+    $req_uri = $_SERVER['REQUEST_URI'] ?? '';
     $is_profile_or_pmpro = (function_exists('pmpro_is_plugin_page') && pmpro_is_plugin_page())
+        || (function_exists('bp_is_user') && bp_is_user())
+        || (function_exists('buddynext_is_profile') && buddynext_is_profile())
         || is_page([
             'membership-account',
             'membership-levels',
@@ -135,8 +138,11 @@ function buddyx_child_enqueue_styles()
             'your-profile',
         ])
         || (bool) get_query_var('bn_profile_action', false)
-        || (strpos($_SERVER['REQUEST_URI'] ?? '', '/members/') !== false)
-        || (strpos($_SERVER['REQUEST_URI'] ?? '', '/membership-') !== false);
+        || (bool) get_query_var('bn_user', false)
+        || (strpos($req_uri, '/members/') !== false)
+        || (strpos($req_uri, '/profile') !== false)
+        || (strpos($req_uri, '/@') !== false)
+        || (strpos($req_uri, '/membership-') !== false);
 
     if ($is_profile_or_pmpro) {
         wp_enqueue_script(
@@ -148,8 +154,8 @@ function buddyx_child_enqueue_styles()
         );
         wp_add_inline_script(
             'pt-tailwind-cdn',
-            'window.tailwind = window.tailwind || {}; window.tailwind.config = { corePlugins: { preflight: false } };',
-            'before'
+            'if (typeof tailwind !== "undefined") { tailwind.config = { corePlugins: { preflight: false } }; }',
+            'after'
         );
     }
 
