@@ -2226,9 +2226,12 @@ function pt_live_push_chunk_ajax()
         'ts'  => time(),
     ];
 
-    // Keep only the latest 12 chunks (~24s window) and delete older files
-    if (count($manifest['chunks']) > 12) {
-        $removed = array_splice($manifest['chunks'], 0, count($manifest['chunks']) - 12);
+    // Always preserve chunk 0 (WebM initialization segment) so late-joining viewers can decode video,
+    // and keep the latest 12 media chunks (~24s window).
+    if (count($manifest['chunks']) > 13) {
+        $has_init = isset($manifest['chunks'][0]['seq']) && (int) $manifest['chunks'][0]['seq'] === 0;
+        $offset   = $has_init ? 1 : 0;
+        $removed  = array_splice($manifest['chunks'], $offset, count($manifest['chunks']) - 13);
         foreach ($removed as $old) {
             if (!empty($old['url'])) {
                 $old_path = $paths['dir'] . '/' . basename($old['url']);
