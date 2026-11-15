@@ -498,7 +498,7 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 			</div>
 
 			<?php if ( $bn_pf_is_owner ) : ?>
-			<div class="bn-pf-tab-pane<?php echo 'messages' === $bn_pf_active ? ' is-active' : ''; ?>" data-tab-panel="messages" role="tabpanel"<?php echo 'messages' === $bn_pf_active ? '' : ' hidden'; ?>>
+			<div class="bn-pf-tab-pane<?php echo 'messages' === $bn_pf_active ? ' is-active' : ''; ?>" data-tab-panel="messages" role="tabpanel" style="<?php echo 'messages' === $bn_pf_active ? '' : 'display:none;'; ?>"<?php echo 'messages' === $bn_pf_active ? '' : ' hidden'; ?>>
 				<div id="pt-profile-inbox-list" style="display:flex;flex-direction:column;gap:12px;">
 				<?php
 				$pt_inbox = get_user_meta( $bn_pf_uid, 'pt_place_inbox_messages', true );
@@ -565,8 +565,18 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 						} catch (e) {}
 					}
 					document.addEventListener('click', (e) => {
-						if (e.target.closest('[data-tab="messages"], a[href*="tab=messages"]')) {
+						const tabBtn = e.target.closest('[data-tab]');
+						if (!tabBtn) return;
+						const targetTab = tabBtn.getAttribute('data-tab');
+						if (targetTab === 'messages') {
+							paneEl.style.display = 'block';
+							paneEl.removeAttribute('hidden');
+							paneEl.classList.add('is-active');
 							setTimeout(refreshInbox, 80);
+						} else {
+							paneEl.style.display = 'none';
+							paneEl.setAttribute('hidden', '');
+							paneEl.classList.remove('is-active');
 						}
 					});
 					setInterval(() => {
