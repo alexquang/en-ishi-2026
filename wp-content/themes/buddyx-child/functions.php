@@ -2872,5 +2872,51 @@ function pt_ajax_meet_chat()
     wp_send_json_success(['messages' => $messages]);
 }
 
+/**
+ * Save recorded livestream video to /root/enishi2026/wpenishi/wp-content/uploads/
+ * Filename format: yyyymmddhhmmss_username.webm
+ */
+add_action('wp_ajax_pt_live_save_recording', 'pt_ajax_live_save_recording');
+function pt_ajax_live_save_recording()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    if (empty($_FILES['video']) || !empty($_FILES['video']['error'])) {
+        wp_send_json_error(['message' => 'No video file uploaded'], 400);
+    }
+
+    $user      = wp_get_current_user();
+    $username  = sanitize_file_name($user->user_login ?: ($user->display_name ?: 'user_' . $user->ID));
+    $timestamp = current_time('YmdHis');
+    $filename  = $timestamp . '_' . $username . '.webm';
+
+    $target_dir = '/root/enishi2026/wpenishi/wp-content/uploads';
+    if (!is_dir($target_dir) || !is_writable($target_dir)) {
+        $upload_dir = wp_upload_dir();
+        $target_dir = rtrim((string) ($upload_dir['basedir'] ?? WP_CONTENT_DIR . '/uploads'), '/');
+    }
+
+    if (!is_dir($target_dir)) {
+        wp_mkdir_p($target_dir);
+    }
+
+    $target_path = trailingslashit($target_dir) . $filename;
+    if (!@move_uploaded_file($_FILES['video']['tmp_name'], $target_path)) {
+        wp_send_json_error(['message' => 'Failed to save video file'], 500);
+    }
+
+    $upload_dir = wp_upload_dir();
+    $file_url   = trailingslashit((string) ($upload_dir['baseurl'] ?? content_url('/uploads'))) . $filename;
+
+    wp_send_json_success([
+        'filename' => $filename,
+        'path'     => $target_path,
+        'url'      => $file_url,
+    ]);
+}
+
+
 
 

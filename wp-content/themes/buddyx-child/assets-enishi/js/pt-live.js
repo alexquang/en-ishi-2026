@@ -346,9 +346,11 @@
                 ? new MediaRecorder(state.localStream, { mimeType: mime, videoBitsPerSecond: 900000 })
                 : new MediaRecorder(state.localStream);
             state.mediaRecorder = recorder;
+            state.recordedChunks = [];
 
             recorder.ondataavailable = async (ev) => {
                 if (!state.isLive || !ev.data || ev.data.size === 0) return;
+                state.recordedChunks.push(ev.data);
                 const seq = state.chunkSeq++;
                 const form = new FormData();
                 form.append('action', 'pt_live_push_chunk');
@@ -1239,7 +1241,81 @@
     }
 
     window.addEventListener('pagehide', sendStopBeacon);
-    window.addEventListener('beforeunload', sendStopBeacon);
+    window.addEventListener('beforeunload', function (e) {
+        sendStopBeacon();
+        if (state.isLive && state.mode === 'broadcast') {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    function showSaveRecordingPrompt(targetUrl) {
+        let modal = document.getElementById('ptLiveSaveModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'ptLiveSaveModal';
+            modal.style.cssText =
+                'position:fixed;inset:0;z-index:999999;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;';
+            modal.innerHTML =
+                '<div style="width:100%;max-width:420px;background:#111827;color:#f8fafc;border:1px solid #334155;border-radius:16px;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.45);text-align:center;">' +
+                  '<h3 style="margin:0 0 8px;font-size:18px;color:#fff;">Lưu video livestream?</h3>' +
+                  '<p style="margin:0 0 20px;font-size:13.5px;color:#94a3b8;line-height:1.5;">Bạn đang phát trực tiếp. Bạn có muốn lưu lại video trước khi rời trang không?</p>' +
+                  '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;">' +
+                    '<button type="button" id="ptLiveSaveYesBtn" style="padding:10px 16px;border-radius:10px;border:0;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Lưu video & Tiếp tục</button>' +
+                    '<button type="button" id="ptLiveSaveNoBtn" style="padding:10px 16px;border-radius:10px;border:1px solid #475569;background:#1e293b;color:#e2e8f0;font-size:13px;font-weight:600;cursor:pointer;">Không lưu</button>' +
+                    '<button type="button" id="ptLiveSaveCancelBtn" style="padding:10px 16px;border-radius:10px;border:0;background:transparent;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;">Ở lại</button>' +
+                  '</div>' +
+                '</div>';
+            document.body.appendChild(modal);
+        }
+        modal.style.display = 'flex';
+
+        const yesBtn = document.getElementById('ptLiveSaveYesBtn');
+        const noBtn = document.getElementById('ptLiveSaveNoBtn');
+        const cancelBtn = document.getElementById('ptLiveSaveCancelBtn');
+
+        cancelBtn.onclick = function () {
+            modal.style.display = 'none';
+        };
+
+        noBtn.onclick = function () {
+            modal.style.display = 'none';
+            sendStopBeacon();
+            state.isLive = false;
+            window.location.assign(targetUrl);
+        };
+
+        yesBtn.onclick = async function () {
+            yesBtn.disabled = true;
+            yesBtn.textContent = 'Đang lưu video...';
+            try {
+                if (state.recordedChunks && state.recordedChunks.length > 0) {
+                    const blob = new Blob(state.recordedChunks, { type: 'video/webm' });
+                    const form = new FormData();
+                    form.append('action', 'pt_live_save_recording');
+                    form.append('video', blob, 'livestream.webm');
+                    await fetch(ajaxUrl, {
+                        method: 'POST',
+                        body: form,
+                        credentials: 'same-origin',
+                    });
+                }
+            } catch (err) {}
+            sendStopBeacon();
+            state.isLive = false;
+            window.location.assign(targetUrl);
+        };
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!state.isLive || state.mode !== 'broadcast') return;
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+        const href = link.getAttribute('href') || '';
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') return;
+        e.preventDefault();
+        showSaveRecordingPrompt(link.href);
+    }, true);
 
     /* ----------------------------------------------------------------------
        INITIALIZATION & EVENT LISTENERS
