@@ -55,6 +55,16 @@
     // peerId -> { call, stream, info }
     var remotePeers = {};
 
+    var ICONS = {
+      users: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      mic: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+      micOff: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+      cam: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>',
+      screen: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+      chat: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+      leave: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg>'
+    };
+
     root.innerHTML =
       '<div class="pt-zmeet-root">' +
         '<div class="pt-zmeet-topbar">' +
@@ -64,14 +74,14 @@
           "</div>" +
           '<div class="pt-zmeet-topbar-right">' +
             '<span class="pt-zmeet-pill" id="ptZmeetStatusText">Connecting...</span>' +
-            '<span class="pt-zmeet-pill" id="ptZmeetCountPill"><i class="fa-solid fa-users"></i> 1</span>' +
+            '<span class="pt-zmeet-pill" id="ptZmeetCountPill">' + ICONS.users + " 1</span>" +
           "</div>" +
         "</div>" +
         '<div class="pt-zmeet-main">' +
           '<div class="pt-zmeet-stage">' +
             '<div class="pt-zmeet-grid count-1" id="ptZmeetGrid"></div>' +
           "</div>" +
-          '<aside class="pt-zmeet-sidebar" id="ptZmeetSidebar">' +
+          '<aside class="pt-zmeet-sidebar is-open" id="ptZmeetSidebar">' +
             '<div class="pt-zmeet-sidebar-tabs">' +
               '<button type="button" class="pt-zmeet-sidebar-tab is-active" data-ztab="chat">Chat</button>' +
               '<button type="button" class="pt-zmeet-sidebar-tab" data-ztab="participants">Participants</button>' +
@@ -85,11 +95,11 @@
           "</aside>" +
         "</div>" +
         '<div class="pt-zmeet-controls">' +
-          '<button type="button" class="pt-zmeet-ctrl-btn" id="ptZmeetMicBtn"><i class="fa-solid fa-microphone"></i> <span>Mute</span></button>' +
-          '<button type="button" class="pt-zmeet-ctrl-btn" id="ptZmeetCamBtn"><i class="fa-solid fa-video"></i> <span>Stop Video</span></button>' +
-          '<button type="button" class="pt-zmeet-ctrl-btn" id="ptZmeetScreenBtn"><i class="fa-solid fa-display"></i> <span>Share Screen</span></button>' +
-          '<button type="button" class="pt-zmeet-ctrl-btn" id="ptZmeetSidebarBtn"><i class="fa-solid fa-comments"></i> <span>Chat</span></button>' +
-          '<button type="button" class="pt-zmeet-ctrl-btn is-leave" id="ptZmeetLeaveBtn"><i class="fa-solid fa-phone-slash"></i> <span>Leave</span></button>' +
+          '<button type="button" class="pt-zmeet-ctrl-btn" id="ptZmeetMicBtn">' + ICONS.mic + " <span>Mute</span></button>" +
+          '<button type="button" class="pt-zmeet-ctrl-btn" id="ptZmeetCamBtn">' + ICONS.cam + " <span>Stop Video</span></button>" +
+          '<button type="button" class="pt-zmeet-ctrl-btn" id="ptZmeetScreenBtn">' + ICONS.screen + " <span>Share Screen</span></button>" +
+          '<button type="button" class="pt-zmeet-ctrl-btn is-active" id="ptZmeetSidebarBtn">' + ICONS.chat + " <span>Chat</span></button>" +
+          '<button type="button" class="pt-zmeet-ctrl-btn is-leave" id="ptZmeetLeaveBtn">' + ICONS.leave + " <span>Leave</span></button>" +
         "</div>" +
       "</div>";
 
@@ -113,7 +123,7 @@
       if (total <= 4) {
         gridEl.classList.add("count-" + total);
       }
-      countPillEl.innerHTML = '<i class="fa-solid fa-users"></i> ' + total;
+      countPillEl.innerHTML = ICONS.users + " " + total;
     }
 
     function createOrUpdateTile(id, label, avatar, stream, isLocal, micEnabled, camEnabled) {
@@ -131,7 +141,7 @@
               : '<div class="pt-zmeet-avatar-initial">' + escapeHtml((label || "G").charAt(0).toUpperCase()) + "</div>") +
           "</div>" +
           '<div class="pt-zmeet-tile-label">' +
-            '<i class="fa-solid fa-microphone-slash pt-zmeet-mic-off" style="display:none;"></i>' +
+            '<span class="pt-zmeet-mic-off" style="display:none;">' + ICONS.micOff + "</span>" +
             "<span>" + escapeHtml(label) + (isLocal ? " (You)" : "") + "</span>" +
           "</div>";
         gridEl.appendChild(tile);
@@ -176,15 +186,16 @@
       var html =
         '<div class="pt-zmeet-participant-row">' +
           "<span><strong>" + escapeHtml(userName) + "</strong> (You)</span>" +
-          '<span>' + (isMicOn ? '<i class="fa-solid fa-microphone" style="color:#10b981;"></i>' : '<i class="fa-solid fa-microphone-slash" style="color:#ef4444;"></i>') + "</span>" +
+          '<span style="color:' + (isMicOn ? "#10b981" : "#ef4444") + ';">' + (isMicOn ? ICONS.mic : ICONS.micOff) + "</span>" +
         "</div>";
 
       Object.keys(remotePeers).forEach(function (pid) {
         var info = remotePeers[pid].info || {};
+        var remoteMic = info.mic_on !== false;
         html +=
           '<div class="pt-zmeet-participant-row">' +
             "<span>" + escapeHtml(info.user_name || "Member") + "</span>" +
-            '<span>' + (info.mic_on !== false ? '<i class="fa-solid fa-microphone" style="color:#10b981;"></i>' : '<i class="fa-solid fa-microphone-slash" style="color:#ef4444;"></i>') + "</span>" +
+            '<span style="color:' + (remoteMic ? "#10b981" : "#ef4444") + ';">' + (remoteMic ? ICONS.mic : ICONS.micOff) + "</span>" +
           "</div>";
       });
       participantsListEl.innerHTML = html;
@@ -291,6 +302,15 @@
 
             if (!remotePeers[p.peer_id]) {
               remotePeers[p.peer_id] = { call: null, stream: null, info: p };
+              createOrUpdateTile(
+                p.peer_id,
+                p.user_name || "Member",
+                p.avatar || "",
+                null,
+                false,
+                p.mic_on !== false,
+                false
+              );
               if (peer && localStream && myPeerId < p.peer_id) {
                 var call = peer.call(p.peer_id, localStream);
                 if (call) {
@@ -444,7 +464,7 @@
         isJoined = true;
         statusTextEl.textContent = "Connected";
         syncRoomWithServer();
-        syncTimer = setInterval(syncRoomWithServer, 4000);
+        syncTimer = setInterval(syncRoomWithServer, 2500);
       });
 
       peer.on("call", function (call) {
