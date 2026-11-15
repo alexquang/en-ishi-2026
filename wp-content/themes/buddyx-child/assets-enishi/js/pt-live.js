@@ -779,7 +779,6 @@
         }
 
         startPeerViewer(roomName);
-        startChunkViewer(roomName);
     }
 
     function getPeerRoomId(roomName) {
@@ -858,20 +857,34 @@
             },
         });
         state.viewerPeer = peer;
+        let gotStream = false;
+        const fallbackTimer = setTimeout(() => {
+            if (!gotStream && state.roomName === roomName) {
+                startChunkViewer(roomName);
+            }
+        }, 5000);
+
         peer.on('open', () => {
-            const call = peer.call(hostId, createSilentStreamForViewer());
-            if (!call) return;
-            call.on('stream', (remoteStream) => {
-                if (state.roomName !== roomName) return;
-                stopChunkViewer();
-                const video = createVideoElement(false);
-                if (!video) return;
-                video.muted = true;
-                video.srcObject = remoteStream;
-                video.play().catch(() => {});
-                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
-                if (typeof setStatusBadge === 'function') setStatusBadge(true);
-            });
+            const attemptCall = () => {
+                if (gotStream || state.roomName !== roomName) return;
+                const call = peer.call(hostId, createSilentStreamForViewer());
+                if (!call) return;
+                call.on('stream', (remoteStream) => {
+                    if (state.roomName !== roomName) return;
+                    gotStream = true;
+                    clearTimeout(fallbackTimer);
+                    stopChunkViewer();
+                    const video = createVideoElement(false);
+                    if (!video) return;
+                    video.muted = true;
+                    video.srcObject = remoteStream;
+                    video.play().catch(() => {});
+                    if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+                    if (typeof setStatusBadge === 'function') setStatusBadge(true);
+                });
+            };
+            attemptCall();
+            setTimeout(attemptCall, 2000);
         });
     }
 
