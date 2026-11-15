@@ -329,6 +329,7 @@ if (!$initial_host) {
         'initialHostInfo' => $initial_host,
     ]); ?>;
 </script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets-enishi/js/pt-live.js?v=' . filemtime(get_stylesheet_directory() . '/assets-enishi/js/pt-live.js')); ?>"></script>
 
 <?php get_footer(); ?>

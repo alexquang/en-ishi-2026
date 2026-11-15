@@ -609,6 +609,7 @@
 
         if (!hlsUrl && !connectedToLiveKit) {
             startChunkRecorder();
+            startPeerHost(state.roomName);
         }
 
         if (els.startLiveBtn) {
@@ -777,7 +778,88 @@
             }
         }
 
+        startPeerViewer(roomName);
         startChunkViewer(roomName);
+    }
+
+    function getPeerRoomId(roomName) {
+        return 'ptlive-' + String(roomName || 'main').replace(/[^a-zA-Z0-9_-]/g, '');
+    }
+
+    function createSilentStreamForViewer() {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return new MediaStream();
+            const ctx = new Ctx();
+            const osc = ctx.createOscillator();
+            const dst = ctx.createMediaStreamDestination();
+            const gain = ctx.createGain();
+            gain.gain.value = 0;
+            osc.connect(gain);
+            gain.connect(dst);
+            osc.start();
+            return dst.stream;
+        } catch (e) {
+            return new MediaStream();
+        }
+    }
+
+    function startPeerHost(roomName) {
+        if (typeof window.Peer === 'undefined' || !state.localStream) return;
+        if (state.hostPeer) {
+            try { state.hostPeer.destroy(); } catch (e) {}
+            state.hostPeer = null;
+        }
+        const hostId = getPeerRoomId(roomName);
+        const peer = new window.Peer(hostId, {
+            debug: 0,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                ],
+            },
+        });
+        state.hostPeer = peer;
+        peer.on('call', (call) => {
+            if (state.localStream) {
+                call.answer(state.localStream);
+            }
+        });
+    }
+
+    function startPeerViewer(roomName) {
+        if (typeof window.Peer === 'undefined') return;
+        if (state.viewerPeer) {
+            try { state.viewerPeer.destroy(); } catch (e) {}
+            state.viewerPeer = null;
+        }
+        const hostId = getPeerRoomId(roomName);
+        const peer = new window.Peer(undefined, {
+            debug: 0,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                ],
+            },
+        });
+        state.viewerPeer = peer;
+        peer.on('open', () => {
+            const call = peer.call(hostId, createSilentStreamForViewer());
+            if (!call) return;
+            call.on('stream', (remoteStream) => {
+                if (state.roomName !== roomName) return;
+                stopChunkViewer();
+                const video = createVideoElement(false);
+                if (!video) return;
+                video.muted = true;
+                video.srcObject = remoteStream;
+                video.play().catch(() => {});
+                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+                if (typeof setStatusBadge === 'function') setStatusBadge(true);
+            });
+        });
     }
 
     function bindLiveKitRoomEvents(lkRoom) {
