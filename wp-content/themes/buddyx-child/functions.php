@@ -1903,6 +1903,9 @@ function pt_send_place_message_ajax()
         try {
             $notif_svc = buddynext_service('notifications');
             if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
+                $sender_label = ($sender_user && !empty($sender_user->display_name)) ? $sender_user->display_name : ('User #' . $sender_id);
+                $shop_label   = $place_name !== '' ? $place_name : 'shop của bạn';
+                $notif_msg    = sprintf('%s đã gửi tin nhắn cho %s: %s', $sender_label, $shop_label, wp_trim_words($message, 15));
                 $notif_svc->create([
                     'recipient_id' => $owner_id,
                     'actor_id'     => $sender_id,
@@ -1911,6 +1914,7 @@ function pt_send_place_message_ajax()
                     'object_id'    => $thread_id ?: 0,
                     'url'          => $thread_url,
                     'title'        => $subject,
+                    'message'      => $notif_msg,
                     'body'         => wp_trim_words($message, 20),
                 ]);
             }
