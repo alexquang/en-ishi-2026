@@ -188,6 +188,10 @@ var gmUserLoggedIn = window.gmUserLoggedIn;
 
         <div id="map"></div>
 
+        <button type="button" id="gm-search-area-btn" class="gm-search-area-btn" style="display: none;">
+            <i class="fa-solid fa-magnifying-glass"></i> Search this area
+        </button>
+
         <!-- Cụm nút điều khiển kiểu Google Maps góc phải dưới -->
         <div class="gm-map-controls">
             <button type="button" id="gm-my-location-btn" class="gm-control-btn" title="Your Location" aria-label="Your Location">

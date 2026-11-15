@@ -633,6 +633,12 @@
     }
   });
 
+  window.ptApplyMenuTranslations = function () {
+    if (activeLanguage) {
+      applyDirectMenuAndUITranslations(activeLanguage);
+    }
+  };
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initAutoLanguage);
   } else {

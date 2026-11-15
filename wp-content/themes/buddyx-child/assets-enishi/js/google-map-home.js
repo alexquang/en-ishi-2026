@@ -59,6 +59,197 @@ function showToast(message) {
   }, 2600);
 }
 
+function renderStarIcons(rating) {
+  const r = Number(rating);
+  if (!r || isNaN(r)) return "";
+  let html = '<span class="gm-stars-row" aria-label="' + r.toFixed(1) + ' stars">';
+  for (let i = 1; i <= 5; i++) {
+    if (r >= i - 0.25) {
+      html += '<i class="fa-solid fa-star gm-star-full"></i>';
+    } else if (r >= i - 0.75) {
+      html += '<i class="fa-solid fa-star-half-stroke gm-star-half"></i>';
+    } else {
+      html += '<i class="fa-regular fa-star gm-star-empty"></i>';
+    }
+  }
+  html += "</span>";
+  return html;
+}
+
+function formatPriceLevel(priceLevel) {
+  if (typeof priceLevel !== "number" || priceLevel <= 0) return "";
+  return "$".repeat(Math.min(4, Math.max(1, priceLevel)));
+}
+
+const PT_SAVED_PLACES_KEY = "pt_gm_saved_places";
+
+function getSavedPlaces() {
+  try {
+    return JSON.parse(localStorage.getItem(PT_SAVED_PLACES_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function isPlaceSaved(placeId) {
+  if (!placeId) return false;
+  return getSavedPlaces().some(function (p) {
+    return p.place_id === placeId;
+  });
+}
+
+function toggleSavePlace(place) {
+  if (!place || !place.place_id) return false;
+  const list = getSavedPlaces();
+  const idx = list.findIndex(function (p) {
+    return p.place_id === place.place_id;
+  });
+  let saved = false;
+  if (idx >= 0) {
+    list.splice(idx, 1);
+    saved = false;
+  } else {
+    list.unshift({
+      place_id: place.place_id,
+      name: place.name || "",
+      address: place.formatted_address || "",
+      lat: place.geometry?.location ? place.geometry.location.lat() : null,
+      lng: place.geometry?.location ? place.geometry.location.lng() : null,
+      saved_at: Date.now(),
+    });
+    saved = true;
+  }
+  try {
+    localStorage.setItem(PT_SAVED_PLACES_KEY, JSON.stringify(list.slice(0, 100)));
+  } catch (e) {}
+  return saved;
+}
+
+function showDroppedPinDetails(latLng) {
+  if (!map || !latLng) return;
+
+  if (selectedMarker) {
+    selectedMarker.setMap(null);
+  }
+  selectedMarker = new google.maps.Marker({
+    position: latLng,
+    map: map,
+    animation: google.maps.Animation.DROP,
+  });
+
+  const lat = typeof latLng.lat === "function" ? latLng.lat() : Number(latLng.lat);
+  const lng = typeof latLng.lng === "function" ? latLng.lng() : Number(latLng.lng);
+  const coordsText = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ location: { lat, lng } }, function (results, status) {
+    const address =
+      status === "OK" && results && results[0]
+        ? results[0].formatted_address
+        : coordsText;
+
+    const resultWrapper = document.querySelector(".result-wrapper");
+    if (!resultWrapper) return;
+
+    let popup = document.getElementById("gm-place-popup");
+    if (!popup) {
+      popup = document.createElement("div");
+      popup.id = "gm-place-popup";
+      popup.className = "gm-place-popup";
+      resultWrapper.appendChild(popup);
+    }
+
+    const shareUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+    popup.innerHTML = `
+      <button type="button" class="gm-popup-close" id="gm-popup-close" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="gm-popup-body" style="padding-top:14px;">
+        <div class="gm-dropped-pin-badge"><i class="fa-solid fa-location-pin"></i> Dropped pin</div>
+        <h2 class="gm-popup-title">${escapeHtml(address)}</h2>
+        <div class="gm-popup-type">${escapeHtml(coordsText)}</div>
+        <div class="gm-popup-actions">
+          <div class="gm-popup-action" id="gm-pin-directions">
+            <div class="gm-popup-action-icon primary"><i class="fa-solid fa-diamond-turn-right"></i></div>
+            <span>Directions</span>
+          </div>
+          <div class="gm-popup-action" id="gm-pin-nearby">
+            <div class="gm-popup-action-icon"><i class="fa-solid fa-magnifying-glass-location"></i></div>
+            <span>Nearby</span>
+          </div>
+          <div class="gm-popup-action" id="gm-pin-share">
+            <div class="gm-popup-action-icon"><i class="fa-solid fa-share-nodes"></i></div>
+            <span>Share</span>
+          </div>
+        </div>
+        <div class="gm-popup-info">
+          <div class="gm-popup-row">
+            <i class="fa-solid fa-location-dot"></i>
+            <div class="gm-popup-row-flex">
+              <span>${escapeHtml(address)}</span>
+              <button type="button" class="gm-copy-inline-btn" data-copy="${escapeHtml(address)}" title="Copy address">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          <div class="gm-popup-row">
+            <i class="fa-solid fa-compass"></i>
+            <div class="gm-popup-row-flex">
+              <span>${escapeHtml(coordsText)}</span>
+              <button type="button" class="gm-copy-inline-btn" data-copy="${escapeHtml(coordsText)}" title="Copy coordinates">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    ensureResultPanelOpen();
+    popup.style.display = "";
+    popup.classList.add("show");
+    syncToggleButtonPosition();
+
+    document.getElementById("gm-popup-close")?.addEventListener("click", function () {
+      popup.classList.remove("show");
+      popup.style.display = "";
+      if (selectedMarker) {
+        selectedMarker.setMap(null);
+        selectedMarker = null;
+      }
+      syncToggleButtonPosition();
+    });
+
+    document.getElementById("gm-pin-directions")?.addEventListener("click", function () {
+      openDirectionsToPlace(coordsText);
+    });
+
+    document.getElementById("gm-pin-nearby")?.addEventListener("click", function () {
+      loadNearbyPlaces(lat, lng);
+    });
+
+    document.getElementById("gm-pin-share")?.addEventListener("click", function () {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(function () {
+          showToast("Location link copied!");
+        });
+      }
+    });
+
+    popup.querySelectorAll(".gm-copy-inline-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const text = this.dataset.copy;
+        if (text && navigator.clipboard) {
+          navigator.clipboard.writeText(text).then(function () {
+            showToast("Copied to clipboard!");
+          });
+        }
+      });
+    });
+  });
+}
+
 /* =====================================================
    CHUẨN HÓA TỪ KHÓA TÌM KIẾM TIẾNG VIỆT
 ===================================================== */
@@ -427,6 +618,62 @@ function initMap(userLat, userLng) {
     layerControlsInitialized = true;
   }
 
+  // Click trực tiếp lên địa điểm (POI) hoặc vị trí bất kỳ trên bản đồ giống Google Maps
+  map.addListener("click", function (event) {
+    if (event.placeId) {
+      event.stop();
+      if (selectedMarker) {
+        selectedMarker.setMap(null);
+      }
+      selectedMarker = new google.maps.Marker({
+        position: event.latLng,
+        map: map,
+        animation: google.maps.Animation.DROP,
+      });
+      loadPlaceDetails(event.placeId, selectedMarker);
+      return;
+    }
+
+    const dirPanel = document.getElementById("gm-directions-panel");
+    const isDirOpen = dirPanel && dirPanel.style.display !== "none";
+    if (isDirOpen && event.latLng) {
+      const originEl = document.getElementById("gm-dir-origin");
+      const destEl = document.getElementById("gm-dir-dest");
+      if (originEl && (!originEl.value.trim() || document.activeElement === originEl)) {
+        const lat = event.latLng.lat().toFixed(6);
+        const lng = event.latLng.lng().toFixed(6);
+        originEl.value = `${lat}, ${lng}`;
+        if (destEl && destEl.value.trim()) {
+          calculateAndDisplayRoute();
+        }
+        return;
+      }
+    }
+
+    if (event.latLng) {
+      showDroppedPinDetails(event.latLng);
+    }
+  });
+
+  // Hiện nút "Search this area" khi người dùng kéo bản đồ
+  map.addListener("dragend", function () {
+    const searchAreaBtn = document.getElementById("gm-search-area-btn");
+    if (searchAreaBtn) {
+      searchAreaBtn.style.display = "inline-flex";
+    }
+  });
+
+  // Đồng bộ trạng thái nút Street View khi đóng/mở từ giao diện Google Street View
+  const panorama = map.getStreetView();
+  if (panorama) {
+    panorama.addListener("visible_changed", function () {
+      const svBtn = document.getElementById("gm-streetview-btn");
+      if (svBtn) {
+        svBtn.classList.toggle("active", !!panorama.getVisible());
+      }
+    });
+  }
+
   // Kiểm tra nếu vừa quay lại từ đăng nhập (fallback trên trình duyệt không hỗ trợ popup)
   if (restoreMapStateIfAny()) {
     return;
@@ -617,10 +864,23 @@ function renderResults(results) {
     });
 
     markers.push(mapMarker);
+    const markerIdx = markers.length - 1;
     bounds.extend(position);
 
     const photo = place.photos?.[0]?.getUrl({ maxWidth: 300 }) || "";
     const address = place.formatted_address || place.vicinity || "";
+    const priceStr = formatPriceLevel(place.price_level);
+    let cardType = "";
+    if (place.types?.length) {
+      const t = place.types.find(
+        (x) => !["point_of_interest", "establishment"].includes(x)
+      );
+      if (t) {
+        cardType = t
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+      }
+    }
     const openNow = place.opening_hours?.isOpen
       ? place.opening_hours.isOpen()
       : place.opening_hours?.open_now;
@@ -632,6 +892,7 @@ function renderResults(results) {
     panel.innerHTML += `
       <div class="place-card"
           data-index="${idx}"
+          data-marker-idx="${markerIdx}"
           data-placeid="${escapeHtml(place.place_id || "")}"
           data-name="${escapeHtml(place.name || "")}"
           data-rating="${place.rating || "-"}"
@@ -642,10 +903,12 @@ function renderResults(results) {
           <div class="place-info">
               <h3>${escapeHtml(place.name)}</h3>
               <div class="rating">
-                  <span class="rating-score">${place.rating || "-"}</span>
-                  <i class="fa-solid fa-star" style="color: #fbbc04;"></i>
-                  ${place.user_ratings_total ? `<span class="rating-count">(${place.user_ratings_total})</span>` : ""}
+                  <span class="rating-score">${place.rating ? Number(place.rating).toFixed(1) : "-"}</span>
+                  ${place.rating ? renderStarIcons(place.rating) : '<i class="fa-solid fa-star" style="color: #fbbc04;"></i>'}
+                  ${place.user_ratings_total ? `<span class="rating-count">(${Number(place.user_ratings_total).toLocaleString()})</span>` : ""}
+                  ${priceStr ? `<span class="rating-price">· ${escapeHtml(priceStr)}</span>` : ""}
               </div>
+              ${cardType ? `<div class="place-type">${escapeHtml(cardType)}</div>` : ""}
               <div class="address">${escapeHtml(address)}</div>
               ${openBadge}
           </div>
@@ -668,12 +931,32 @@ function renderResults(results) {
 
 function highlightPlaceCard(placeId) {
   document.querySelectorAll(".place-card").forEach((card) => {
-    card.classList.toggle("active", card.dataset.placeid === placeId);
+    const isMatch = card.dataset.placeid === placeId;
+    card.classList.toggle("active", isMatch);
+    if (isMatch) {
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   });
 }
 
 function bindPlaces() {
   document.querySelectorAll(".place-card").forEach(function (item) {
+    item.addEventListener("mouseenter", function () {
+      const mIdx = parseInt(this.dataset.markerIdx, 10);
+      if (!isNaN(mIdx) && markers[mIdx]) {
+        markers[mIdx].setAnimation(google.maps.Animation.BOUNCE);
+        markers[mIdx].setZIndex(999);
+      }
+    });
+
+    item.addEventListener("mouseleave", function () {
+      const mIdx = parseInt(this.dataset.markerIdx, 10);
+      if (!isNaN(mIdx) && markers[mIdx]) {
+        markers[mIdx].setAnimation(null);
+        markers[mIdx].setZIndex(undefined);
+      }
+    });
+
     item.addEventListener("click", function () {
       const placeId = this.dataset.placeid;
       const lat = parseFloat(this.dataset.lat);
@@ -727,12 +1010,27 @@ function loadPlaceDetails(placeId, clickedMarker) {
         "rating",
         "user_ratings_total",
         "opening_hours",
+        "utc_offset_minutes",
         "photos",
         "url",
         "types",
         "reviews",
         "geometry",
         "price_level",
+        "business_status",
+        "editorial_summary",
+        "plus_code",
+        "dine_in",
+        "takeout",
+        "delivery",
+        "reservable",
+        "wheelchair_accessible_entrance",
+        "serves_breakfast",
+        "serves_lunch",
+        "serves_dinner",
+        "serves_beer",
+        "serves_wine",
+        "serves_vegetarian_food",
       ],
     },
     function (place, status) {
@@ -758,6 +1056,7 @@ function loadPlaceDetails(placeId, clickedMarker) {
         p.getUrl({ maxWidth: 1200, maxHeight: 900 })
       );
       const coverPhoto = photoUrls[0] || "";
+      const stripPhotos = photoUrls.slice(1, 5);
 
       let placeType = "Place";
       if (place.types?.length) {
@@ -771,10 +1070,20 @@ function loadPlaceDetails(placeId, clickedMarker) {
         }
       }
 
+      const priceLevelStr = formatPriceLevel(place.price_level);
+
+      // Trạng thái kinh doanh (Operational / Temporarily closed / Permanently closed)
+      let businessStatusHTML = "";
+      if (place.business_status === "CLOSED_TEMPORARILY") {
+        businessStatusHTML = `<span class="gm-status-pill temp-closed">Temporarily closed</span>`;
+      } else if (place.business_status === "CLOSED_PERMANENTLY") {
+        businessStatusHTML = `<span class="gm-status-pill perm-closed">Permanently closed</span>`;
+      }
+
       // Trạng thái đang mở cửa / đóng cửa
+      let isOpenNow = undefined;
       let openStatusHTML = "";
       if (place.opening_hours) {
-        let isOpenNow = undefined;
         try {
           if (typeof place.opening_hours.isOpen === "function") {
             isOpenNow = place.opening_hours.isOpen();
@@ -786,25 +1095,38 @@ function loadPlaceDetails(placeId, clickedMarker) {
         }
         if (typeof isOpenNow === "boolean") {
           openStatusHTML = isOpenNow
-            ? `<span class="gm-open-badge open">Open now</span>`
+            ? `<span class="gm-open-badge open">Open</span>`
             : `<span class="gm-open-badge closed">Closed</span>`;
         }
       }
 
-      // Danh sách giờ mở cửa
+      // Giờ mở cửa hôm nay + danh sách 7 ngày (highlight hôm nay giống Google Maps)
+      const jsDay = new Date().getDay(); // 0=Sun..6=Sat
+      const googleWeekdayIdx = jsDay === 0 ? 6 : jsDay - 1; // weekday_text: 0=Mon..6=Sun
+      let todayHoursText = "";
       let hoursHTML = "";
       if (place.opening_hours && place.opening_hours.weekday_text) {
+        const rawToday = place.opening_hours.weekday_text[googleWeekdayIdx] || "";
+        const colonIdx = rawToday.indexOf(":");
+        todayHoursText = colonIdx !== -1 ? rawToday.slice(colonIdx + 1).trim() : rawToday;
+
         hoursHTML = `
           <div class="gm-popup-row gm-hours-row">
               <i class="fa-regular fa-clock"></i>
               <div class="gm-hours-wrap">
                   <div class="gm-hours-header" id="gm-hours-toggle">
-                      ${openStatusHTML || "<span>Opening hours</span>"}
+                      <span class="gm-hours-summary-line">
+                        ${openStatusHTML || "<span>Hours</span>"}
+                        ${todayHoursText ? `<span class="gm-hours-today-text">· ${escapeHtml(todayHoursText)}</span>` : ""}
+                      </span>
                       <i class="fa-solid fa-chevron-down gm-hours-chevron"></i>
                   </div>
                   <div class="gm-hours-list" id="gm-hours-list">
                       ${place.opening_hours.weekday_text
-                        .map((day) => `<div>${escapeHtml(day)}</div>`)
+                        .map((day, idx) => {
+                          const isToday = idx === googleWeekdayIdx;
+                          return `<div class="gm-hours-day ${isToday ? "is-today" : ""}">${escapeHtml(day)}</div>`;
+                        })
                         .join("")}
                   </div>
               </div>
@@ -812,58 +1134,147 @@ function loadPlaceDetails(placeId, clickedMarker) {
         `;
       }
 
-      // Danh sách đánh giá (Reviews)
-      let reviewsHTML = "";
-      if (place.reviews && place.reviews.length) {
-        reviewsHTML = `
+      // Tiện ích / Service options kiểu Google Maps
+      const attrDefs = [
+        { key: "dine_in", label: "Dine-in" },
+        { key: "takeout", label: "Takeout" },
+        { key: "delivery", label: "Delivery" },
+        { key: "reservable", label: "Reservations" },
+        { key: "wheelchair_accessible_entrance", label: "Wheelchair accessible" },
+        { key: "serves_vegetarian_food", label: "Vegetarian options" },
+        { key: "serves_breakfast", label: "Breakfast" },
+        { key: "serves_lunch", label: "Lunch" },
+        { key: "serves_dinner", label: "Dinner" },
+        { key: "serves_beer", label: "Beer" },
+        { key: "serves_wine", label: "Wine" },
+      ];
+      const activeAttrs = attrDefs.filter((a) => place[a.key] === true);
+      const attributesHTML = activeAttrs.length
+        ? `<div class="gm-attributes-row">
+            ${activeAttrs
+              .map(
+                (a) =>
+                  `<span class="gm-attr-chip"><i class="fa-solid fa-check"></i> ${escapeHtml(a.label)}</span>`
+              )
+              .join("")}
+           </div>`
+        : "";
+
+      const editorialSummary =
+        place.editorial_summary && place.editorial_summary.overview
+          ? `<div class="gm-editorial-summary">${escapeHtml(place.editorial_summary.overview)}</div>`
+          : "";
+
+      const plusCode =
+        place.plus_code && (place.plus_code.compound_code || place.plus_code.global_code)
+          ? place.plus_code.compound_code || place.plus_code.global_code
+          : "";
+
+      let cleanWebsiteHost = "";
+      if (place.website) {
+        try {
+          cleanWebsiteHost = new URL(place.website).hostname.replace(/^www\./, "");
+        } catch (e) {
+          cleanWebsiteHost = place.website;
+        }
+      }
+
+      // Helper render review cards
+      const reviews = Array.isArray(place.reviews) ? place.reviews.slice() : [];
+      function buildReviewCardsHTML(list) {
+        return list
+          .map(function (rev) {
+            const authorName = escapeHtml(rev.author_name || "Google User");
+            const authorPhoto = rev.profile_photo_url || "";
+            const rating = rev.rating || 0;
+            const reviewText = escapeHtml(rev.text || "");
+            const relativeTime = escapeHtml(rev.relative_time_description || "");
+            return `
+              <div class="gm-review">
+                  <div class="gm-review-author">
+                      ${
+                        authorPhoto
+                          ? `<img class="gm-review-avatar" src="${escapeHtml(authorPhoto)}" alt="${authorName}">`
+                          : `<div class="gm-review-avatar gm-review-avatar-default">${authorName.charAt(0)}</div>`
+                      }
+                      <div class="gm-review-author-info">
+                          <div class="gm-review-author-name">${authorName}</div>
+                          <div class="gm-review-meta">
+                              ${renderStarIcons(rating)}
+                              <span class="gm-review-time">${relativeTime}</span>
+                          </div>
+                      </div>
+                  </div>
+                  ${reviewText ? `<div class="gm-review-text">${reviewText}</div>` : ""}
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      // Phân bố số sao (5★ -> 1★) từ danh sách reviews
+      const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+      reviews.forEach(function (r) {
+        const s = Math.min(5, Math.max(1, Math.round(r.rating || 5)));
+        starCounts[s] = (starCounts[s] || 0) + 1;
+      });
+      const maxStarCount = Math.max(1, reviews.length);
+
+      const ratingHistogramHTML = `
+        <div class="gm-reviews-overview-box">
+          <div class="gm-reviews-score-col">
+            <div class="gm-reviews-big-score">${place.rating ? Number(place.rating).toFixed(1) : "-"}</div>
+            ${place.rating ? renderStarIcons(place.rating) : ""}
+            <div class="gm-reviews-total-count">${Number(place.user_ratings_total || 0).toLocaleString()} reviews</div>
+          </div>
+          <div class="gm-rating-bars">
+            ${[5, 4, 3, 2, 1]
+              .map(function (star) {
+                const pct = Math.round((starCounts[star] / maxStarCount) * 100);
+                return `
+                  <div class="gm-rating-bar-row">
+                    <span>${star}</span>
+                    <div class="gm-rating-bar-track"><div class="gm-rating-bar-fill" style="width:${pct}%"></div></div>
+                  </div>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+      `;
+
+      // Preview reviews trong tab Overview
+      let overviewReviewsHTML = "";
+      if (reviews.length) {
+        overviewReviewsHTML = `
           <div class="gm-popup-reviews">
               <div class="gm-reviews-header">
-                  <div class="gm-reviews-title"><i class="fa-solid fa-star"></i> Reviews</div>
-                  <div class="gm-reviews-summary">
-                      <strong>${place.rating ? place.rating.toFixed(1) : "-"}</strong>
-                      <span class="gm-review-stars">★</span>
-                      <span>(${place.user_ratings_total || 0})</span>
-                  </div>
+                  <div class="gm-reviews-title">Review summary</div>
+                  <button type="button" class="gm-see-all-reviews-btn" id="gm-see-all-reviews">See all</button>
               </div>
               <div class="gm-reviews-list">
-                  ${place.reviews
-                    .map(function (rev) {
-                      const authorName = escapeHtml(
-                        rev.author_name || "Google User"
-                      );
-                      const authorPhoto = rev.profile_photo_url || "";
-                      const rating = rev.rating || 0;
-                      const reviewText = escapeHtml(rev.text || "");
-                      const relativeTime = escapeHtml(
-                        rev.relative_time_description || ""
-                      );
-
-                      return `
-                        <div class="gm-review">
-                            <div class="gm-review-author">
-                                ${
-                                  authorPhoto
-                                    ? `<img class="gm-review-avatar" src="${escapeHtml(authorPhoto)}" alt="${authorName}">`
-                                    : `<div class="gm-review-avatar gm-review-avatar-default">${authorName.charAt(0)}</div>`
-                                }
-                                <div class="gm-review-author-info">
-                                    <div class="gm-review-author-name">${authorName}</div>
-                                    <div class="gm-review-meta">
-                                        <span class="gm-review-stars">${"★".repeat(rating)}</span>
-                                        <span class="gm-review-time">${relativeTime}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            ${reviewText ? `<div class="gm-review-text">${reviewText}</div>` : ""}
-                        </div>
-                      `;
-                    })
-                    .join("")}
+                  ${buildReviewCardsHTML(reviews.slice(0, 3))}
               </div>
               <div class="gm-google-attribution">Reviews from Google</div>
           </div>
         `;
       }
+
+      // Full Reviews tab content
+      const fullReviewsTabHTML = reviews.length
+        ? `
+          ${ratingHistogramHTML}
+          <div class="gm-reviews-sort-bar">
+            <button type="button" class="gm-sort-pill active" data-sort="relevant">Most relevant</button>
+            <button type="button" class="gm-sort-pill" data-sort="highest">Highest</button>
+            <button type="button" class="gm-sort-pill" data-sort="lowest">Lowest</button>
+          </div>
+          <div class="gm-reviews-list" id="gm-full-reviews-list">
+            ${buildReviewCardsHTML(reviews)}
+          </div>
+          <div class="gm-google-attribution">Reviews from Google</div>
+        `
+        : `<div class="gm-empty" style="padding:24px 16px;">No reviews available yet.</div>`;
 
       const lat = place.geometry?.location ? place.geometry.location.lat() : "";
       const lng = place.geometry?.location ? place.geometry.location.lng() : "";
@@ -872,6 +1283,7 @@ function loadPlaceDetails(placeId, clickedMarker) {
         `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
           place.name || ""
         )}&query_place_id=${encodeURIComponent(placeId)}`;
+      const savedNow = isPlaceSaved(placeId);
 
       popup.innerHTML = `
         <button type="button" class="gm-popup-close" id="gm-popup-close" aria-label="Close">
@@ -881,22 +1293,45 @@ function loadPlaceDetails(placeId, clickedMarker) {
           coverPhoto
             ? `<div class="gm-popup-cover" id="gm-popup-cover-btn" title="Click to view photos">
                 <img src="${escapeHtml(coverPhoto)}" alt="${escapeHtml(place.name)}">
-                ${photoUrls.length > 1 ? `<span class="gm-cover-photo-count"><i class="fa-solid fa-camera"></i> ${photoUrls.length} photos</span>` : ""}
-               </div>`
+                ${
+                  photoUrls.length > 1
+                    ? `<span class="gm-cover-photo-count"><i class="fa-regular fa-images"></i> See photos (${photoUrls.length})</span>`
+                    : ""
+                }
+               </div>
+               ${
+                 stripPhotos.length
+                   ? `<div class="gm-popup-photo-strip">
+                        ${stripPhotos
+                          .map(
+                            (u, idx) =>
+                              `<button type="button" class="gm-strip-thumb" data-photo-idx="${idx + 1}">
+                                <img src="${escapeHtml(u)}" alt="${escapeHtml(place.name)}">
+                               </button>`
+                          )
+                          .join("")}
+                      </div>`
+                   : ""
+               }`
             : ""
         }
         <div class="gm-popup-body">
             <h2 class="gm-popup-title">${escapeHtml(place.name)}</h2>
             <div class="gm-popup-rating">
-                <span>${place.rating || "-"}</span>
-                <i class="fa-solid fa-star"></i>
-                <span>(${place.user_ratings_total || 0})</span>
-                ${openStatusHTML ? `<span class="gm-rating-dot">•</span>${openStatusHTML}` : ""}
+                <span class="gm-rating-num">${place.rating ? Number(place.rating).toFixed(1) : "-"}</span>
+                ${place.rating ? renderStarIcons(place.rating) : '<i class="fa-solid fa-star"></i>'}
+                <span>(${Number(place.user_ratings_total || 0).toLocaleString()})</span>
+                ${priceLevelStr ? `<span class="gm-rating-dot">·</span><span>${escapeHtml(priceLevelStr)}</span>` : ""}
             </div>
-            <div class="gm-popup-type">${escapeHtml(placeType)}</div>
+            <div class="gm-popup-type">
+              ${escapeHtml(placeType)}
+              ${businessStatusHTML}
+            </div>
+            ${editorialSummary}
 
             <div class="gm-popup-tabs">
                 <button type="button" class="gm-popup-tab active" data-popup-tab="overview">Overview</button>
+                <button type="button" class="gm-popup-tab" data-popup-tab="reviews">Reviews</button>
                 <button type="button" class="gm-popup-tab gm-message-btn"
                     data-tab="message"
                     data-placeid="${escapeHtml(placeId)}"
@@ -908,81 +1343,136 @@ function loadPlaceDetails(placeId, clickedMarker) {
                 <button type="button" class="gm-popup-tab gm-video-btn" data-tab="video" data-placeid="${escapeHtml(placeId)}">Video</button>
             </div>
 
-            <!-- Thanh nút thao tác nhanh kiểu Google Maps -->
-            <div class="gm-popup-actions">
-                <div class="gm-popup-action" id="gm-action-directions"
-                     data-name="${escapeHtml(place.name || "")}"
-                     data-address="${escapeHtml(place.formatted_address || "")}"
-                     data-lat="${lat}"
-                     data-lng="${lng}">
-                    <div class="gm-popup-action-icon primary">
-                        <i class="fa-solid fa-diamond-turn-right"></i>
-                    </div>
-                    <span>Directions</span>
-                </div>
+            <div id="gm-tab-overview" class="gm-tab-panel active">
+              <!-- Thanh nút thao tác nhanh kiểu Google Maps -->
+              <div class="gm-popup-actions">
+                  <div class="gm-popup-action" id="gm-action-directions"
+                       data-name="${escapeHtml(place.name || "")}"
+                       data-address="${escapeHtml(place.formatted_address || "")}"
+                       data-lat="${lat}"
+                       data-lng="${lng}">
+                      <div class="gm-popup-action-icon primary">
+                          <i class="fa-solid fa-diamond-turn-right"></i>
+                      </div>
+                      <span>Directions</span>
+                  </div>
 
-                <div class="gm-popup-action" id="gm-action-call"
-                     data-phone="${escapeHtml(place.formatted_phone_number || place.international_phone_number || "")}">
-                    <div class="gm-popup-action-icon">
-                        <i class="fa-solid fa-phone"></i>
-                    </div>
-                    <span>Call</span>
-                </div>
+                  <div class="gm-popup-action ${savedNow ? "saved" : ""}" id="gm-action-save">
+                      <div class="gm-popup-action-icon">
+                          <i class="${savedNow ? "fa-solid" : "fa-regular"} fa-bookmark"></i>
+                      </div>
+                      <span>${savedNow ? "Saved" : "Save"}</span>
+                  </div>
 
-                <div class="gm-popup-action" id="gm-action-website"
-                     data-url="${escapeHtml(place.website || shareUrl)}">
-                    <div class="gm-popup-action-icon">
-                        <i class="fa-solid fa-earth-americas"></i>
-                    </div>
-                    <span>Website</span>
-                </div>
+                  <div class="gm-popup-action" id="gm-action-nearby"
+                       data-lat="${lat}"
+                       data-lng="${lng}">
+                      <div class="gm-popup-action-icon">
+                          <i class="fa-solid fa-magnifying-glass-location"></i>
+                      </div>
+                      <span>Nearby</span>
+                  </div>
 
-                <div class="gm-popup-action" id="gm-action-share"
-                     data-url="${escapeHtml(shareUrl)}"
-                     data-name="${escapeHtml(place.name || "")}">
-                    <div class="gm-popup-action-icon">
-                        <i class="fa-solid fa-share-nodes"></i>
-                    </div>
-                    <span>Share</span>
-                </div>
+                  ${
+                    place.formatted_phone_number || place.international_phone_number
+                      ? `<div class="gm-popup-action" id="gm-action-call"
+                              data-phone="${escapeHtml(place.formatted_phone_number || place.international_phone_number || "")}">
+                             <div class="gm-popup-action-icon">
+                                 <i class="fa-solid fa-phone"></i>
+                             </div>
+                             <span>Call</span>
+                         </div>`
+                      : ""
+                  }
+
+                  ${
+                    place.website
+                      ? `<div class="gm-popup-action" id="gm-action-website"
+                              data-url="${escapeHtml(place.website)}">
+                             <div class="gm-popup-action-icon">
+                                 <i class="fa-solid fa-earth-americas"></i>
+                             </div>
+                             <span>Website</span>
+                         </div>`
+                      : ""
+                  }
+
+                  <div class="gm-popup-action" id="gm-action-share"
+                       data-url="${escapeHtml(shareUrl)}"
+                       data-name="${escapeHtml(place.name || "")}">
+                      <div class="gm-popup-action-icon">
+                          <i class="fa-solid fa-share-nodes"></i>
+                      </div>
+                      <span>Share</span>
+                  </div>
+              </div>
+
+              ${attributesHTML}
+
+              <div class="gm-popup-info">
+                  <div class="gm-popup-row">
+                      <i class="fa-solid fa-location-dot"></i>
+                      <div class="gm-popup-row-flex">
+                          <span>${escapeHtml(place.formatted_address || "")}</span>
+                          <button type="button" class="gm-copy-inline-btn" data-copy="${escapeHtml(place.formatted_address || "")}" title="Copy address">
+                              <i class="fa-regular fa-copy"></i>
+                          </button>
+                      </div>
+                  </div>
+                  ${hoursHTML}
+                  ${
+                    place.formatted_phone_number
+                      ? `<div class="gm-popup-row">
+                          <i class="fa-solid fa-phone"></i>
+                          <div class="gm-popup-row-flex">
+                            <a href="tel:${escapeHtml(place.formatted_phone_number)}">${escapeHtml(place.formatted_phone_number)}</a>
+                            <button type="button" class="gm-copy-inline-btn" data-copy="${escapeHtml(place.formatted_phone_number)}" title="Copy phone">
+                              <i class="fa-regular fa-copy"></i>
+                            </button>
+                          </div>
+                         </div>`
+                      : ""
+                  }
+                  ${
+                    place.website
+                      ? `<div class="gm-popup-row">
+                          <i class="fa-solid fa-globe"></i>
+                          <div class="gm-popup-row-flex">
+                            <a href="${escapeHtml(place.website)}" target="_blank" rel="noopener">${escapeHtml(cleanWebsiteHost)}</a>
+                            <button type="button" class="gm-copy-inline-btn" data-copy="${escapeHtml(place.website)}" title="Copy website">
+                              <i class="fa-regular fa-copy"></i>
+                            </button>
+                          </div>
+                         </div>`
+                      : ""
+                  }
+                  ${
+                    plusCode
+                      ? `<div class="gm-popup-row">
+                          <i class="fa-solid fa-crosshairs"></i>
+                          <div class="gm-popup-row-flex">
+                            <span>${escapeHtml(plusCode)}</span>
+                            <button type="button" class="gm-copy-inline-btn" data-copy="${escapeHtml(plusCode)}" title="Copy Plus Code">
+                              <i class="fa-regular fa-copy"></i>
+                            </button>
+                          </div>
+                         </div>`
+                      : ""
+                  }
+                  ${
+                    place.url
+                      ? `<div class="gm-popup-row">
+                          <i class="fa-solid fa-map"></i>
+                          <div><a href="${escapeHtml(place.url)}" target="_blank" rel="noopener">View on Google Maps</a></div>
+                         </div>`
+                      : ""
+                  }
+                  ${overviewReviewsHTML}
+              </div>
             </div>
 
-            <div class="gm-popup-info">
-                <div class="gm-popup-row">
-                    <i class="fa-solid fa-location-dot"></i>
-                    <div class="gm-popup-row-flex">
-                        <span>${escapeHtml(place.formatted_address || "")}</span>
-                        <button type="button" class="gm-copy-inline-btn" data-copy="${escapeHtml(place.formatted_address || "")}" title="Copy address">
-                            <i class="fa-regular fa-copy"></i>
-                        </button>
-                    </div>
-                </div>
-                ${
-                  place.formatted_phone_number
-                    ? `<div class="gm-popup-row">
-                        <i class="fa-solid fa-phone"></i>
-                        <div><a href="tel:${escapeHtml(place.formatted_phone_number)}">${escapeHtml(place.formatted_phone_number)}</a></div>
-                       </div>`
-                    : ""
-                }
-                ${
-                  place.website
-                    ? `<div class="gm-popup-row">
-                        <i class="fa-solid fa-globe"></i>
-                        <div><a href="${escapeHtml(place.website)}" target="_blank" rel="noopener">${escapeHtml(place.website)}</a></div>
-                       </div>`
-                    : ""
-                }
-                ${hoursHTML}
-                ${reviewsHTML}
-                ${
-                  place.url
-                    ? `<div class="gm-popup-row">
-                        <i class="fa-solid fa-map"></i>
-                        <div><a href="${escapeHtml(place.url)}" target="_blank" rel="noopener">View on Google Maps</a></div>
-                       </div>`
-                    : ""
-                }
+            <div id="gm-tab-reviews" class="gm-tab-panel">
+              ${fullReviewsTabHTML}
             </div>
         </div>
       `;
@@ -994,6 +1484,47 @@ function loadPlaceDetails(placeId, clickedMarker) {
       popup.classList.add("show");
       syncToggleButtonPosition();
 
+      // Chuyển tab Overview / Reviews inline giống Google Maps
+      function switchInlineTab(tabName) {
+        popup.querySelectorAll(".gm-popup-tab[data-popup-tab]").forEach((t) => {
+          t.classList.toggle("active", t.dataset.popupTab === tabName);
+        });
+        const overviewPanel = document.getElementById("gm-tab-overview");
+        const reviewsPanel = document.getElementById("gm-tab-reviews");
+        if (overviewPanel) overviewPanel.classList.toggle("active", tabName === "overview");
+        if (reviewsPanel) reviewsPanel.classList.toggle("active", tabName === "reviews");
+      }
+
+      popup.querySelectorAll(".gm-popup-tab[data-popup-tab]").forEach((tabBtn) => {
+        tabBtn.addEventListener("click", function () {
+          switchInlineTab(this.dataset.popupTab);
+        });
+      });
+
+      document.getElementById("gm-see-all-reviews")?.addEventListener("click", function () {
+        switchInlineTab("reviews");
+        popup.scrollTop = 0;
+      });
+
+      // Sắp xếp đánh giá trong tab Reviews
+      popup.querySelectorAll(".gm-sort-pill").forEach((pill) => {
+        pill.addEventListener("click", function () {
+          popup.querySelectorAll(".gm-sort-pill").forEach((p) => p.classList.remove("active"));
+          this.classList.add("active");
+          const sortType = this.dataset.sort;
+          const sorted = reviews.slice();
+          if (sortType === "highest") {
+            sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+          } else if (sortType === "lowest") {
+            sorted.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+          }
+          const fullListEl = document.getElementById("gm-full-reviews-list");
+          if (fullListEl) {
+            fullListEl.innerHTML = buildReviewCardsHTML(sorted);
+          }
+        });
+      });
+
       // Sự kiện đóng popup
       const closeBtn = document.getElementById("gm-popup-close");
       if (closeBtn) {
@@ -1004,16 +1535,23 @@ function loadPlaceDetails(placeId, clickedMarker) {
         });
       }
 
-      // Click ảnh bìa mở Lightbox
+      // Click ảnh bìa hoặc strip thumbnail mở Lightbox
+      const lightboxItems = photoUrls.map((u) => ({
+        url: u,
+        label: place.name || "Google Photo",
+      }));
       const coverBtn = document.getElementById("gm-popup-cover-btn");
-      if (coverBtn && photoUrls.length) {
+      if (coverBtn && lightboxItems.length) {
         coverBtn.addEventListener("click", function () {
-          openLightbox(
-            photoUrls.map((u) => ({ url: u, label: place.name || "Google Photo" })),
-            0
-          );
+          openLightbox(lightboxItems, 0);
         });
       }
+      popup.querySelectorAll(".gm-strip-thumb").forEach((thumbBtn) => {
+        thumbBtn.addEventListener("click", function () {
+          const idx = parseInt(this.dataset.photoIdx, 10) || 0;
+          openLightbox(lightboxItems, idx);
+        });
+      });
 
       // Thu gọn / mở rộng giờ mở cửa
       const hoursToggle = document.getElementById("gm-hours-toggle");
@@ -1025,18 +1563,18 @@ function loadPlaceDetails(placeId, clickedMarker) {
         });
       }
 
-      // Nút copy địa chỉ
+      // Nút copy thông tin
       popup.querySelectorAll(".gm-copy-inline-btn").forEach((btn) => {
         btn.addEventListener("click", function () {
           const text = this.dataset.copy || "";
           if (text && navigator.clipboard) {
             navigator.clipboard.writeText(text);
-            showToast("Address copied to clipboard!");
+            showToast("Copied to clipboard!");
           }
         });
       });
 
-      // Các nút thao tác nhanh (Directions, Call, Website, Share)
+      // Các nút thao tác nhanh (Directions, Save, Nearby, Call, Website, Share)
       const dirAction = document.getElementById("gm-action-directions");
       if (dirAction) {
         dirAction.addEventListener("click", function () {
@@ -1045,6 +1583,38 @@ function loadPlaceDetails(placeId, clickedMarker) {
               ? `${this.dataset.name}, ${this.dataset.address}`
               : this.dataset.address || this.dataset.name;
           openDirectionsToPlace(destText);
+        });
+      }
+
+      const saveAction = document.getElementById("gm-action-save");
+      if (saveAction) {
+        saveAction.addEventListener("click", function () {
+          const nowSaved = toggleSavePlace(place);
+          this.classList.toggle("saved", nowSaved);
+          const iconEl = this.querySelector("i");
+          const labelEl = this.querySelector("span");
+          if (iconEl) {
+            iconEl.className = nowSaved ? "fa-solid fa-bookmark" : "fa-regular fa-bookmark";
+          }
+          if (labelEl) {
+            labelEl.textContent = nowSaved ? "Saved" : "Save";
+          }
+          showToast(nowSaved ? "Saved to your places!" : "Removed from saved places.");
+        });
+      }
+
+      const nearbyAction = document.getElementById("gm-action-nearby");
+      if (nearbyAction) {
+        nearbyAction.addEventListener("click", function () {
+          const pLat = parseFloat(this.dataset.lat);
+          const pLng = parseFloat(this.dataset.lng);
+          if (!isNaN(pLat) && !isNaN(pLng)) {
+            if (map) {
+              map.panTo({ lat: pLat, lng: pLng });
+              map.setZoom(15);
+            }
+            loadNearbyPlaces(pLat, pLng);
+          }
         });
       }
 
@@ -1199,55 +1769,91 @@ function calculateAndDisplayRoute() {
         directionsRenderer.setMap(map);
         directionsRenderer.setDirections(response);
 
-        const route = response.routes[0];
-        const leg = route.legs[0];
+        function renderSelectedRoute(routeIdx) {
+          const route = response.routes[routeIdx] || response.routes[0];
+          const leg = route.legs[0];
 
-        if (summaryEl && leg) {
-          summaryEl.style.display = "block";
-          summaryEl.innerHTML = `
-            <div class="gm-route-overview">
-              <div class="gm-route-primary">
-                <span class="gm-route-duration">${escapeHtml(leg.duration?.text || "")}</span>
-                <span class="gm-route-distance">(${escapeHtml(leg.distance?.text || "")})</span>
-              </div>
-              ${route.summary ? `<div class="gm-route-via">via ${escapeHtml(route.summary)}</div>` : ""}
-              <div class="gm-route-addresses">
-                <div><strong>From:</strong> ${escapeHtml(leg.start_address || originVal)}</div>
-                <div><strong>To:</strong> ${escapeHtml(leg.end_address || destVal)}</div>
-              </div>
-            </div>
-          `;
-        }
+          if (typeof directionsRenderer.setRouteIndex === "function") {
+            directionsRenderer.setRouteIndex(routeIdx);
+          }
 
-        if (stepsEl && leg && leg.steps) {
-          stepsEl.innerHTML = leg.steps
-            .map(function (step, idx) {
-              return `
-                <div class="gm-dir-step" data-lat="${step.start_location.lat()}" data-lng="${step.start_location.lng()}">
-                  <div class="gm-step-num">${idx + 1}</div>
-                  <div class="gm-step-body">
-                    <div class="gm-step-instruction">${step.instructions || ""}</div>
-                    <div class="gm-step-meta">
-                      <span>${escapeHtml(step.distance?.text || "")}</span>
-                      ${step.duration?.text ? `<span>• ${escapeHtml(step.duration.text)}</span>` : ""}
+          if (summaryEl && leg) {
+            summaryEl.style.display = "block";
+            const alternativesHTML =
+              response.routes.length > 1
+                ? `<div class="gm-route-alternatives">
+                    ${response.routes
+                      .map(function (r, idx) {
+                        const rLeg = r.legs[0];
+                        return `
+                          <button type="button" class="gm-route-option ${idx === routeIdx ? "active" : ""}" data-route-idx="${idx}">
+                            <div class="gm-route-opt-top">
+                              <span class="gm-route-opt-time">${escapeHtml(rLeg?.duration?.text || "")}</span>
+                              <span class="gm-route-opt-dist">${escapeHtml(rLeg?.distance?.text || "")}</span>
+                            </div>
+                            ${r.summary ? `<div class="gm-route-opt-via">via ${escapeHtml(r.summary)}</div>` : ""}
+                          </button>
+                        `;
+                      })
+                      .join("")}
+                   </div>`
+                : "";
+
+            summaryEl.innerHTML = `
+              ${alternativesHTML}
+              <div class="gm-route-overview">
+                <div class="gm-route-primary">
+                  <span class="gm-route-duration">${escapeHtml(leg.duration?.text || "")}</span>
+                  <span class="gm-route-distance">(${escapeHtml(leg.distance?.text || "")})</span>
+                </div>
+                ${route.summary ? `<div class="gm-route-via">via ${escapeHtml(route.summary)}</div>` : ""}
+                <div class="gm-route-addresses">
+                  <div><strong>From:</strong> ${escapeHtml(leg.start_address || originVal)}</div>
+                  <div><strong>To:</strong> ${escapeHtml(leg.end_address || destVal)}</div>
+                </div>
+              </div>
+            `;
+
+            summaryEl.querySelectorAll(".gm-route-option").forEach(function (optBtn) {
+              optBtn.addEventListener("click", function () {
+                const idx = parseInt(this.dataset.routeIdx, 10) || 0;
+                renderSelectedRoute(idx);
+              });
+            });
+          }
+
+          if (stepsEl && leg && leg.steps) {
+            stepsEl.innerHTML = leg.steps
+              .map(function (step, idx) {
+                return `
+                  <div class="gm-dir-step" data-lat="${step.start_location.lat()}" data-lng="${step.start_location.lng()}">
+                    <div class="gm-step-num">${idx + 1}</div>
+                    <div class="gm-step-body">
+                      <div class="gm-step-instruction">${step.instructions || ""}</div>
+                      <div class="gm-step-meta">
+                        <span>${escapeHtml(step.distance?.text || "")}</span>
+                        ${step.duration?.text ? `<span>• ${escapeHtml(step.duration.text)}</span>` : ""}
+                      </div>
                     </div>
                   </div>
-                </div>
-              `;
-            })
-            .join("");
+                `;
+              })
+              .join("");
 
-          stepsEl.querySelectorAll(".gm-dir-step").forEach(function (stepItem) {
-            stepItem.addEventListener("click", function () {
-              const lat = parseFloat(this.dataset.lat);
-              const lng = parseFloat(this.dataset.lng);
-              if (!isNaN(lat) && !isNaN(lng) && map) {
-                map.panTo({ lat, lng });
-                map.setZoom(17);
-              }
+            stepsEl.querySelectorAll(".gm-dir-step").forEach(function (stepItem) {
+              stepItem.addEventListener("click", function () {
+                const lat = parseFloat(this.dataset.lat);
+                const lng = parseFloat(this.dataset.lng);
+                if (!isNaN(lat) && !isNaN(lng) && map) {
+                  map.panTo({ lat, lng });
+                  map.setZoom(17);
+                }
+              });
             });
-          });
+          }
         }
+
+        renderSelectedRoute(0);
       } else if (currentTravelMode === "TWO_WHEELER") {
         // Fallback sang DRIVING nếu khu vực không hỗ trợ TWO_WHEELER
         currentTravelMode = "DRIVING";
@@ -1569,111 +2175,34 @@ function resumePendingLoginAction() {
 }
 
 function refreshHeaderAuthArea() {
-  fetch(window.location.href, {
-    method: "GET",
-    credentials: "include",
-  })
-    .then((r) => r.text())
-    .then((html) => {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, "text/html");
-      const selectors = [
-        ".site-header .user-notifications",
-        ".site-header .bp-msg-Log",
-        "#masthead .site-header-wrapper",
-        ".buddynext-rail",
-      ];
-      for (const sel of selectors) {
-        const newEl = doc.querySelector(sel);
-        const curEl = document.querySelector(sel);
-        if (newEl && curEl) {
-          curEl.innerHTML = newEl.innerHTML;
-          break;
-        }
-      }
-    })
-    .catch(() => {});
-}
-
-function handleSeamlessGoogleLogin(redirectUrl) {
-  const loginTextEl = document.getElementById("gmLoginRequiredText");
-  const originalText = loginTextEl ? loginTextEl.innerHTML : "";
-  if (loginTextEl) {
-    loginTextEl.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin"></i> Signing in with Google...';
+  if (typeof window.ptRefreshHeaderMenu === "function") {
+    return window.ptRefreshHeaderMenu();
   }
-
-  const targetUrl = redirectUrl || "/wp-login.php?loginSocial=google";
-
-  fetch(targetUrl, {
-    method: "GET",
-    credentials: "include",
-  })
-    .catch(() => {})
-    .finally(() => {
-      fetch(`${ajaxUrl}?action=pt_check_login_status`, {
-        method: "GET",
-        credentials: "include",
-      })
-        .then((r) => r.json())
-        .then((res) => {
-          gmUserLoggedIn = true;
-          window.gmUserLoggedIn = true;
-          if (typeof ptMap !== "undefined") {
-            ptMap.isLoggedIn = true;
-            if (res?.data?.ai_nonce) {
-              ptMap.ai_nonce = res.data.ai_nonce;
-            }
-          }
-
-          try {
-            sessionStorage.removeItem(PT_MAPS_STATE_KEY);
-          } catch (e) {}
-
-          if (loginTextEl && originalText) {
-            loginTextEl.innerHTML = originalText;
-          }
-
-          // Xóa overlay redirect của Nextend nếu có
-          const nslOverlay = document.getElementById("nsl-redirect-overlay");
-          if (nslOverlay) nslOverlay.remove();
-
-          hideLoginRequiredDialog();
-          showToast("Logged in successfully!");
-          refreshHeaderAuthArea();
-          resumePendingLoginAction();
-        })
-        .catch(() => {
-          gmUserLoggedIn = true;
-          window.gmUserLoggedIn = true;
-          hideLoginRequiredDialog();
-          resumePendingLoginAction();
-        });
-    });
 }
 
-function installSeamlessGoogleLoginHook() {
-  const customRedirect = function (url) {
-    handleSeamlessGoogleLogin(url);
-  };
+window.addEventListener("pt:google_login_success", function (e) {
+  const data = (e && e.detail) || {};
+  gmUserLoggedIn = true;
+  window.gmUserLoggedIn = true;
+
+  if (typeof ptMap !== "undefined") {
+    ptMap.isLoggedIn = true;
+    if (data.ai_nonce) {
+      ptMap.ai_nonce = data.ai_nonce;
+    }
+  }
 
   try {
-    Object.defineProperty(window, "nslRedirect", {
-      configurable: true,
-      enumerable: true,
-      get: function () {
-        return customRedirect;
-      },
-      set: function () {
-        // Giữ nguyên customRedirect để chặn Nextend reload trang Maps
-      },
-    });
-  } catch (e) {
-    window.nslRedirect = customRedirect;
-  }
-}
+    sessionStorage.removeItem(PT_MAPS_STATE_KEY);
+  } catch (err) {}
 
-installSeamlessGoogleLoginHook();
+  hideLoginRequiredDialog();
+  resumePendingLoginAction();
+});
+
+if (typeof window.ptInstallSeamlessGoogleLoginHook === "function") {
+  window.ptInstallSeamlessGoogleLoginHook();
+}
 
 /* =====================================================
    GỬI TIN NHẮN CHO CHỦ QUÁN (BUDDYPRESS / BUDDYX MESSAGE)
@@ -2050,6 +2579,28 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
+
+  // Nút "Search this area" kiểu Google Maps
+  const searchAreaBtn = document.getElementById("gm-search-area-btn");
+  if (searchAreaBtn) {
+    searchAreaBtn.addEventListener("click", function () {
+      this.style.display = "none";
+      if (!map) return;
+      const center = map.getCenter();
+      if (!center) return;
+
+      const activeCatBtn = document.querySelector(".cat-btn.active");
+      const queryVal = document.getElementById("pac-input")?.value.trim();
+
+      if (activeCatBtn && activeCatBtn.dataset.type) {
+        searchByType(activeCatBtn.dataset.type, activeCatBtn);
+      } else if (queryVal) {
+        searchPlaces(queryVal);
+      } else {
+        loadNearbyPlaces(center.lat(), center.lng());
+      }
+    });
+  }
 
   // 6. Các nút điều khiển bản đồ góc phải dưới (.gm-map-controls)
   const myLocBtn = document.getElementById("gm-my-location-btn");
@@ -2587,7 +3138,9 @@ document.addEventListener(
       e.target.closest("#gmNextendGoogleLogin a") ||
       e.target.closest(".gm-login-btn")
     ) {
-      installSeamlessGoogleLoginHook();
+      if (typeof window.ptInstallSeamlessGoogleLoginHook === "function") {
+        window.ptInstallSeamlessGoogleLoginHook();
+      }
       saveMapStateBeforeLogin();
     }
   },

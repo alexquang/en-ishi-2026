@@ -114,6 +114,21 @@ function buddyx_child_enqueue_styles()
         array('buddyx-style'),
         wp_get_theme()->get('Version')
     );
+
+    wp_enqueue_script(
+        'pt-google-login',
+        get_stylesheet_directory_uri() . '/assets-enishi/js/pt-google-login.js',
+        array(),
+        filemtime(get_stylesheet_directory() . '/assets-enishi/js/pt-google-login.js'),
+        true
+    );
+    wp_localize_script(
+        'pt-google-login',
+        'ptGoogleLoginData',
+        array(
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+        )
+    );
 }
 
 add_action('wp_enqueue_scripts', 'buddyx_child_enqueue_styles');
