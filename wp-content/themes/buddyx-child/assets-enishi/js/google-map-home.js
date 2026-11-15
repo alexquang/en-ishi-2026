@@ -501,6 +501,14 @@ function loadNearbyPlaces(lat, lng) {
 /* =====================================================
    KHỞI TẠO BẢN ĐỒ GOOGLE MAPS
 ===================================================== */
+window.gm_authFailure = function () {
+  const mapElement = document.getElementById("map");
+  if (mapElement) {
+    mapElement.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center;color:#475569;background:#f8fafc;">Google Maps API authentication failed. Please check the API key or billing settings.</div>';
+  }
+};
+
 function initMap(userLat, userLng) {
   const defaultLat = userLat ? Number(userLat) : 10.7769;
   const defaultLng = userLng ? Number(userLng) : 106.7009;
@@ -508,6 +516,11 @@ function initMap(userLat, userLng) {
 
   const mapElement = document.getElementById("map");
   if (!mapElement) return;
+  if (typeof google === "undefined" || !google.maps || !google.maps.Map) {
+    mapElement.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:24px;text-align:center;color:#475569;background:#f8fafc;">Unable to load Google Maps. Please refresh the page.</div>';
+    return;
+  }
 
   map = new google.maps.Map(mapElement, {
     center: center,
