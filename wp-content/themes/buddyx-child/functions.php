@@ -1893,7 +1893,8 @@ function pt_send_place_message_ajax()
                 'body'        => wp_trim_words($message, 20),
             ]);
         } catch (\Throwable $e) {}
-    } elseif (function_exists('bp_notifications_add_notification')) {
+    }
+    if (function_exists('bp_notifications_add_notification')) {
         bp_notifications_add_notification([
             'user_id'           => $owner_id,
             'item_id'           => $thread_id ?: $sender_id,
