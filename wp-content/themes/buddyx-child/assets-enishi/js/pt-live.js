@@ -829,6 +829,17 @@
     }
 
     function startPeerViewer(roomName) {
+        if (els.videoMount && Array.isArray(state.channels)) {
+            const ch = state.channels.find((c) => c && c.room === roomName);
+            const poster = (ch && (ch.host_avatar || ch.thumb)) || '';
+            const hostName = (ch && ch.host_name) || 'Host';
+            if (poster) {
+                els.videoMount.style.backgroundImage = `linear-gradient(rgba(15,23,42,0.55), rgba(15,23,42,0.75)), url("${poster}")`;
+                els.videoMount.style.backgroundSize = 'cover';
+                els.videoMount.style.backgroundPosition = 'center';
+            }
+            els.videoMount.setAttribute('data-connecting-host', hostName);
+        }
         if (typeof window.Peer === 'undefined') return;
         if (state.viewerPeer) {
             try { state.viewerPeer.destroy(); } catch (e) {}
