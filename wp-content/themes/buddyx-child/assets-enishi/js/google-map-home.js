@@ -2707,6 +2707,16 @@ document.addEventListener("DOMContentLoaded", function () {
   const aiPanel = document.getElementById("ai-result-panel");
   const aiContent = document.getElementById("ai-result-content");
   const closeAiButton = document.getElementById("close-ai-result");
+  const aiSearchCache = new Map();
+  let aiAbortController = null;
+
+  function getActiveAiLang() {
+    try {
+      const saved = localStorage.getItem("pt_gtranslate_selected_lang");
+      if (saved) return saved;
+    } catch (err) {}
+    return document.documentElement.lang || "";
+  }
 
   if (aiButton) {
     aiButton.addEventListener("click", function (e) {
@@ -2729,6 +2739,23 @@ document.addEventListener("DOMContentLoaded", function () {
       if (aiPanel) {
         aiPanel.style.display = "block";
       }
+
+      const lang = getActiveAiLang();
+      const cacheKey = `${query}|${lang}`;
+      if (aiSearchCache.has(cacheKey)) {
+        if (aiContent) {
+          aiContent.innerHTML = aiSearchCache.get(cacheKey);
+        }
+        return;
+      }
+
+      if (aiAbortController) {
+        aiAbortController.abort();
+      }
+      aiAbortController = new AbortController();
+      const controller = aiAbortController;
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
       if (aiContent) {
         aiContent.innerHTML = `
           <div class="ai-loading">
@@ -2742,12 +2769,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
       fetch(ajaxUrl, {
         method: "POST",
+        signal: controller.signal,
         headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         },
         body: new URLSearchParams({
           action: "pt_ai_search",
           query: query,
+          lang: lang,
         }),
       })
         .then((r) => r.json())
@@ -2763,11 +2792,18 @@ document.addEventListener("DOMContentLoaded", function () {
             }
             return;
           }
+          const html = data.data?.html || "No result.";
+          if (data.data?.html) {
+            aiSearchCache.set(cacheKey, html);
+          }
           if (aiContent) {
-            aiContent.innerHTML = data.data?.html || "No result.";
+            aiContent.innerHTML = html;
           }
         })
-        .catch(() => {
+        .catch((err) => {
+          if (err && err.name === "AbortError") {
+            return;
+          }
           if (aiContent) {
             aiContent.innerHTML = `
               <div class="ai-error">
@@ -2778,13 +2814,23 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         })
         .finally(() => {
-          aiButton.disabled = false;
+          clearTimeout(timeoutId);
+          if (aiAbortController === controller) {
+            aiButton.disabled = false;
+          }
         });
     });
   }
 
   if (closeAiButton) {
     closeAiButton.addEventListener("click", function () {
+      if (aiAbortController) {
+        aiAbortController.abort();
+        aiAbortController = null;
+      }
+      if (aiButton) {
+        aiButton.disabled = false;
+      }
       if (aiPanel) {
         aiPanel.style.display = "none";
       }

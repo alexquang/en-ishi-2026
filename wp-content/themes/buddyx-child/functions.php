@@ -461,408 +461,232 @@ add_action(
 
 function pt_ai_search()
 {
-
     /*
      * =====================================================
-     * 1. GET SEARCH QUERY
+     * 1. GET SEARCH QUERY & LANGUAGE
      * =====================================================
      */
-
     $query = isset($_POST['query'])
-        ? sanitize_text_field(
-            wp_unslash($_POST['query'])
-        )
+        ? trim(sanitize_text_field(wp_unslash($_POST['query'])))
         : '';
 
-
     if ($query === '') {
-
         wp_send_json_error([
             'message' => 'Search content is empty.'
         ], 400);
     }
 
+    if (function_exists('mb_substr')) {
+        $query = mb_substr($query, 0, 500, 'UTF-8');
+    } else {
+        $query = substr($query, 0, 500);
+    }
+
+    $lang = isset($_POST['lang'])
+        ? sanitize_text_field(wp_unslash($_POST['lang']))
+        : '';
 
     /*
      * =====================================================
-     * 2. GEMINI API KEY
+     * 2. TRANSIENT CACHE (FAST REPEAT SEARCHES)
      * =====================================================
-     *
-     * TEST ONLY
      */
+    $cache_key = 'pt_ai_search_' . md5($query . '|' . $lang);
+    $cached_html = get_transient($cache_key);
+    if (is_string($cached_html) && $cached_html !== '') {
+        wp_send_json_success([
+            'html'   => $cached_html,
+            'query'  => $query,
+            'cached' => true,
+        ]);
+    }
 
-    $api_key = 'AQ.Ab8RN6KpzRnB1gj1TrD7TCrKWQdb4QfmTzNzvI8qQtMk5vN2ZA';
-
+    /*
+     * =====================================================
+     * 3. GEMINI API KEY
+     * =====================================================
+     */
+    $api_key = (defined('GEMINI_API_KEY') && GEMINI_API_KEY)
+        ? GEMINI_API_KEY
+        : 'AQ.Ab8RN6KpzRnB1gj1TrD7TCrKWQdb4QfmTzNzvI8qQtMk5vN2ZA';
 
     if (empty($api_key)) {
-
         wp_send_json_error([
             'message' => 'Gemini API key is empty.'
         ], 500);
     }
 
-
     /*
      * =====================================================
-     * 3. PROMPT
+     * 4. SYSTEM INSTRUCTION & REQUEST BODY
      * =====================================================
      */
+    $lang_hint = $lang !== ''
+        ? "Preferred response language code: {$lang} (or match the language of the user's query if clearly written in another language)."
+        : "Match the language of the user's query (respond in Vietnamese when appropriate).";
 
-    $prompt = <<<PROMPT
-You are a general AI search assistant.
-
-Search and understand the user's entire input.
-
-The user may ask about ANYTHING, including:
-- places
-- businesses
-- restaurants
-- cafes
-- hotels
-- hospitals
-- schools
-- companies
-- people
-- products
-- services
-- prices
-- news
-- events
-- travel
-- geography
-- technology
-- general knowledge
-- current information
-- or any other topic.
-
-Do not restrict the search to places or categories.
-
-Use Google Search when current or factual web information is useful.
-
-Answer the user's actual query directly.
-
-Do not invent information.
-
-Respond in Vietnamese when appropriate.
-
-Keep the answer concise.
-
-Return HTML only.
-
-Allowed HTML:
-<p>
-<strong>
-<ul>
-<li>
-<br>
-
-Do not use Markdown.
-Do not use <html>, <head>, or <body>.
-
-User query:
-{$query}
+    $system_instruction = <<<PROMPT
+You are a fast, accurate AI search assistant.
+Search and understand the user's entire input. The user may ask about anything: places, businesses, restaurants, cafes, hotels, hospitals, schools, companies, people, products, services, prices, news, events, travel, geography, technology, or general knowledge.
+Use Google Search grounding when current, local, or factual web information is needed.
+Answer the user's actual query directly, accurately, and concisely. Do not invent facts or addresses.
+{$lang_hint}
+Return clean HTML only using only: <p>, <strong>, <ul>, <li>, <br>.
+Do not use Markdown, code fences, <html>, <head>, or <body>.
 PROMPT;
-    /*
-     * =====================================================
-     * 4. GEMINI REQUEST BODY
-     * =====================================================
-     */
 
     $body = [
-
-        'contents' => [
-
-            [
-
-                'role' => 'user',
-
-                'parts' => [
-
-                    [
-                        'text' => $prompt
-                    ]
-
-                ]
-
+        'systemInstruction' => [
+            'parts' => [
+                ['text' => $system_instruction]
             ]
-
+        ],
+        'contents' => [
+            [
+                'role'  => 'user',
+                'parts' => [
+                    ['text' => $query]
+                ]
+            ]
+        ],
+        'tools' => [
+            ['google_search' => (object) []]
+        ],
+        'generationConfig' => [
+            'temperature'     => 0.3,
+            'maxOutputTokens' => 700,
+            'thinkingConfig'  => [
+                'thinkingBudget' => 0
+            ]
         ]
-
     ];
 
-
     /*
      * =====================================================
-     * 5. GEMINI MODEL
+     * 5. CALL GEMINI (gemini-2.5-flash)
      * =====================================================
      */
+    $model = 'gemini-2.5-flash';
+    $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
 
-    $model = 'gemini-3.6-flash';
-
-
-    /*
-     * =====================================================
-     * 6. GEMINI API URL
-     * =====================================================
-     */
-
-    $url =
-        'https://generativelanguage.googleapis.com/v1beta/models/'
-        . $model
-        . ':generateContent';
-
-
-    /*
-     * =====================================================
-     * 7. CALL GEMINI
-     * =====================================================
-     */
-
-    $response = wp_remote_post(
-
-        $url,
-
-        [
-
-            'timeout' => 60,
-
-            'headers' => [
-
-                'Content-Type' => 'application/json',
-
-                'x-goog-api-key' => $api_key
-
-            ],
-
-            'body' => wp_json_encode($body)
-
-        ]
-
-    );
-
-
-    /*
-     * =====================================================
-     * 8. CONNECTION ERROR
-     * =====================================================
-     */
+    $response = wp_remote_post($url, [
+        'timeout' => 20,
+        'headers' => [
+            'Content-Type'   => 'application/json',
+            'x-goog-api-key' => $api_key,
+        ],
+        'body' => wp_json_encode($body),
+    ]);
 
     if (is_wp_error($response)) {
-
         wp_send_json_error([
-
-            'message' =>
-            'Unable to connect to Gemini: '
-                . $response->get_error_message()
-
+            'message' => 'Unable to connect to Gemini: ' . $response->get_error_message()
         ], 500);
     }
 
-
-    /*
-     * =====================================================
-     * 9. HTTP STATUS
-     * =====================================================
-     */
-
-    $status =
-        wp_remote_retrieve_response_code(
-            $response
-        );
-
-
-    /*
-     * =====================================================
-     * 10. RESPONSE BODY
-     * =====================================================
-     */
-
-    $raw_body =
-        wp_remote_retrieve_body(
-            $response
-        );
-
-
-    $response_body =
-        json_decode(
-            $raw_body,
-            true
-        );
-
-
-    /*
-     * =====================================================
-     * 11. INVALID JSON
-     * =====================================================
-     */
+    $status = wp_remote_retrieve_response_code($response);
+    $raw_body = wp_remote_retrieve_body($response);
+    $response_body = json_decode($raw_body, true);
 
     if (!is_array($response_body)) {
-
         wp_send_json_error([
-
-            'message' =>
-            'Invalid response from Gemini.'
-
+            'message' => 'Invalid response from Gemini.'
         ], 502);
     }
 
-
-    /*
-     * =====================================================
-     * 12. GEMINI API ERROR
-     * =====================================================
-     */
-
-    if (
-        $status < 200 ||
-        $status >= 300
-    ) {
-
-        $error_message =
-            $response_body['error']['message']
-            ?? 'Gemini API error.';
-
-
+    if ($status < 200 || $status >= 300) {
+        $error_message = $response_body['error']['message'] ?? 'Gemini API error.';
         wp_send_json_error([
-
             'message' => $error_message
-
         ], $status ?: 500);
     }
 
-
     /*
      * =====================================================
-     * 13. GET GEMINI TEXT
+     * 6. EXTRACT TEXT & GROUNDING SOURCES
      * =====================================================
      */
-
     $text = '';
+    $candidate = $response_body['candidates'][0] ?? [];
 
-
-    if (
-        isset(
-            $response_body['candidates'][0]['content']['parts']
-        )
-        &&
-        is_array(
-            $response_body['candidates'][0]['content']['parts']
-        )
-    ) {
-
-        foreach (
-            $response_body['candidates'][0]['content']['parts']
-            as $part
-        ) {
-
-            if (
-                isset($part['text']) &&
-                is_string($part['text'])
-            ) {
-
+    if (!empty($candidate['content']['parts']) && is_array($candidate['content']['parts'])) {
+        foreach ($candidate['content']['parts'] as $part) {
+            if (isset($part['text']) && is_string($part['text'])) {
                 $text .= $part['text'];
             }
         }
     }
 
-
-    /*
-     * =====================================================
-     * 14. NO RESULT
-     * =====================================================
-     */
-
-    if (trim($text) === '') {
-
+    $text = trim($text);
+    if ($text === '') {
         wp_send_json_error([
-
-            'message' =>
-            'Gemini returned no content.'
-
+            'message' => 'Gemini returned no content.'
         ], 502);
     }
 
-
-    /*
-     * =====================================================
-     * 15. CLEAN MARKDOWN CODE BLOCK
-     * =====================================================
-     */
-
+    $text = preg_replace('/^```(?:html)?\s*/i', '', $text);
+    $text = preg_replace('/\s*```$/', '', $text);
     $text = trim($text);
 
-    $text = preg_replace(
-        '/^```(?:html)?\s*/i',
-        '',
-        $text
-    );
-
-    $text = preg_replace(
-        '/\s*```$/',
-        '',
-        $text
-    );
-
-    $text = trim($text);
-
-
-    /*
-     * =====================================================
-     * 16. ALLOW SAFE HTML
-     * =====================================================
-     */
-
-    $html = wp_kses(
-
-        $text,
-
-        [
-
-            'p' => [],
-
-            'strong' => [],
-
-            'b' => [],
-
-            'em' => [],
-
-            'i' => [],
-
-            'br' => [],
-
-            'ul' => [],
-
-            'ol' => [],
-
-            'li' => [],
-
-            'h3' => [],
-
-            'h4' => [],
-
-            'span' => [
-
-                'class' => true
-
-            ]
-
-        ]
-
-    );
-
+    // Append verified Google Search grounding sources if present
+    $sources_html = '';
+    $chunks = $candidate['groundingMetadata']['groundingChunks'] ?? [];
+    if (is_array($chunks) && !empty($chunks)) {
+        $links = [];
+        $seen_urls = [];
+        foreach ($chunks as $chunk) {
+            $web = $chunk['web'] ?? null;
+            if (!is_array($web) || empty($web['uri'])) {
+                continue;
+            }
+            $uri = esc_url_raw($web['uri']);
+            if ($uri === '' || isset($seen_urls[$uri])) {
+                continue;
+            }
+            $seen_urls[$uri] = true;
+            $title = !empty($web['title']) ? esc_html($web['title']) : esc_html($uri);
+            $links[] = '<li><a href="' . esc_url($uri) . '" target="_blank" rel="noopener noreferrer">' . $title . '</a></li>';
+            if (count($links) >= 4) {
+                break;
+            }
+        }
+        if (!empty($links)) {
+            $sources_html = '<div class="ai-sources"><strong>Sources:</strong><ul>' . implode('', $links) . '</ul></div>';
+        }
+    }
 
     /*
      * =====================================================
-     * 17. RETURN TO JAVASCRIPT
+     * 7. SANITIZE HTML & CACHE
      * =====================================================
      */
+    $html = wp_kses($text . $sources_html, [
+        'p'      => [],
+        'strong' => [],
+        'b'      => [],
+        'em'     => [],
+        'i'      => [],
+        'br'     => [],
+        'ul'     => [],
+        'ol'     => [],
+        'li'     => [],
+        'h3'     => [],
+        'h4'     => [],
+        'div'    => ['class' => true],
+        'span'   => ['class' => true],
+        'a'      => [
+            'href'   => true,
+            'target' => true,
+            'rel'    => true,
+        ],
+    ]);
+
+    set_transient($cache_key, $html, 10 * MINUTE_IN_SECONDS);
 
     wp_send_json_success([
-
-        'html' => $html,
-
-        'query' => $query
-
+        'html'   => $html,
+        'query'  => $query,
+        'cached' => false,
     ]);
 }
 // End Search GEMINI
