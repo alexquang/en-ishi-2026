@@ -386,6 +386,34 @@
   }
 
   /**
+   * Tự động điều chỉnh chiều rộng .gt_selector vừa khít với ngôn ngữ đang chọn
+   */
+  const _measureCanvas = document.createElement("canvas");
+  function fitSelectorWidth(sel) {
+    if (!sel || !sel.options || sel.selectedIndex < 0) return;
+    const option = sel.options[sel.selectedIndex];
+    const text = option ? option.textContent.trim() : "";
+    if (!text) return;
+
+    const ctx = _measureCanvas.getContext("2d");
+    if (!ctx) return;
+
+    const cs = window.getComputedStyle(sel);
+    ctx.font =
+      cs.font ||
+      (cs.fontWeight || "bold") +
+        " " +
+        (cs.fontSize || "14px") +
+        " " +
+        (cs.fontFamily || "Poppins, sans-serif");
+
+    const textWidth = Math.ceil(ctx.measureText(text).width);
+    const arrowAndPadding = 32;
+    const targetWidth = Math.max(70, Math.min(150, textWidth + arrowAndPadding));
+    sel.style.width = targetWidth + "px";
+  }
+
+  /**
    * Đồng bộ giá trị hiển thị trên dropdown menu (.gt_selector)
    */
   function syncDropdownAndCombo(lang) {
@@ -406,6 +434,7 @@
           break;
         }
       }
+      fitSelectorWidth(sel);
     });
 
     applyDirectMenuAndUITranslations(lang);
@@ -597,6 +626,7 @@
 
   function initAutoLanguage() {
     removeLoadingState();
+    document.querySelectorAll(".gt_selector").forEach(fitSelectorWidth);
 
     let storedLang = null;
     let isUserManual = false;

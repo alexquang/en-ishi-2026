@@ -208,11 +208,13 @@ textarea,
 .pt-header-language .gt_selector {
   border: none !important;
   background: #fff !important;
-  min-width: 110px !important;
-  width: auto !important;
+  min-width: 0 !important;
+  width: 88px;
+  max-width: 150px;
   font-size: 14px !important;
   font-weight: bold !important;
   color: #000 !important;
+  text-overflow: ellipsis;
   cursor: pointer;
 }
 
