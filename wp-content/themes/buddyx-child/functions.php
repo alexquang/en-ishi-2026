@@ -1898,19 +1898,22 @@ function pt_send_place_message_ajax()
     ]);
     update_user_meta($owner_id, 'pt_place_inbox_messages', array_slice($inbox, 0, 100));
 
-    // Gửi Notification cho chủ quán trên hệ thống (BuddyNext / BuddyPress)
-    if (class_exists('\\BuddyNext\\Notifications\\NotificationService') && method_exists('\\BuddyNext\\Notifications\\NotificationService', 'create')) {
+    // Gửi Notification cho chủ quán trên hệ thống (BuddyNext Notifications -> hiện trên icon cái chuông)
+    if (function_exists('buddynext_service')) {
         try {
-            \BuddyNext\Notifications\NotificationService::create([
-                'user_id'     => $owner_id,
-                'actor_id'    => $sender_id,
-                'type'        => 'message',
-                'object_type' => 'message_thread',
-                'object_id'   => $thread_id ?: 0,
-                'url'         => $thread_url,
-                'title'       => $subject,
-                'body'        => wp_trim_words($message, 20),
-            ]);
+            $notif_svc = buddynext_service('notifications');
+            if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
+                $notif_svc->create([
+                    'user_id'     => $owner_id,
+                    'actor_id'    => $sender_id,
+                    'type'        => 'message',
+                    'object_type' => 'message_thread',
+                    'object_id'   => $thread_id ?: 0,
+                    'url'         => $thread_url,
+                    'title'       => $subject,
+                    'body'        => wp_trim_words($message, 20),
+                ]);
+            }
         } catch (\Throwable $e) {}
     }
     if (function_exists('bp_notifications_add_notification')) {
