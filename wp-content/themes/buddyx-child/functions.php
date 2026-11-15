@@ -1299,7 +1299,25 @@ add_filter('body_class', function ($classes) {
         $classes[] = 'my-wallet-page';
     }
 
-    if (is_page(['membership-account', 'membership-levels', 'membership-checkout', 'membership-confirmation', 'membership-billing', 'membership-cancel', 'membership-invoice'])) {
+    $is_pmpro_page = (function_exists('pmpro_is_plugin_page') && pmpro_is_plugin_page())
+        || is_page(['membership-account', 'membership-levels', 'membership-checkout', 'membership-confirmation', 'confirmation', 'membership-billing', 'membership-cancel', 'membership-invoice', 'invoice', 'levels', 'checkout']);
+
+    if (!$is_pmpro_page && function_exists('pmpro_getOption')) {
+        $pmpro_page_ids = array_filter([
+            (int) pmpro_getOption('account_page_id'),
+            (int) pmpro_getOption('billing_page_id'),
+            (int) pmpro_getOption('cancel_page_id'),
+            (int) pmpro_getOption('checkout_page_id'),
+            (int) pmpro_getOption('confirmation_page_id'),
+            (int) pmpro_getOption('invoice_page_id'),
+            (int) pmpro_getOption('levels_page_id'),
+        ]);
+        if (!empty($pmpro_page_ids) && is_page($pmpro_page_ids)) {
+            $is_pmpro_page = true;
+        }
+    }
+
+    if ($is_pmpro_page) {
         $classes[] = 'membership-account-page';
         $classes[] = 'pmpro-page';
     }

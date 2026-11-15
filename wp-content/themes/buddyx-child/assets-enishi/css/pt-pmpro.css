@@ -243,8 +243,77 @@ body.membership-account-page .site-sub-header {
   color: #92400e;
 }
 
+/* Confirmation & Invoice Page */
+.pmpro #pmpro_confirmation_message,
+.pmpro .pmpro_confirmation_wrap {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-left: 4px solid #10b981;
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+}
+
+.pmpro .pmpro_confirmation_wrap > p,
+.pmpro #pmpro_confirmation_message > p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #374151;
+}
+
+.pmpro .pmpro_confirmation_wrap > p:last-child,
+.pmpro #pmpro_confirmation_message > p:last-child {
+  margin-bottom: 0;
+}
+
+.pmpro .pmpro_btn-print,
+.pmpro a.pmpro_btn-print {
+  background: #f8fafc !important;
+  color: #012068 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  padding: 7px 14px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  box-shadow: none !important;
+}
+
+.pmpro .pmpro_btn-print:hover,
+.pmpro a.pmpro_btn-print:hover {
+  background: #eef2ff !important;
+  border-color: #012068 !important;
+}
+
+.pmpro .pmpro_cols-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.pmpro .pmpro_list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.pmpro .pmpro_list_item {
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.pmpro .pmpro_list_item:last-child {
+  border-bottom: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
+  .pmpro .pmpro_cols-2 {
+    grid-template-columns: 1fr;
+  }
   .pmpro {
     margin: 14px auto 32px;
     padding: 0 12px;
