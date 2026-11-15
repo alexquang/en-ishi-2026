@@ -550,3 +550,23 @@ body.membership-account-page .site-sub-header {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Stabilize BuddyPress/BuddyNext relative timestamps & header meta during GTranslate */
+#buddypress #item-header-content .activity,
+#buddypress .item-meta .activity,
+.buddypress-wrap .activity,
+.bp-group-meta .activity {
+  display: inline-block;
+  min-height: 1.4em;
+  line-height: 1.4;
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: middle;
+  contain: layout style;
+}
+
+#buddypress #item-header-content,
+.buddypress-wrap #item-header-content {
+  min-width: 0;
+}
+
