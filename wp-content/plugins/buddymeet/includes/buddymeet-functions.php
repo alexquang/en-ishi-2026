@@ -303,8 +303,14 @@ function buddymeet_render_jitsi_meet($room = null, $subject = null){
     global $bp;
     $group_id = bp_get_current_group_id();
 
-    if(is_null($room)){
+    if(is_null($room) || $room === ''){
         $room = buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_room', true);
+        if (empty($room)) {
+            $room = 'enishi-group-' . $group_id . '-' . buddymeet_generate_unique_room();
+            if (function_exists('groups_update_groupmeta')) {
+                groups_update_groupmeta($group_id, 'buddymeet_room', $room);
+            }
+        }
     }
 
     if(is_null($subject)){
@@ -314,19 +320,28 @@ function buddymeet_render_jitsi_meet($room = null, $subject = null){
         }
     }
 
-    $user = $bp->loggedin_user->userdata;
-    $user_id = esc_js($user->ID);
-    $user_name = esc_js($user->display_name);
-    $user_email = esc_js($user->user_email);
-    $avatar_url = esc_js(get_avatar_url($user_id));
+    $user = wp_get_current_user();
+    $user_id = ($user && $user->exists()) ? esc_js((string) $user->ID) : '0';
+    $user_name = ($user && $user->exists()) ? esc_js($user->display_name ?: $user->user_login) : 'Guest';
+    $user_email = ($user && $user->exists()) ? esc_js($user->user_email) : '';
+    $avatar_url = ($user && $user->exists()) ? esc_js(get_avatar_url($user->ID)) : '';
 
     //apply group settings
     $password = buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_password', true);
 
-    $domain =  buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_domain', true);
+    $domain = buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_domain', true);
+    if (empty($domain)) {
+        $domain = BuddyMeet::get_default_jitsi_domain();
+    }
     $film_strip_only =  buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_film_strip_only', true) === '1' ?  'true' : 'false';
     $width =  buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_width', true);
+    if (empty($width)) {
+        $width = '100%';
+    }
     $height =  buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_height', true);
+    if (empty($height)) {
+        $height = 660;
+    }
     $start_audio_only =  buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_start_audio_only', true) === '1' ? 'true' : 'false';
     $mobile_open_in_browser =  buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_mobile_open_in_browser', true) === '1' ? 'true' : 'false';
     $default_language =  buddymeet_groups_get_groupmeta( $group_id, 'buddymeet_default_language', true);

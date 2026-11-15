@@ -303,7 +303,11 @@ class BuddyMeet {
             ));
 
             $handle = 'buddymeet-jitsi-js';
-            wp_enqueue_script( $handle, "https://8x8.vc/libs/external_api.min.js", array(), buddymeet_get_version(), true);
+            $active_domain = self::get_active_group_jitsi_domain(bp_get_current_group_id());
+            $api_js_url = ($active_domain === '8x8.vc')
+                ? 'https://8x8.vc/libs/external_api.min.js'
+                : 'https://' . $active_domain . '/external_api.js';
+            wp_enqueue_script( $handle, $api_js_url, array(), buddymeet_get_version(), true);
         }
     }
 
@@ -485,24 +489,42 @@ class BuddyMeet {
             return esc_js($item);
         }, $params);
 
-        $app_id = get_option('buddymeet_jitsi_appid', "");
-        $key_id = get_option('buddymeet_jitsi_apikeyid', "");
-        $private_key = get_option('buddymeet_jitsi_privatekey', "");
-        $jwt_generator = new BuddyMeet_JWT($app_id, $key_id, $private_key);
+        $app_id = trim((string) get_option('buddymeet_jitsi_appid', ""));
+        $key_id = trim((string) get_option('buddymeet_jitsi_apikeyid', ""));
+        $private_key = trim((string) get_option('buddymeet_jitsi_privatekey', ""));
+        $has_jaas_creds = ($app_id !== '' && $key_id !== '' && $private_key !== '');
 
-        $user_data = [
-            'id'     =>  isset($params['user_id']) ? $params['user_id'] : '',
-            'name'   => isset($params['user']) ? $params['user'] : '',
-            'avatar' => isset($params['avatar']) ? $params['avatar'] : '',
-            'email' => isset($params['email']) ? $params['email'] : '',
-        ];
+        $domain = !empty($params['domain']) ? trim((string) $params['domain']) : self::get_default_jitsi_domain();
+        if (!$has_jaas_creds && ($domain === '8x8.vc' || $domain === self::PUBLIC_JITSI_DOMAIN_OLD || $domain === '')) {
+            $domain = self::get_default_jitsi_domain();
+        }
+        $params['domain'] = $domain;
 
-        $room_name = $params['room'];
-        $jwt = $jwt_generator->generate_token($user_data, $room_name);
-        error_log($jwt);
-        if (isset($jwt) && isset($app_id)) {
+        $jwt = '';
+        if ($has_jaas_creds) {
+            $jwt_generator = new BuddyMeet_JWT($app_id, $key_id, $private_key);
+            $user_data = [
+                'id'     => isset($params['user_id']) ? $params['user_id'] : '',
+                'name'   => isset($params['user']) ? $params['user'] : '',
+                'avatar' => isset($params['avatar']) ? $params['avatar'] : '',
+                'email'  => isset($params['email']) ? $params['email'] : '',
+            ];
+            $generated = $jwt_generator->generate_token($user_data, $params['room']);
+            if (!empty($generated) && is_string($generated)) {
+                $jwt = $generated;
+            }
+        }
+
+        $room_name = !empty($params['room']) ? $params['room'] : ('enishi-meet-' . substr(md5(home_url($_SERVER['REQUEST_URI'] ?? '')), 0, 10));
+        if ($jwt !== '' && $app_id !== '') {
             $room_name = $app_id . '/' . $room_name;
         }
+
+        $height_val = (int) preg_replace('/[^0-9]/', '', (string) ($params['height'] ?? ''));
+        if ($height_val < 520) {
+            $height_val = 660;
+        }
+        $width_val = !empty($params['width']) ? $params['width'] : '100%';
 
         $script = sprintf(
             $this->get_jitsi_init_template(),
@@ -510,18 +532,18 @@ class BuddyMeet {
             $params['settings'],
             $params['toolbar'],
             $room_name,
-            $params['width'],
-            $params['height'],
+            $width_val,
+            $height_val,
             $params['parent_node'],
             $params['start_audio_only'] === "true" || $params['start_audio_only'] === true ? 1 : 0,
-            $params['default_language'],
+            !empty($params['default_language']) ? $params['default_language'] : 'en',
             $params['film_strip_only'] === "true" || $params['film_strip_only'] === true? 1 : 0,
-            $params['background_color'],
+            !empty($params['background_color']) ? $params['background_color'] : '#0f172a',
             $params['show_watermark'] === "true" || $params['show_watermark'] === true? 1 : 0,
             $params['show_brand_watermark'] === "true" || $params['show_brand_watermark'] === true? 1 : 0,
             $params['brand_watermark_link'],
             $params['disable_video_quality_label'] === "true" || $params['disable_video_quality_label'] === true ? 1 : 0,
-            isset($params['user']) ? $params['user'] : '',
+            isset($params['user']) && $params['user'] !== '' ? $params['user'] : 'Guest',
             $params['subject'],
             isset($params['avatar']) ? $params['avatar'] : '',
             isset($params['password']) ? $params['password'] : '',
@@ -530,40 +552,57 @@ class BuddyMeet {
             $jwt
         );
 
+        $api_js_url = ($domain === '8x8.vc')
+            ? 'https://8x8.vc/libs/external_api.min.js'
+            : 'https://' . $domain . '/external_api.js';
+
         if(wp_doing_ajax()){
             //when initializing the meet via an ajax request we need to return the script to the caller to
             //add it in the page
+            echo '<script src="' . esc_url($api_js_url) . '"></script>';
             echo '<script>' . $script . '</script>';
         } else {
             $handle = "buddymeet-jitsi-js";
-            wp_enqueue_script($handle, "https://8x8.vc/libs/external_api.min.js", array(), buddymeet_get_version(), true);
+            wp_enqueue_script($handle, $api_js_url, array(), buddymeet_get_version(), true);
             wp_add_inline_script($handle, $script);
         }
 
-        return '<div id="meet"></div>';
+        return '<div id="meet" style="width:100%;min-height:' . esc_attr((string) $height_val) . 'px;background:#0f172a;border-radius:12px;overflow:hidden;"></div>';
     }
 
     public function get_jitsi_init_template(){
-        return 'const domain = "%1$s";
-            const settings = "%2$s"; 
-            const toolbar = "%3$s"; 
+        return '(function initBuddyMeetRoom() {
+            const domain = "%1$s";
+            const settings = "%2$s";
+            const toolbar = "%3$s";
+            const parentEl = document.querySelector("%7$s");
+            if (!parentEl) return;
+            if (typeof JitsiMeetExternalAPI === "undefined") {
+                parentEl.innerHTML = "<div style=\'padding:36px;text-align:center;color:#e2e8f0;\'>Unable to load meeting room library from " + domain + ". Please refresh the page.</div>";
+                return;
+            }
+            const jwtToken = "%22$s";
             const options = {
                 roomName: "%4$s",
                 width: "%5$s",
                 height: %6$d,
-                parentNode: document.querySelector("%7$s"),
-                jwt: "%22$s",
+                parentNode: parentEl,
                 configOverwrite: {
                     startAudioOnly: %8$b === 1,
+                    startWithAudioMuted: false,
+                    startWithVideoMuted: false,
+                    prejoinPageEnabled: false,
+                    disableDeepLinking: true,
+                    enableWelcomePage: false,
                     defaultLanguage: "%9$s",
                     deeplinking: {
-                        disabled: %21$b === 1
+                        disabled: true
                     }
                 },
                 interfaceConfigOverwrite: {
                     filmStripOnly: %10$b === 1,
                     DEFAULT_BACKGROUND: "%11$s",
-                    DEFAULT_REMOTE_DISPLAY_NAME: "",
+                    DEFAULT_REMOTE_DISPLAY_NAME: "Member",
                     SHOW_JITSI_WATERMARK: %12$b === 1,
                     SHOW_WATERMARK_FOR_GUESTS: %12$b === 1,
                     SHOW_BRAND_WATERMARK: %13$b === 1,
@@ -571,26 +610,37 @@ class BuddyMeet {
                     LANG_DETECTION: true,
                     CONNECTION_INDICATOR_DISABLED: false,
                     VIDEO_QUALITY_LABEL_DISABLED: %15$b === 1,
-                    SETTINGS_SECTIONS: settings.split(","),
-                    TOOLBAR_BUTTONS: toolbar.split(","),
-                },
+                    SETTINGS_SECTIONS: settings ? settings.split(",") : ["devices","language","profile","sounds"],
+                    TOOLBAR_BUTTONS: toolbar ? toolbar.split(",") : ["microphone","camera","desktop","chat","raisehand","tileview","fullscreen","hangup"]
+                }
             };
+            if (jwtToken) {
+                options.jwt = jwtToken;
+            }
             const api = new JitsiMeetExternalAPI(domain, options);
-            api.executeCommand("displayName", "%16$s");
-            api.executeCommand("subject", "%17$s");
-            api.executeCommand("avatarUrl", "%18$s");
-            
-            /** 
-             * Only moderators can set a password
-             * Issue: https://community.jitsi.org/t/lock-failed-on-jitsimeetexternalapi/32060
-             */
+            if ("%16$s") {
+                api.executeCommand("displayName", "%16$s");
+            }
+            if ("%17$s") {
+                api.executeCommand("subject", "%17$s");
+            }
+            if ("%18$s") {
+                api.executeCommand("avatarUrl", "%18$s");
+            }
+
             api.addEventListener("participantRoleChanged", (event) => {
                 if ("%19$s" && event.role === "moderator"){
                     api.executeCommand("password", "%19$s");
                 }
             });
 
-            window.api = api;';
+            api.addEventListener("readyToClose", () => {
+                api.dispose();
+                parentEl.innerHTML = "<div style=\'padding:48px 20px;text-align:center;color:#f8fafc;\'><h3 style=\'margin:0 0 10px;color:#fff;\'>%20$s</h3><button type=\'button\' onclick=\'window.location.reload()\' style=\'margin-top:8px;padding:10px 20px;border-radius:8px;border:0;background:#2563eb;color:#fff;font-weight:600;cursor:pointer;\'>Rejoin Meeting</button></div>";
+            });
+
+            window.api = api;
+        })();';
     }
 
     public function buddymeet_post_settings($settings){
@@ -620,18 +670,37 @@ class BuddyMeet {
     }
 
     public function buddymeet_migrate_groupmeta($value, $group_id, $key) {
-        if ($value === BuddyMeet::PUBLIC_JITSI_DOMAIN_OLD) {
-            return BuddyMeet::get_default_jitsi_domain();
+        if ($key === 'buddymeet_domain') {
+            $app_id      = trim((string) get_option('buddymeet_jitsi_appid', ''));
+            $private_key = trim((string) get_option('buddymeet_jitsi_privatekey', ''));
+            $has_jaas    = ($app_id !== '' && $private_key !== '');
+            if (empty($value) || $value === BuddyMeet::PUBLIC_JITSI_DOMAIN_OLD || ($value === BuddyMeet::PUBLIC_JITSI_DOMAIN && !$has_jaas)) {
+                return BuddyMeet::get_default_jitsi_domain();
+            }
         }
         return $value;
     }
 
     public static function get_default_jitsi_domain() {
-        $domain = get_option('buddymeet_jitsi_domain', BuddyMeet::PUBLIC_JITSI_DOMAIN);
-        if (empty($domain)) {
-            $domain = BuddyMeet::PUBLIC_JITSI_DOMAIN;
+        $domain      = trim((string) get_option('buddymeet_jitsi_domain', ''));
+        $app_id      = trim((string) get_option('buddymeet_jitsi_appid', ''));
+        $private_key = trim((string) get_option('buddymeet_jitsi_privatekey', ''));
+        $has_jaas    = ($app_id !== '' && $private_key !== '');
+
+        if (empty($domain) || $domain === BuddyMeet::PUBLIC_JITSI_DOMAIN_OLD || ($domain === BuddyMeet::PUBLIC_JITSI_DOMAIN && !$has_jaas)) {
+            return 'meet.ffmuc.net';
         }
         return $domain;
+    }
+
+    public static function get_active_group_jitsi_domain($group_id = 0) {
+        if ($group_id && function_exists('buddymeet_groups_get_groupmeta')) {
+            $group_domain = trim((string) buddymeet_groups_get_groupmeta($group_id, 'buddymeet_domain', true));
+            if ($group_domain !== '') {
+                return $group_domain;
+            }
+        }
+        return self::get_default_jitsi_domain();
     }
 }
 
