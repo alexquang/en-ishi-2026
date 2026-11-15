@@ -3058,7 +3058,8 @@ function pt_get_user_shop_info_ajax()
         "SELECT user_email FROM {$wpdb->users} WHERE ID = %d LIMIT 1",
         $target_user_id
     ));
-    $company = '';
+    $company  = '';
+    $location = '';
 
     if (class_exists('\\BuddyNext\\Profile\\ProfileService')) {
         $profile_groups = \BuddyNext\Profile\ProfileService::get_profile($target_user_id, $target_user_id);
@@ -3067,8 +3068,12 @@ function pt_get_user_shop_info_ajax()
                 $gkey = $grp['group_key'] ?? '';
                 if ($gkey === 'basic_info' && !empty($grp['fields']) && is_array($grp['fields'])) {
                     foreach ($grp['fields'] as $f) {
-                        if (($f['field_key'] ?? '') === 'email' && !empty($f['value'])) {
+                        $fkey = $f['field_key'] ?? '';
+                        if ($fkey === 'email' && !empty($f['value'])) {
                             $email = (string) $f['value'];
+                        }
+                        if ($fkey === 'location' && !empty($f['value'])) {
+                            $location = (string) $f['value'];
                         }
                     }
                 }
@@ -3087,15 +3092,17 @@ function pt_get_user_shop_info_ajax()
         }
     }
 
-    $query = trim($company !== '' ? $company : $email);
+    $parts = array_filter([$company, $location], static fn($v) => trim((string) $v) !== '');
+    $query = !empty($parts) ? implode(' ', $parts) : trim($email);
     $map_url = $query !== '' ? add_query_arg('search', $query, home_url('/maps/')) : home_url('/maps/');
 
     wp_send_json_success([
-        'user_id' => $target_user_id,
-        'email'   => $email,
-        'company' => $company,
-        'query'   => $query,
-        'map_url' => $map_url,
+        'user_id'  => $target_user_id,
+        'email'    => $email,
+        'company'  => $company,
+        'location' => $location,
+        'query'    => $query,
+        'map_url'  => $map_url,
     ]);
 }
 
@@ -3129,8 +3136,8 @@ add_action('wp_footer', function () {
                 });
                 const json = await res.json();
                 if (!json || !json.success || !json.data) return;
-                const { email, company, map_url, query } = json.data;
-                if (!email && !company) return;
+                const { email, company, location, map_url, query } = json.data;
+                if (!email && !company && !location) return;
 
                 let bar = document.getElementById('pt-msg-shop-map-bar');
                 const container = document.querySelector('.bn-msg-thread-header, .bn-msg-header, .bn-messages-main');
@@ -3143,6 +3150,7 @@ add_action('wp_footer', function () {
                 }
                 const labelParts = [];
                 if (company) labelParts.push('🏢 ' + company);
+                if (location) labelParts.push('📍 ' + location);
                 if (email) labelParts.push('✉️ ' + email);
                 bar.innerHTML = '<span>' + labelParts.join(' &nbsp;|&nbsp; ') + '</span>' +
                     (query ? '<a href="' + map_url + '" target="_blank" style="background:#ef4444;color:#fff;padding:4px 10px;border-radius:6px;text-decoration:none;font-weight:600;">Tìm Shop trên Map</a>' : '');
