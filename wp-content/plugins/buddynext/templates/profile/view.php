@@ -427,7 +427,7 @@ if ( $is_own_profile && class_exists( '\\BuddyNext\\Core\\PageRouter' ) ) {
 					'surface'  => 'profile',
 					'layer'    => 'primary',
 					'label'    => __( 'Messages', 'buddynext' ),
-					'url'      => \BuddyNext\Core\PageRouter::messages_url(),
+					'tab'      => 'messages',
 					'priority' => 85,
 				);
 			}

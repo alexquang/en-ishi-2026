@@ -1861,6 +1861,24 @@ function pt_send_place_message_ajax()
         ], 500);
     }
 
+    // Lưu vào hộp thư nhận tin nhắn trên My Profile của chủ quán ($owner_id)
+    $inbox = get_user_meta($owner_id, 'pt_place_inbox_messages', true);
+    if (!is_array($inbox)) {
+        $inbox = [];
+    }
+    $sender_user = get_userdata($sender_id);
+    array_unshift($inbox, [
+        'id'          => uniqid('ptm_', true),
+        'sender_id'   => $sender_id,
+        'sender_name' => $sender_user ? $sender_user->display_name : 'User #' . $sender_id,
+        'place_name'  => $place_name,
+        'address'     => $address,
+        'subject'     => $subject,
+        'message'     => $message,
+        'created_at'  => current_time('mysql'),
+    ]);
+    update_user_meta($owner_id, 'pt_place_inbox_messages', array_slice($inbox, 0, 100));
+
     // Gửi Notification cho chủ quán trên hệ thống (BuddyNext / BuddyPress)
     if (class_exists('\\BuddyNext\\Notifications\\NotificationService') && method_exists('\\BuddyNext\\Notifications\\NotificationService', 'create')) {
         try {

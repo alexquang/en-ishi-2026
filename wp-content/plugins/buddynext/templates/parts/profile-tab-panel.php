@@ -497,6 +497,40 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 				<?php endif; ?>
 			</div>
 
+			<?php if ( $bn_pf_is_owner ) : ?>
+			<div class="bn-pf-tab-pane<?php echo 'messages' === $bn_pf_active ? ' is-active' : ''; ?>" data-tab-panel="messages" role="tabpanel"<?php echo 'messages' === $bn_pf_active ? '' : ' hidden'; ?>>
+				<?php
+				$pt_inbox = get_user_meta( $bn_pf_uid, 'pt_place_inbox_messages', true );
+				if ( ! is_array( $pt_inbox ) ) {
+					$pt_inbox = array();
+				}
+				if ( ! empty( $pt_inbox ) ) :
+				?>
+					<div style="display:flex;flex-direction:column;gap:12px;">
+						<?php foreach ( $pt_inbox as $pt_msg ) : ?>
+							<div class="bn-card" style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">
+								<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
+									<strong><?php echo esc_html( (string) ( $pt_msg['sender_name'] ?? 'User' ) ); ?></strong>
+									<span style="font-size:12px;color:#64748b;"><?php echo esc_html( (string) ( $pt_msg['created_at'] ?? '' ) ); ?></span>
+								</div>
+								<?php if ( ! empty( $pt_msg['place_name'] ) ) : ?>
+									<div style="font-size:12px;color:#ef4444;margin-bottom:4px;">📍 <?php echo esc_html( (string) $pt_msg['place_name'] ); ?></div>
+								<?php endif; ?>
+								<?php if ( ! empty( $pt_msg['subject'] ) ) : ?>
+									<div style="font-weight:600;margin-bottom:4px;"><?php echo esc_html( (string) $pt_msg['subject'] ); ?></div>
+								<?php endif; ?>
+								<div style="font-size:14px;color:#334155;white-space:pre-line;"><?php echo esc_html( (string) ( $pt_msg['message'] ?? '' ) ); ?></div>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				<?php else : ?>
+					<div class="bn-empty-state">
+						<div class="bn-empty-title"><?php esc_html_e( 'No messages received yet', 'buddynext' ); ?></div>
+					</div>
+				<?php endif; ?>
+			</div>
+			<?php endif; ?>
+
 		</div><!-- /.bn-pf-tab-content -->
 <?php
 do_action( 'buddynext_part_profile_tab_panel_after', $args );
