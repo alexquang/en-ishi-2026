@@ -94,6 +94,20 @@ bp_nouveau_before_loop(); ?>
 					if (is_array($bm_room_members)) {
 						$buddymeet_members_count = count(array_filter($bm_room_members));
 					}
+
+					// Kiểm tra phòng Meet PeerJS đang hoạt động (transient pt_meet_peers_{md5($bm_room)})
+					$meet_peers = get_transient('pt_meet_peers_' . md5((string) $bm_room));
+					if (is_array($meet_peers) && ! empty($meet_peers)) {
+						$active_meet_peers = 0;
+						foreach ($meet_peers as $mp) {
+							if (is_array($mp) && ($now - (int) ($mp['updated_at'] ?? 0)) <= 20) {
+								$active_meet_peers++;
+							}
+						}
+						if ($active_meet_peers > 0) {
+							$buddymeet_members_count = max($buddymeet_members_count, $active_meet_peers);
+						}
+					}
 				}
 
 				// Kiểm tra toàn bộ các room buddymeet_room_members_* của group trong bảng bp_groups_groupmeta
