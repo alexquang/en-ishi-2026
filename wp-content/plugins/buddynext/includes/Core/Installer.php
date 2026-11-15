@@ -734,6 +734,7 @@ class Installer {
 			array( 'basic_info', 'website', 'Website', 'url', 0, 0, 4 ),
 			array( 'basic_info', 'pronouns', 'Pronouns', 'text', 0, 0, 5 ),
 			array( 'basic_info', 'birth_date', 'Birth Date', 'date', 0, 0, 6 ),
+			array( 'basic_info', 'email', 'Email', 'email', 0, 0, 7 ),
 
 			// social_links.
 			array( 'social_links', 'social_twitter', 'Twitter / X', 'url', 0, 0, 1 ),

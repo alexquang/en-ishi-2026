@@ -3458,3 +3458,19 @@ async function handlePlaceLiveClick(place) {
 
   window.location.href = buildStartPlaceLiveUrl(place);
 }
+
+// Auto-search shop on map when navigated from Message (?search=...)
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    const q = new URLSearchParams(window.location.search).get("search");
+    if (!q) return;
+    setTimeout(() => {
+      const input = document.querySelector("#gm-search-input, #search-input, input[placeholder*='Search'], input[type='search']");
+      if (input) {
+        input.value = q;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true }));
+      }
+    }, 900);
+  } catch (e) {}
+});

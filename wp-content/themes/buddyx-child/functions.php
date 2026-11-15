@@ -2981,6 +2981,136 @@ function pt_ajax_live_save_recording()
     ]);
 }
 
+add_action('wp_ajax_pt_get_user_shop_info', 'pt_get_user_shop_info_ajax');
+function pt_get_user_shop_info_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    global $wpdb;
+    $target_user_id = intval($_POST['user_id'] ?? $_GET['user_id'] ?? 0);
+    $thread_id      = intval($_POST['thread_id'] ?? $_GET['thread_id'] ?? 0);
+
+    if ($target_user_id <= 0 && $thread_id > 0) {
+        $me = get_current_user_id();
+        $msg_table = $wpdb->prefix . 'bn_messages_recipients';
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $msg_table)) === $msg_table) {
+            $target_user_id = (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT user_id FROM {$msg_table} WHERE thread_id = %d AND user_id != %d LIMIT 1",
+                $thread_id,
+                $me
+            ));
+        }
+    }
+
+    if ($target_user_id <= 0) {
+        wp_send_json_error(['message' => 'User not found'], 404);
+    }
+
+    // 1. Lấy email từ bảng eni_users ($wpdb->users) và Basic Info (BuddyNext)
+    $email = (string) $wpdb->get_var($wpdb->prepare(
+        "SELECT user_email FROM {$wpdb->users} WHERE ID = %d LIMIT 1",
+        $target_user_id
+    ));
+    $company = '';
+
+    if (class_exists('\\BuddyNext\\Profile\\ProfileService')) {
+        $profile_groups = \BuddyNext\Profile\ProfileService::get_profile($target_user_id, $target_user_id);
+        if (is_array($profile_groups)) {
+            foreach ($profile_groups as $grp) {
+                $gkey = $grp['group_key'] ?? '';
+                if ($gkey === 'basic_info' && !empty($grp['fields']) && is_array($grp['fields'])) {
+                    foreach ($grp['fields'] as $f) {
+                        if (($f['field_key'] ?? '') === 'email' && !empty($f['value'])) {
+                            $email = (string) $f['value'];
+                        }
+                    }
+                }
+                if ($gkey === 'work_experience' && !empty($grp['entries']) && is_array($grp['entries'])) {
+                    foreach ($grp['entries'] as $entry) {
+                        if (!is_array($entry)) continue;
+                        foreach ($entry as $f) {
+                            if (is_array($f) && ($f['field_key'] ?? '') === 'company' && !empty($f['value'])) {
+                                $company = (string) $f['value'];
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    $query = trim($company !== '' ? $company : $email);
+    $map_url = $query !== '' ? add_query_arg('search', $query, home_url('/maps/')) : home_url('/maps/');
+
+    wp_send_json_success([
+        'user_id' => $target_user_id,
+        'email'   => $email,
+        'company' => $company,
+        'query'   => $query,
+        'map_url' => $map_url,
+    ]);
+}
+
+add_action('wp_footer', function () {
+    if (!is_user_logged_in()) {
+        return;
+    }
+    $ajax_url = admin_url('admin-ajax.php');
+    ?>
+    <script>
+    (function () {
+        if (!window.location.pathname.includes('/messages')) return;
+        const ajaxUrl = <?php echo wp_json_encode($ajax_url); ?>;
+        let lastThreadKey = '';
+
+        async function checkMessageShopInfo() {
+            const match = window.location.pathname.match(/\/messages\/(?:thread\/)?(\d+)/);
+            const threadId = match ? match[1] : '';
+            const activeItem = document.querySelector('[data-thread-id].is-active, .bn-msg-thread[data-thread-id]');
+            const tid = threadId || (activeItem ? activeItem.getAttribute('data-thread-id') : '');
+            if (!tid || tid === lastThreadKey) return;
+            lastThreadKey = tid;
+
+            try {
+                const body = new URLSearchParams({ action: 'pt_get_user_shop_info', thread_id: tid });
+                const res = await fetch(ajaxUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                });
+                const json = await res.json();
+                if (!json || !json.success || !json.data) return;
+                const { email, company, map_url, query } = json.data;
+                if (!email && !company) return;
+
+                let bar = document.getElementById('pt-msg-shop-map-bar');
+                const container = document.querySelector('.bn-msg-thread-header, .bn-msg-header, .bn-messages-main');
+                if (!container) return;
+                if (!bar) {
+                    bar = document.createElement('div');
+                    bar.id = 'pt-msg-shop-map-bar';
+                    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:13px;';
+                    container.parentNode.insertBefore(bar, container.nextSibling);
+                }
+                const labelParts = [];
+                if (company) labelParts.push('🏢 ' + company);
+                if (email) labelParts.push('✉️ ' + email);
+                bar.innerHTML = '<span>' + labelParts.join(' &nbsp;|&nbsp; ') + '</span>' +
+                    (query ? '<a href="' + map_url + '" target="_blank" style="background:#ef4444;color:#fff;padding:4px 10px;border-radius:6px;text-decoration:none;font-weight:600;">Tìm Shop trên Map</a>' : '');
+            } catch (e) {}
+        }
+
+        document.addEventListener('click', () => setTimeout(checkMessageShopInfo, 300));
+        setTimeout(checkMessageShopInfo, 600);
+    })();
+    </script>
+    <?php
+});
+
 
 
 

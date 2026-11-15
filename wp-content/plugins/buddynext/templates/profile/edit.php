@@ -414,6 +414,29 @@ do_action( 'buddynext_profile_edit_before', isset( $user_id ) ? (int) $user_id :
 				}
 
 				$bn_gvis_default = $bn_vis_norm( $bn_group['visibility'] ?? 'public', 'public' );
+				if ( 'basic_info' === $bn_gkey ) {
+					$bn_has_email = false;
+					foreach ( $bn_fields as $bn_fchk ) {
+						if ( is_array( $bn_fchk ) && isset( $bn_fchk['field_key'] ) && 'email' === $bn_fchk['field_key'] ) {
+							$bn_has_email = true;
+							break;
+						}
+					}
+					if ( ! $bn_has_email ) {
+						global $wpdb;
+						$bn_target_uid = isset( $user_id ) ? (int) $user_id : get_current_user_id();
+						$bn_eni_email  = $bn_target_uid > 0
+							? (string) $wpdb->get_var( $wpdb->prepare( "SELECT user_email FROM {$wpdb->users} WHERE ID = %d", $bn_target_uid ) )
+							: '';
+						$bn_fields[] = array(
+							'field_key'  => 'email',
+							'label'      => __( 'Email', 'buddynext' ),
+							'type'       => 'email',
+							'value'      => $bn_eni_email,
+							'visibility' => 'public',
+						);
+					}
+				}
 				$bn_body_html    = '<div class="bn-ep-grid">';
 
 				foreach ( $bn_fields as $bn_field ) {
