@@ -762,12 +762,15 @@
                 state.lkRoom = lkRoom;
                 updateRemoteViewerCount();
 
-                // If host isn't publishing via LiveKit (e.g. direct browser broadcast), switch to chunk viewer
+                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+                if (typeof setStatusBadge === 'function') setStatusBadge(true);
+
+                // If host isn't publishing via LiveKit (e.g. direct browser broadcast), switch to chunk viewer quickly
                 setTimeout(() => {
                     if (!receivedLiveKitTrack && state.roomName === roomName && !state.hlsInstance) {
                         startChunkViewer(roomName);
                     }
-                }, 2500);
+                }, 800);
                 return;
             } catch (err) {
                 console.warn('Viewer LiveKit fallback to chunk relay:', err.message);
