@@ -1904,14 +1904,14 @@ function pt_send_place_message_ajax()
             $notif_svc = buddynext_service('notifications');
             if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
                 $notif_svc->create([
-                    'user_id'     => $owner_id,
-                    'actor_id'    => $sender_id,
-                    'type'        => 'message',
-                    'object_type' => 'message_thread',
-                    'object_id'   => $thread_id ?: 0,
-                    'url'         => $thread_url,
-                    'title'       => $subject,
-                    'body'        => wp_trim_words($message, 20),
+                    'recipient_id' => $owner_id,
+                    'actor_id'     => $sender_id,
+                    'type'         => 'message',
+                    'object_type'  => 'message_thread',
+                    'object_id'    => $thread_id ?: 0,
+                    'url'          => $thread_url,
+                    'title'        => $subject,
+                    'body'         => wp_trim_words($message, 20),
                 ]);
             }
         } catch (\Throwable $e) {}
