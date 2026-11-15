@@ -413,10 +413,10 @@
     const borderX =
       (parseFloat(cs.borderLeftWidth) || 0) +
       (parseFloat(cs.borderRightWidth) || 0);
-    const arrowReserve = padRight >= 18 ? 8 : 22 - padRight;
+    const arrowReserve = 28;
     const targetWidth = Math.max(
-      75,
-      Math.min(165, textWidth + padLeft + padRight + borderX + arrowReserve)
+      85,
+      Math.min(180, textWidth + padLeft + padRight + borderX + arrowReserve)
     );
     sel.style.width = targetWidth + "px";
   }
