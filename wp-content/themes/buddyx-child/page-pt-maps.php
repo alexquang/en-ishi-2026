@@ -10,6 +10,7 @@ get_header();
 <script>
 window.gmUserLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
 var gmUserLoggedIn = window.gmUserLoggedIn;
+window.gmLivePageUrl = <?php echo wp_json_encode(home_url('/video/')); ?>;
 </script>
 
 <div class="google-map-section">
@@ -338,6 +339,28 @@ var gmUserLoggedIn = window.gmUserLoggedIn;
 
     </div>
 
+</div>
+
+<!-- Dialog Place Live Streams -->
+<div id="gmPlaceLiveDialog" class="gm-place-live-dialog">
+    <div class="gm-place-live-modal">
+        <div class="gm-place-live-header">
+            <h3>
+                <span class="gm-live-dot"></span>
+                <span id="gmPlaceLiveTitle">Live Streams</span>
+            </h3>
+            <button type="button" id="gmPlaceLiveClose" aria-label="Close Live Dialog">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="gmPlaceLiveList" class="gm-place-live-list"></div>
+        <div class="gm-place-live-footer">
+            <button type="button" id="gmPlaceLiveStartBtn" class="gm-place-live-start-btn">
+                <i class="fa-solid fa-video"></i>
+                <span>Start Livestream Here</span>
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Dialog Picture -->

@@ -2042,11 +2042,14 @@ function pt_live_start_stream_ajax()
         wp_send_json_error(['message' => 'Login required'], 403);
     }
 
-    $user     = wp_get_current_user();
-    $room     = sanitize_text_field(wp_unslash($_POST['room'] ?? ('channel-' . $user->ID)));
-    $title    = sanitize_text_field(wp_unslash($_POST['title'] ?? ($user->display_name . ' is live now')));
-    $category = sanitize_text_field(wp_unslash($_POST['category'] ?? 'Talk & Hangout'));
-    $avatar   = get_avatar_url($user->ID, ['size' => 128]);
+    $user          = wp_get_current_user();
+    $room          = sanitize_text_field(wp_unslash($_POST['room'] ?? ('channel-' . $user->ID)));
+    $title         = sanitize_text_field(wp_unslash($_POST['title'] ?? ($user->display_name . ' is live now')));
+    $category      = sanitize_text_field(wp_unslash($_POST['category'] ?? 'Talk & Hangout'));
+    $place_id      = sanitize_text_field(wp_unslash($_POST['place_id'] ?? ''));
+    $place_name    = sanitize_text_field(wp_unslash($_POST['place_name'] ?? ''));
+    $place_address = sanitize_text_field(wp_unslash($_POST['place_address'] ?? ''));
+    $avatar        = get_avatar_url($user->ID, ['size' => 128]);
 
     $stored = get_option('pt_active_livestreams', []);
     if (!is_array($stored)) {
@@ -2054,17 +2057,20 @@ function pt_live_start_stream_ajax()
     }
 
     $stored[$room] = [
-        'room'        => $room,
-        'title'       => $title,
-        'category'    => $category,
-        'host_id'     => (int) $user->ID,
-        'host_name'   => $user->display_name ?: $user->user_login,
-        'host_avatar' => $avatar,
-        'thumb'       => $avatar,
-        'viewers'     => 1,
-        'is_live'     => true,
-        'started_at'  => time(),
-        'updated_at'  => time(),
+        'room'          => $room,
+        'title'         => $title,
+        'category'      => $category,
+        'place_id'      => $place_id,
+        'place_name'    => $place_name,
+        'place_address' => $place_address,
+        'host_id'       => (int) $user->ID,
+        'host_name'     => $user->display_name ?: $user->user_login,
+        'host_avatar'   => $avatar,
+        'thumb'         => $avatar,
+        'viewers'       => 1,
+        'is_live'       => true,
+        'started_at'    => time(),
+        'updated_at'    => time(),
     ];
 
     update_option('pt_active_livestreams', $stored, false);
@@ -2111,6 +2117,50 @@ function pt_live_stop_stream_ajax()
 
     wp_send_json_success([
         'streams' => pt_get_active_livestreams_list(),
+    ]);
+}
+
+add_action('wp_ajax_pt_get_place_livestreams', 'pt_get_place_livestreams_ajax');
+add_action('wp_ajax_nopriv_pt_get_place_livestreams', 'pt_get_place_livestreams_ajax');
+function pt_get_place_livestreams_ajax()
+{
+    $place_id = sanitize_text_field(wp_unslash($_REQUEST['place_id'] ?? ''));
+    if ($place_id === '') {
+        wp_send_json_success([
+            'count'   => 0,
+            'streams' => [],
+        ]);
+    }
+
+    $stored = get_option('pt_active_livestreams', []);
+    if (!is_array($stored)) {
+        $stored = [];
+    }
+
+    $now     = time();
+    $cleaned = [];
+    $matches = [];
+
+    foreach ($stored as $room => $info) {
+        if (!is_array($info)) {
+            continue;
+        }
+        $updated = isset($info['updated_at']) ? (int) $info['updated_at'] : 0;
+        if ($now - $updated <= 600) {
+            $cleaned[$room] = $info;
+            if (!empty($info['is_live']) && ($info['place_id'] ?? '') === $place_id) {
+                $matches[] = $info;
+            }
+        }
+    }
+
+    if (count($cleaned) !== count($stored)) {
+        update_option('pt_active_livestreams', $cleaned, false);
+    }
+
+    wp_send_json_success([
+        'count'   => count($matches),
+        'streams' => $matches,
     ]);
 }
 

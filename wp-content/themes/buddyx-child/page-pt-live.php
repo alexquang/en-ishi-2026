@@ -15,8 +15,18 @@ $user_name    = $is_logged_in ? ($current_user->display_name ?: $current_user->u
 $user_avatar  = $is_logged_in ? get_avatar_url($user_id, ['size' => 96]) : 'https://www.gravatar.com/avatar/?d=mp&s=96';
 $user_room    = $is_logged_in ? ('channel-' . sanitize_key($current_user->user_login ?: $user_id)) : 'enishi-main';
 
-$requested_room = isset($_GET['room']) ? sanitize_text_field(wp_unslash($_GET['room'])) : '';
-$requested_mode = isset($_GET['mode']) ? sanitize_text_field(wp_unslash($_GET['mode'])) : 'watch';
+$requested_room  = isset($_GET['room']) ? sanitize_text_field(wp_unslash($_GET['room'])) : '';
+$requested_mode  = isset($_GET['mode']) ? sanitize_text_field(wp_unslash($_GET['mode'])) : 'watch';
+$place_id        = isset($_GET['place_id']) ? sanitize_text_field(wp_unslash($_GET['place_id'])) : '';
+$place_name      = isset($_GET['place_name']) ? sanitize_text_field(wp_unslash($_GET['place_name'])) : '';
+$place_address   = isset($_GET['place_address']) ? sanitize_text_field(wp_unslash($_GET['place_address'])) : '';
+
+if ($is_logged_in && $place_id !== '' && $requested_mode === 'host') {
+    $user_room = 'place-' . substr(md5($place_id), 0, 10) . '-u' . $user_id;
+    if ($requested_room === '') {
+        $requested_room = $user_room;
+    }
+}
 
 $active_streams = function_exists('pt_get_active_livestreams_list')
     ? pt_get_active_livestreams_list()
@@ -205,7 +215,7 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                     <div class="ptlive-setup-grid">
                         <div class="ptlive-field">
                             <label for="ptlive-input-title">Stream Title</label>
-                            <input type="text" id="ptlive-input-title" placeholder="Enter your livestream title..." value="<?php echo esc_attr($user_name . ' is live now'); ?>" />
+                            <input type="text" id="ptlive-input-title" placeholder="Enter your livestream title..." value="<?php echo esc_attr($place_name !== '' ? ('Live at ' . $place_name) : ($user_name . ' is live now')); ?>" />
                         </div>
                         <div class="ptlive-field">
                             <label for="ptlive-input-category">Category / Topic</label>
@@ -298,6 +308,9 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
         'userRoom'        => $user_room,
         'initialRoom'     => $requested_room,
         'initialMode'     => $requested_mode === 'host' ? 'host' : 'watch',
+        'placeId'         => $place_id,
+        'placeName'       => $place_name,
+        'placeAddress'    => $place_address,
         'initialStreams'  => $active_streams,
         'initialHostInfo' => $initial_host,
     ]); ?>;

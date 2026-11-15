@@ -313,6 +313,9 @@
                 room: state.roomName,
                 title: streamTitle,
                 category: streamCategory,
+                place_id: cfg.placeId || '',
+                place_name: cfg.placeName || '',
+                place_address: cfg.placeAddress || '',
             });
             const resp = await fetch(ajaxUrl, {
                 method: 'POST',

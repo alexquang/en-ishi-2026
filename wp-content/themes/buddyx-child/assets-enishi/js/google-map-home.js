@@ -1343,6 +1343,15 @@ function loadPlaceDetails(placeId, clickedMarker) {
                     data-website="${escapeHtml(place.website || "")}">Message</button>
                 <button type="button" class="gm-popup-tab gm-picture-btn" data-tab="picture" data-placeid="${escapeHtml(placeId)}">Picture</button>
                 <button type="button" class="gm-popup-tab gm-video-btn" data-tab="video" data-placeid="${escapeHtml(placeId)}">Video</button>
+                <button type="button" class="gm-popup-tab gm-live-btn"
+                    data-tab="live"
+                    data-placeid="${escapeHtml(placeId)}"
+                    data-placename="${escapeHtml(place.name || "")}"
+                    data-address="${escapeHtml(place.formatted_address || "")}">
+                    <span class="gm-live-dot" aria-hidden="true"></span>
+                    <span>Live</span>
+                    <span class="gm-live-count" style="display:none;"></span>
+                </button>
             </div>
 
             <div id="gm-tab-overview" class="gm-tab-panel active">
@@ -1485,6 +1494,7 @@ function loadPlaceDetails(placeId, clickedMarker) {
       popup.style.display = "";
       popup.classList.add("show");
       syncToggleButtonPosition();
+      refreshPlaceLiveStatus(placeId);
 
       // Chuyển tab Overview / Reviews inline giống Google Maps
       function switchInlineTab(tabName) {
@@ -3151,6 +3161,27 @@ document.addEventListener("click", function (e) {
     return;
   }
 
+  // Click tab Live
+  const liveBtn = e.target.closest(".gm-live-btn");
+  if (liveBtn) {
+    const placeId = liveBtn.dataset.placeid || "";
+    const placeName = liveBtn.dataset.placename || "";
+    const placeAddress = liveBtn.dataset.address || "";
+    if (placeId) {
+      handlePlaceLiveClick({ placeId, placeName, placeAddress });
+    }
+    return;
+  }
+
+  // Đóng dialog Place Live Streams
+  if (
+    e.target.closest("#gmPlaceLiveClose") ||
+    e.target.id === "gmPlaceLiveDialog"
+  ) {
+    closePlaceLiveListDialog();
+    return;
+  }
+
   // Click nút Upload Photo
   if (e.target.closest("#gmUploadPhotoBtn")) {
     if (typeof gmUserLoggedIn !== "undefined" && !gmUserLoggedIn) {
@@ -3197,3 +3228,210 @@ document.addEventListener(
   },
   true
 );
+
+/* =====================================================
+   PLACE LIVESTREAM (LIVE TAB IN PLACE POPUP)
+   ===================================================== */
+let gmPlaceLivePollTimer = null;
+let gmActiveLivePlaceId = "";
+
+function getPlaceLiveBaseUrl() {
+  return window.gmLivePageUrl || "/video/";
+}
+
+function buildStartPlaceLiveUrl(place) {
+  const url = new URL(getPlaceLiveBaseUrl(), window.location.origin);
+  url.searchParams.set("mode", "host");
+  if (place.placeId) url.searchParams.set("place_id", place.placeId);
+  if (place.placeName) url.searchParams.set("place_name", place.placeName);
+  if (place.placeAddress) url.searchParams.set("place_address", place.placeAddress);
+  return url.toString();
+}
+
+function buildJoinPlaceLiveUrl(room) {
+  const url = new URL(getPlaceLiveBaseUrl(), window.location.origin);
+  url.searchParams.set("room", room);
+  return url.toString();
+}
+
+function fetchPlaceLivestreams(placeId) {
+  const endpoint =
+    typeof ajaxUrl !== "undefined" ? ajaxUrl : "/wp-admin/admin-ajax.php";
+  return fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    },
+    body: new URLSearchParams({
+      action: "pt_get_place_livestreams",
+      place_id: placeId,
+    }),
+  })
+    .then((res) => res.json())
+    .then((json) =>
+      json && json.success && json.data && Array.isArray(json.data.streams)
+        ? json.data.streams
+        : []
+    )
+    .catch(() => []);
+}
+
+function updateLiveTabUI(placeId, streams) {
+  const btn = document.querySelector(
+    `.gm-live-btn[data-placeid="${CSS.escape(placeId)}"]`
+  );
+  if (!btn) return;
+  const countEl = btn.querySelector(".gm-live-count");
+  const count = Array.isArray(streams) ? streams.length : 0;
+
+  if (count > 0) {
+    btn.classList.add("is-live");
+    if (countEl) {
+      if (count >= 2) {
+        countEl.textContent = `(${count})`;
+        countEl.style.display = "inline";
+      } else {
+        countEl.textContent = "";
+        countEl.style.display = "none";
+      }
+    }
+  } else {
+    btn.classList.remove("is-live");
+    if (countEl) {
+      countEl.textContent = "";
+      countEl.style.display = "none";
+    }
+  }
+}
+
+function refreshPlaceLiveStatus(placeId) {
+  if (!placeId) return;
+  gmActiveLivePlaceId = placeId;
+
+  if (gmPlaceLivePollTimer) {
+    clearInterval(gmPlaceLivePollTimer);
+    gmPlaceLivePollTimer = null;
+  }
+
+  const runCheck = () => {
+    if (gmActiveLivePlaceId !== placeId) return;
+    const btn = document.querySelector(
+      `.gm-live-btn[data-placeid="${CSS.escape(placeId)}"]`
+    );
+    if (!btn) {
+      clearInterval(gmPlaceLivePollTimer);
+      gmPlaceLivePollTimer = null;
+      return;
+    }
+    fetchPlaceLivestreams(placeId).then((streams) => {
+      updateLiveTabUI(placeId, streams);
+    });
+  };
+
+  runCheck();
+  gmPlaceLivePollTimer = setInterval(runCheck, 15000);
+}
+
+function openPlaceLiveListDialog(place, streams) {
+  const dialog = document.getElementById("gmPlaceLiveDialog");
+  const titleEl = document.getElementById("gmPlaceLiveTitle");
+  const listEl = document.getElementById("gmPlaceLiveList");
+  const startBtn = document.getElementById("gmPlaceLiveStartBtn");
+  if (!dialog || !listEl) return;
+
+  if (titleEl) {
+    titleEl.textContent = place.placeName
+      ? `Live at ${place.placeName} (${streams.length})`
+      : `Active Livestreams (${streams.length})`;
+  }
+
+  listEl.innerHTML = streams
+    .map((s) => {
+      const avatar =
+        s.host_avatar ||
+        "https://www.gravatar.com/avatar/?d=mp&s=96";
+      const hostName = escapeHtml(s.host_name || "Streamer");
+      const streamTitle = escapeHtml(s.title || "Live now");
+      const viewers = Number(s.viewers || 1);
+      const room = escapeHtml(s.room || "");
+      return `
+        <button type="button" class="gm-place-live-item" data-room="${room}">
+          <img class="gm-place-live-avatar" src="${escapeHtml(avatar)}" alt="${hostName}" />
+          <div class="gm-place-live-info">
+            <div class="gm-place-live-host">
+              <span>${hostName}</span>
+              <span class="gm-place-live-badge"><span class="gm-live-dot"></span>LIVE</span>
+            </div>
+            <div class="gm-place-live-stream-title">${streamTitle}</div>
+            <div class="gm-place-live-viewers">
+              <i class="fa-solid fa-eye"></i> ${viewers} watching
+            </div>
+          </div>
+          <span class="gm-place-live-join">Join</span>
+        </button>
+      `;
+    })
+    .join("");
+
+  listEl.querySelectorAll(".gm-place-live-item").forEach((item) => {
+    item.addEventListener("click", function () {
+      const room = this.dataset.room;
+      if (room) {
+        window.location.href = buildJoinPlaceLiveUrl(room);
+      }
+    });
+  });
+
+  if (startBtn) {
+    startBtn.onclick = function () {
+      if (typeof gmUserLoggedIn !== "undefined" && !gmUserLoggedIn) {
+        closePlaceLiveListDialog();
+        showLoginRequiredDialog({ type: "livestream" });
+        return;
+      }
+      window.location.href = buildStartPlaceLiveUrl(place);
+    };
+  }
+
+  dialog.classList.add("show");
+}
+
+function closePlaceLiveListDialog() {
+  const dialog = document.getElementById("gmPlaceLiveDialog");
+  if (dialog) {
+    dialog.classList.remove("show");
+  }
+}
+
+async function handlePlaceLiveClick(place) {
+  const streams = await fetchPlaceLivestreams(place.placeId);
+  updateLiveTabUI(place.placeId, streams);
+
+  const isLoggedIn =
+    typeof gmUserLoggedIn === "undefined" ? false : Boolean(gmUserLoggedIn);
+
+  if (streams.length >= 2) {
+    // >= 2 người đang live: luôn popup danh sách cho viewer click join
+    openPlaceLiveListDialog(place, streams);
+    return;
+  }
+
+  if (streams.length === 1) {
+    if (!isLoggedIn) {
+      // Viewer chưa login: join thẳng vào live duy nhất đó
+      window.location.href = buildJoinPlaceLiveUrl(streams[0].room);
+    } else {
+      // User đã login: cho chọn join live hiện có hoặc tự phát live mới tại quán
+      openPlaceLiveListDialog(place, streams);
+    }
+    return;
+  }
+
+  // Chưa có ai live tại quán này
+  if (!isLoggedIn) {
+    showLoginRequiredDialog({ type: "livestream" });
+    return;
+  }
+
+  window.location.href = buildStartPlaceLiveUrl(place);
+}
