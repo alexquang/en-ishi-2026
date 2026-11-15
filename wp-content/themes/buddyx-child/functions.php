@@ -2703,4 +2703,166 @@ function pt_render_pmpro_your_profile_deposit_section($user)
     <?php
 }
 
+/**
+ * Thêm tab "Balance" vào trang Profile BuddyNext (hiển thị số tiền đã nạp qua PMPro)
+ */
+add_filter('buddynext_nav_items', 'pt_buddynext_add_balance_tab', 20, 2);
+function pt_buddynext_add_balance_tab($items, $ctx)
+{
+    if (!is_array($items) || !is_object($ctx) || ($ctx->surface ?? '') !== 'profile') {
+        return $items;
+    }
+
+    $subject_id = (int) ($ctx->subject_id ?? 0);
+    $viewer_id  = (int) ($ctx->viewer_id ?? 0);
+    if (!$subject_id || ($subject_id !== $viewer_id && !current_user_can('manage_options'))) {
+        return $items;
+    }
+
+    $items[] = [
+        'id'       => 'balance',
+        'surface'  => 'profile',
+        'layer'    => 'primary',
+        'label'    => __('Balance', 'buddyx-child'),
+        'tab'      => 'balance',
+        'priority' => 90,
+    ];
+
+    return $items;
+}
+
+/**
+ * Render nội dung tab "Balance" trong BuddyNext Profile
+ */
+add_action('buddynext_part_profile_tab_panel_after', 'pt_buddynext_render_balance_panel');
+function pt_buddynext_render_balance_panel($args)
+{
+    global $wpdb;
+
+    $profile_user_id = (int) ($args['profile_user_id'] ?? 0);
+    $viewer_id       = (int) ($args['viewer_id'] ?? get_current_user_id());
+    $active_tab      = (string) ($args['active_tab'] ?? 'posts');
+
+    if (!$profile_user_id || ($profile_user_id !== $viewer_id && !current_user_can('manage_options'))) {
+        return;
+    }
+
+    $summary   = pt_get_user_pmpro_deposit_summary($profile_user_id);
+    $last_date = $summary['last_paid_at'] !== ''
+        ? date_i18n(get_option('date_format'), strtotime($summary['last_paid_at']))
+        : '—';
+
+    $orders_table = !empty($wpdb->pmpro_membership_orders)
+        ? $wpdb->pmpro_membership_orders
+        : ($wpdb->prefix . 'pmpro_membership_orders');
+    $levels_table = $wpdb->prefix . 'pmpro_membership_levels';
+    $orders       = [];
+
+    $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $orders_table));
+    if ($table_exists === $orders_table) {
+        $orders = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT o.code, o.total, o.status, o.timestamp, l.name AS level_name
+                 FROM {$orders_table} o
+                 LEFT JOIN {$levels_table} l ON o.membership_id = l.id
+                 WHERE o.user_id = %d
+                 ORDER BY o.id DESC
+                 LIMIT 10",
+                $profile_user_id
+            ),
+            ARRAY_A
+        );
+    }
+
+    $panel_id    = function_exists('buddynext_nav_panel_id') ? buddynext_nav_panel_id('balance') : 'bn-panel-balance';
+    $levels_url  = function_exists('pmpro_url') ? pmpro_url('levels') : home_url('/membership-levels/');
+    $account_url = function_exists('pmpro_url') ? pmpro_url('account') : home_url('/membership-account/');
+    ?>
+    <div
+        class="bn-card pt-bn-balance-panel"
+        id="<?php echo esc_attr($panel_id); ?>"
+        data-tab-panel="balance"
+        data-wp-context='<?php echo esc_attr(wp_json_encode(['tabSlug' => 'balance'])); ?>'
+        data-wp-bind--hidden="!state.isActiveTab"
+        <?php echo ('balance' === $active_tab) ? '' : 'hidden'; ?>
+    >
+        <div class="pt-bn-balance-head">
+            <div>
+                <h3 class="pt-bn-balance-title"><?php esc_html_e('Account Balance & Deposits', 'buddyx-child'); ?></h3>
+                <p class="pt-bn-balance-sub"><?php esc_html_e('Summary of your Paid Memberships Pro deposits and orders.', 'buddyx-child'); ?></p>
+            </div>
+            <div class="pt-bn-balance-actions">
+                <?php if ($levels_url) : ?>
+                    <a class="pt-bn-balance-btn primary" href="<?php echo esc_url($levels_url); ?>">
+                        <i class="fa-solid fa-plus"></i> <?php esc_html_e('Deposit / Upgrade', 'buddyx-child'); ?>
+                    </a>
+                <?php endif; ?>
+                <?php if ($account_url) : ?>
+                    <a class="pt-bn-balance-btn" href="<?php echo esc_url($account_url); ?>">
+                        <?php esc_html_e('Billing Account', 'buddyx-child'); ?>
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="pt-bn-balance-stats">
+            <div class="pt-bn-stat-card highlight">
+                <span class="pt-bn-stat-label"><?php esc_html_e('Total Deposited', 'buddyx-child'); ?></span>
+                <span class="pt-bn-stat-value"><?php echo wp_kses_post($summary['formatted']); ?></span>
+            </div>
+            <div class="pt-bn-stat-card">
+                <span class="pt-bn-stat-label"><?php esc_html_e('Membership Level', 'buddyx-child'); ?></span>
+                <span class="pt-bn-stat-value"><?php echo esc_html($summary['level_name']); ?></span>
+            </div>
+            <div class="pt-bn-stat-card">
+                <span class="pt-bn-stat-label"><?php esc_html_e('Completed Orders', 'buddyx-child'); ?></span>
+                <span class="pt-bn-stat-value"><?php echo esc_html((string) $summary['orders_count']); ?></span>
+            </div>
+            <div class="pt-bn-stat-card">
+                <span class="pt-bn-stat-label"><?php esc_html_e('Latest Payment', 'buddyx-child'); ?></span>
+                <span class="pt-bn-stat-value"><?php echo esc_html($last_date); ?></span>
+            </div>
+        </div>
+
+        <?php if (!empty($orders)) : ?>
+            <div class="pt-bn-balance-orders">
+                <h4><?php esc_html_e('Recent Payment History', 'buddyx-child'); ?></h4>
+                <div class="pt-bn-orders-table-wrap">
+                    <table class="pt-bn-orders-table">
+                        <thead>
+                            <tr>
+                                <th><?php esc_html_e('Order', 'buddyx-child'); ?></th>
+                                <th><?php esc_html_e('Date', 'buddyx-child'); ?></th>
+                                <th><?php esc_html_e('Level', 'buddyx-child'); ?></th>
+                                <th><?php esc_html_e('Amount', 'buddyx-child'); ?></th>
+                                <th><?php esc_html_e('Status', 'buddyx-child'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($orders as $ord) :
+                                $ord_amount = function_exists('pmpro_formatPrice')
+                                    ? pmpro_formatPrice((float) ($ord['total'] ?? 0))
+                                    : number_format((float) ($ord['total'] ?? 0), 2);
+                                $ord_date = !empty($ord['timestamp'])
+                                    ? date_i18n(get_option('date_format'), strtotime((string) $ord['timestamp']))
+                                    : '—';
+                                $ord_status = !empty($ord['status']) ? (string) $ord['status'] : 'success';
+                            ?>
+                                <tr>
+                                    <td>#<?php echo esc_html((string) ($ord['code'] ?? '')); ?></td>
+                                    <td><?php echo esc_html($ord_date); ?></td>
+                                    <td><?php echo esc_html((string) ($ord['level_name'] ?: '—')); ?></td>
+                                    <td><strong><?php echo wp_kses_post($ord_amount); ?></strong></td>
+                                    <td><span class="pt-bn-order-status status-<?php echo esc_attr(sanitize_html_class($ord_status)); ?>"><?php echo esc_html(ucfirst($ord_status)); ?></span></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
 

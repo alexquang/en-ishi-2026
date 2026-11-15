@@ -400,3 +400,153 @@ body.membership-account-page .site-sub-header {
   color: #059669;
   font-size: 15px;
 }
+
+/* BuddyNext Profile Balance Tab */
+.pt-bn-balance-panel {
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  margin-top: 12px;
+}
+
+.pt-bn-balance-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.pt-bn-balance-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #012068;
+}
+
+.pt-bn-balance-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.pt-bn-balance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pt-bn-balance-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #012068;
+}
+
+.pt-bn-balance-btn.primary {
+  background: linear-gradient(135deg, #012068, #1a3a8f);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.pt-bn-balance-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.pt-bn-stat-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pt-bn-stat-card.highlight {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+}
+
+.pt-bn-stat-label {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.pt-bn-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pt-bn-stat-card.highlight .pt-bn-stat-value {
+  color: #059669;
+  font-size: 18px;
+}
+
+.pt-bn-balance-orders h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.pt-bn-orders-table-wrap {
+  overflow-x: auto;
+}
+
+.pt-bn-orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pt-bn-orders-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  text-transform: uppercase;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pt-bn-orders-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pt-bn-order-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.pt-bn-order-status.status-success,
+.pt-bn-order-status.status-completed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+@media (max-width: 768px) {
+  .pt-bn-balance-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
