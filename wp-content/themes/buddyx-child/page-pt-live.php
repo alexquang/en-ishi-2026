@@ -36,19 +36,29 @@ if ($requested_room === '') {
     $requested_room = !empty($active_streams[0]['room']) ? $active_streams[0]['room'] : 'enishi-main';
 }
 
-$initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
-    'room'        => $requested_room,
-    'title'       => 'En-Ishi Official Live Channel - Community & Discovery',
-    'category'    => 'Talk & Hangout',
-    'host_name'   => 'En-Ishi Channel',
-    'host_avatar' => $user_avatar,
-    'viewers'     => 1,
-    'is_live'     => true,
-];
+$initial_host = null;
+foreach ($active_streams as $st) {
+    if (!empty($st['room']) && $st['room'] === $requested_room) {
+        $initial_host = $st;
+        break;
+    }
+}
+if (!$initial_host) {
+    $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
+        'room'        => $requested_room,
+        'title'       => 'En-Ishi Official Live Channel - Community & Discovery',
+        'category'    => 'Talk & Hangout',
+        'host_name'   => 'En-Ishi Channel',
+        'host_avatar' => $user_avatar,
+        'viewers'     => 1,
+        'is_live'     => true,
+    ];
+}
 ?>
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
 <link rel="stylesheet" href="<?php echo esc_url(get_stylesheet_directory_uri() . '/assets-enishi/css/pt-live.css?v=' . filemtime(get_stylesheet_directory() . '/assets-enishi/css/pt-live.css')); ?>" />
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
 
 <main class="ptlive-wrapper">
@@ -238,6 +248,10 @@ $initial_host = !empty($active_streams[0]) ? $active_streams[0] : [
                             <select id="ptlive-select-mic">
                                 <option value="">Default Microphone</option>
                             </select>
+                        </div>
+                        <div class="ptlive-field" style="grid-column: 1 / -1;">
+                            <label for="ptlive-input-hls-url">HLS Stream URL (.m3u8) <small style="opacity:0.7;">(Optional — leave blank to broadcast from Camera/Mic)</small></label>
+                            <input type="url" id="ptlive-input-hls-url" placeholder="https://your-stream-server/live/stream.m3u8" value="" />
                         </div>
                     </div>
                 </div>

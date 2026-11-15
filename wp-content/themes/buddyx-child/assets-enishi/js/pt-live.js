@@ -18,6 +18,11 @@
         micEnabled: true,
         screenSharing: false,
         lkRoom: null,
+        hlsInstance: null,
+        mediaRecorder: null,
+        chunkSeq: 0,
+        chunkPollTimer: null,
+        lastChunkSeq: -1,
         localStream: null,
         screenStream: null,
         uptimeSeconds: 0,
@@ -63,6 +68,7 @@
         els.streamCategorySelect = document.getElementById('ptlive-input-category');
         els.cameraSelect = document.getElementById('ptlive-select-camera');
         els.micSelect = document.getElementById('ptlive-select-mic');
+        els.hlsUrlInput = document.getElementById('ptlive-input-hls-url');
 
         // Streamer Info Bar
         els.streamerAvatar = document.getElementById('ptlive-streamer-avatar');
@@ -228,6 +234,254 @@
     /* ----------------------------------------------------------------------
        LIVEKIT & BROADCAST / WATCH ENGINE
        ---------------------------------------------------------------------- */
+    /* ----------------------------------------------------------------------
+       HLS.JS PLAYER & CHUNKED LIVE RELAY (1-HOST -> VIEWERS)
+       ---------------------------------------------------------------------- */
+    function destroyHlsPlayer() {
+        if (state.hlsInstance) {
+            try {
+                state.hlsInstance.destroy();
+            } catch (e) {}
+            state.hlsInstance = null;
+        }
+    }
+
+    function createVideoElement(muted = false) {
+        if (!els.videoMount) return null;
+        els.videoMount.innerHTML = '';
+        const video = document.createElement('video');
+        video.autoplay = true;
+        video.playsInline = true;
+        video.controls = true;
+        video.muted = muted;
+        video.style.width = '100%';
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        els.videoMount.appendChild(video);
+        return video;
+    }
+
+    function playHlsStream(hlsUrl, muted = false) {
+        if (!hlsUrl) return false;
+        destroyHlsPlayer();
+        stopChunkViewer();
+
+        const video = createVideoElement(muted);
+        if (!video) return false;
+
+        if (window.Hls && window.Hls.isSupported()) {
+            const hls = new window.Hls({
+                lowLatencyMode: true,
+                enableWorker: true,
+                liveSyncDurationCount: 3,
+                liveMaxLatencyDurationCount: 6,
+                backBufferLength: 30,
+            });
+            state.hlsInstance = hls;
+
+            hls.loadSource(hlsUrl);
+            hls.attachMedia(video);
+
+            hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+                updateStatusUI(true, '🔴 LIVE');
+                startUptimeClock(0);
+                video.play().catch(() => {
+                    video.muted = true;
+                    video.play().catch(() => {});
+                });
+            });
+
+            hls.on(window.Hls.Events.ERROR, (event, data) => {
+                if (!data || !data.fatal) return;
+                if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+                    hls.startLoad();
+                } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+                    hls.recoverMediaError();
+                } else {
+                    destroyHlsPlayer();
+                }
+            });
+
+            return true;
+        }
+
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = hlsUrl;
+            video.addEventListener('loadedmetadata', () => {
+                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+                updateStatusUI(true, '🔴 LIVE');
+                startUptimeClock(0);
+                video.play().catch(() => {});
+            });
+            return true;
+        }
+
+        return false;
+    }
+
+    function pickSupportedRecorderMime() {
+        if (typeof MediaRecorder === 'undefined') return '';
+        const candidates = [
+            'video/webm;codecs=vp8,opus',
+            'video/webm;codecs=vp9,opus',
+            'video/webm',
+            'video/mp4',
+        ];
+        for (const mime of candidates) {
+            if (MediaRecorder.isTypeSupported(mime)) return mime;
+        }
+        return '';
+    }
+
+    function startChunkRecorder() {
+        stopChunkRecorder();
+        if (!state.localStream || typeof MediaRecorder === 'undefined') return;
+
+        const mime = pickSupportedRecorderMime();
+        state.chunkSeq = 0;
+
+        try {
+            const recorder = mime
+                ? new MediaRecorder(state.localStream, { mimeType: mime, videoBitsPerSecond: 900000 })
+                : new MediaRecorder(state.localStream);
+            state.mediaRecorder = recorder;
+
+            recorder.ondataavailable = async (ev) => {
+                if (!state.isLive || !ev.data || ev.data.size === 0) return;
+                const seq = state.chunkSeq++;
+                const form = new FormData();
+                form.append('action', 'pt_live_push_chunk');
+                form.append('nonce', cfg.nonce || '');
+                form.append('room', state.roomName);
+                form.append('seq', String(seq));
+                form.append('mime', ev.data.type || mime || 'video/webm');
+                form.append('chunk', ev.data, `chunk_${seq}.webm`);
+
+                try {
+                    await fetch(ajaxUrl, {
+                        method: 'POST',
+                        body: form,
+                        credentials: 'same-origin',
+                    });
+                } catch (e) {}
+            };
+
+            recorder.start(2000);
+        } catch (e) {
+            console.warn('Chunk recorder unavailable:', e);
+        }
+    }
+
+    function stopChunkRecorder() {
+        if (state.mediaRecorder) {
+            try {
+                if (state.mediaRecorder.state !== 'inactive') {
+                    state.mediaRecorder.stop();
+                }
+            } catch (e) {}
+            state.mediaRecorder = null;
+        }
+    }
+
+    function stopChunkViewer() {
+        if (state.chunkPollTimer) {
+            clearInterval(state.chunkPollTimer);
+            state.chunkPollTimer = null;
+        }
+        state.lastChunkSeq = -1;
+    }
+
+    function startChunkViewer(roomName) {
+        stopChunkViewer();
+        if (!els.videoMount) return;
+
+        const video = createVideoElement(false);
+        if (!video) return;
+
+        let mediaSource = null;
+        let sourceBuffer = null;
+        const queue = [];
+        let appending = false;
+        let mseInitialized = false;
+
+        function pumpQueue() {
+            if (appending || !sourceBuffer || sourceBuffer.updating || queue.length === 0) return;
+            appending = true;
+            const buf = queue.shift();
+            try {
+                sourceBuffer.appendBuffer(buf);
+            } catch (e) {
+                appending = false;
+            }
+        }
+
+        const pollChunks = async () => {
+            if (state.roomName !== roomName || (state.isLive && state.mode === 'host')) {
+                stopChunkViewer();
+                return;
+            }
+            try {
+                const res = await fetch(
+                    `${ajaxUrl}?action=pt_live_get_chunks&room=${encodeURIComponent(roomName)}`,
+                    { credentials: 'same-origin' }
+                );
+                const json = await res.json();
+                if (!json || !json.success || !json.data || !json.data.active) {
+                    return;
+                }
+
+                const chunks = Array.isArray(json.data.chunks) ? json.data.chunks : [];
+                const mime = json.data.mime || 'video/webm;codecs=vp8,opus';
+                if (chunks.length === 0) return;
+
+                if (!mseInitialized && window.MediaSource && MediaSource.isTypeSupported(mime)) {
+                    mseInitialized = true;
+                    mediaSource = new MediaSource();
+                    video.src = URL.createObjectURL(mediaSource);
+                    mediaSource.addEventListener('sourceopen', () => {
+                        try {
+                            sourceBuffer = mediaSource.addSourceBuffer(mime);
+                            sourceBuffer.mode = 'sequence';
+                            sourceBuffer.addEventListener('updateend', () => {
+                                appending = false;
+                                pumpQueue();
+                            });
+                            pumpQueue();
+                        } catch (e) {}
+                    });
+                }
+
+                const newChunks = chunks.filter((c) => Number(c.seq) > state.lastChunkSeq);
+                if (newChunks.length === 0) return;
+
+                if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+                updateStatusUI(true, '🔴 LIVE');
+                if (!state.uptimeTimer) startUptimeClock(0);
+
+                for (const c of newChunks) {
+                    state.lastChunkSeq = Math.max(state.lastChunkSeq, Number(c.seq));
+                    if (mseInitialized) {
+                        const arrBuf = await fetch(c.url).then((r) => r.arrayBuffer());
+                        queue.push(arrBuf);
+                        pumpQueue();
+                        video.play().catch(() => {
+                            video.muted = true;
+                            video.play().catch(() => {});
+                        });
+                    } else {
+                        // Sequential fallback if MSE codec is not supported
+                        video.src = c.url;
+                        video.play().catch(() => {});
+                    }
+                }
+            } catch (e) {}
+        };
+
+        pollChunks();
+        state.chunkPollTimer = setInterval(pollChunks, 2000);
+    }
+
     async function fetchLivekitToken(roomName, asHost = false) {
         const url = new URL(restTokenUrl, window.location.origin);
         url.searchParams.set('room', roomName);
@@ -255,57 +509,63 @@
 
         const streamTitle = (els.streamTitleInput && els.streamTitleInput.value.trim()) || ((cfg.userName || 'Host') + ' is live now');
         const streamCategory = (els.streamCategorySelect && els.streamCategorySelect.value) || 'Talk & Hangout';
+        const hlsUrl = (els.hlsUrlInput && els.hlsUrlInput.value.trim()) || '';
 
         if (els.startLiveBtn) els.startLiveBtn.disabled = true;
         updateStatusUI(false, 'CONNECTING...');
 
-        // Ensure local camera stream is ready first so broadcaster always sees video immediately
-        if (!state.localStream) {
-            const preview = await startLocalCameraPreview();
-            if (!preview) {
-                if (els.startLiveBtn) els.startLiveBtn.disabled = false;
-                updateStatusUI(false, 'OFFLINE');
-                return;
-            }
-        }
-
-        // Try connecting to LiveKit server if available
         let connectedToLiveKit = false;
-        if (window.LivekitClient) {
-            try {
-                const tokenData = await fetchLivekitToken(state.roomName, true);
-                if (state.lkRoom) {
-                    await state.lkRoom.disconnect();
-                    state.lkRoom = null;
+        if (hlsUrl) {
+            // Host provided an HLS (.m3u8) stream URL (e.g., OBS / MediaMTX)
+            playHlsStream(hlsUrl, true);
+        } else {
+            // Ensure local camera stream is ready first so broadcaster always sees video immediately
+            if (!state.localStream) {
+                const preview = await startLocalCameraPreview();
+                if (!preview) {
+                    if (els.startLiveBtn) els.startLiveBtn.disabled = false;
+                    updateStatusUI(false, 'OFFLINE');
+                    return;
                 }
+            }
 
-                const lkRoom = new window.LivekitClient.Room({
-                    adaptiveStream: true,
-                    dynacast: true,
-                });
-
-                bindLiveKitRoomEvents(lkRoom);
-
-                await Promise.race([
-                    lkRoom.connect(tokenData.url, tokenData.token),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error('LiveKit connect timeout')), 7000)),
-                ]);
-
-                // Publish tracks from localStream
-                if (state.localStream) {
-                    for (const track of state.localStream.getTracks()) {
-                        await lkRoom.localParticipant.publishTrack(track);
+            // Try connecting to LiveKit server if available
+            if (window.LivekitClient) {
+                try {
+                    const tokenData = await fetchLivekitToken(state.roomName, true);
+                    if (state.lkRoom) {
+                        await state.lkRoom.disconnect();
+                        state.lkRoom = null;
                     }
-                }
 
-                state.lkRoom = lkRoom;
-                connectedToLiveKit = true;
-            } catch (lkErr) {
-                console.warn('LiveKit server fallback to local studio stream:', lkErr.message);
+                    const lkRoom = new window.LivekitClient.Room({
+                        adaptiveStream: true,
+                        dynacast: true,
+                    });
+
+                    bindLiveKitRoomEvents(lkRoom);
+
+                    await Promise.race([
+                        lkRoom.connect(tokenData.url, tokenData.token),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('LiveKit connect timeout')), 5000)),
+                    ]);
+
+                    // Publish tracks from localStream
+                    if (state.localStream) {
+                        for (const track of state.localStream.getTracks()) {
+                            await lkRoom.localParticipant.publishTrack(track);
+                        }
+                    }
+
+                    state.lkRoom = lkRoom;
+                    connectedToLiveKit = true;
+                } catch (lkErr) {
+                    console.warn('LiveKit server fallback to chunk relay:', lkErr.message);
+                }
             }
         }
 
-        // Register active stream in WordPress backend so viewers see it in Channel -> Video
+        // Register active stream in WordPress backend so viewers see it in Channel -> Video & Place Live
         try {
             const body = new URLSearchParams({
                 action: 'pt_live_start_stream',
@@ -313,6 +573,7 @@
                 room: state.roomName,
                 title: streamTitle,
                 category: streamCategory,
+                hls_url: hlsUrl,
                 place_id: cfg.placeId || '',
                 place_name: cfg.placeName || '',
                 place_address: cfg.placeAddress || '',
@@ -336,6 +597,10 @@
         updateStatusUI(true, '🔴 LIVE');
         startUptimeClock(0);
         if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+
+        if (!hlsUrl && !connectedToLiveKit) {
+            startChunkRecorder();
+        }
 
         if (els.startLiveBtn) {
             els.startLiveBtn.disabled = false;
@@ -366,6 +631,9 @@
     async function stopBroadcast() {
         stopHeartbeat();
         stopUptimeClock();
+        stopChunkRecorder();
+        stopChunkViewer();
+        destroyHlsPlayer();
 
         if (state.lkRoom) {
             try {
@@ -440,7 +708,9 @@
             card.classList.toggle('is-watching', card.dataset.room === roomName);
         });
 
-        // Connect to LiveKit room as viewer
+        // Reset previous HLS / chunk / LiveKit players before joining
+        destroyHlsPlayer();
+        stopChunkViewer();
         if (state.lkRoom) {
             try {
                 await state.lkRoom.disconnect();
@@ -448,27 +718,54 @@
             state.lkRoom = null;
         }
 
-        if (!window.LivekitClient) return;
+        const matchedMeta = streamMeta || state.streams.find((s) => s && s.room === roomName) || null;
+        const hlsUrl = matchedMeta && matchedMeta.hls_url ? matchedMeta.hls_url : '';
 
-        try {
-            const tokenData = await fetchLivekitToken(roomName, false);
-            const lkRoom = new window.LivekitClient.Room({
-                adaptiveStream: true,
-                dynacast: true,
-            });
-
-            bindLiveKitRoomEvents(lkRoom);
-
-            await Promise.race([
-                lkRoom.connect(tokenData.url, tokenData.token),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('LiveKit timeout')), 6500)),
-            ]);
-
-            state.lkRoom = lkRoom;
-            updateRemoteViewerCount();
-        } catch (err) {
-            console.warn('Viewer LiveKit connection note:', err.message);
+        // 1. Primary: Play HLS (.m3u8) stream via hls.js
+        if (hlsUrl && playHlsStream(hlsUrl, false)) {
+            return;
         }
+
+        // 2. Fallback: LiveKit WebRTC if available, else WordPress chunked live relay
+        let receivedLiveKitTrack = false;
+        if (window.LivekitClient) {
+            try {
+                const tokenData = await fetchLivekitToken(roomName, false);
+                const lkRoom = new window.LivekitClient.Room({
+                    adaptiveStream: true,
+                    dynacast: true,
+                });
+
+                lkRoom.on(window.LivekitClient.RoomEvent.TrackSubscribed, (track) => {
+                    if (track.kind === 'video') {
+                        receivedLiveKitTrack = true;
+                        stopChunkViewer();
+                    }
+                });
+
+                bindLiveKitRoomEvents(lkRoom);
+
+                await Promise.race([
+                    lkRoom.connect(tokenData.url, tokenData.token),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('LiveKit timeout')), 4500)),
+                ]);
+
+                state.lkRoom = lkRoom;
+                updateRemoteViewerCount();
+
+                // If host isn't publishing via LiveKit (e.g. direct browser broadcast), switch to chunk viewer
+                setTimeout(() => {
+                    if (!receivedLiveKitTrack && state.roomName === roomName && !state.hlsInstance) {
+                        startChunkViewer(roomName);
+                    }
+                }, 2500);
+                return;
+            } catch (err) {
+                console.warn('Viewer LiveKit fallback to chunk relay:', err.message);
+            }
+        }
+
+        startChunkViewer(roomName);
     }
 
     function bindLiveKitRoomEvents(lkRoom) {

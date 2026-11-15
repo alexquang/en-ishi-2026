@@ -2049,6 +2049,10 @@ function pt_live_start_stream_ajax()
     $place_id      = sanitize_text_field(wp_unslash($_POST['place_id'] ?? ''));
     $place_name    = sanitize_text_field(wp_unslash($_POST['place_name'] ?? ''));
     $place_address = sanitize_text_field(wp_unslash($_POST['place_address'] ?? ''));
+    $hls_url       = esc_url_raw(wp_unslash($_POST['hls_url'] ?? ''));
+    if ($hls_url === '' && defined('PT_LIVE_HLS_BASE_URL') && PT_LIVE_HLS_BASE_URL) {
+        $hls_url = trailingslashit(PT_LIVE_HLS_BASE_URL) . rawurlencode($room) . '/index.m3u8';
+    }
     $avatar        = get_avatar_url($user->ID, ['size' => 128]);
 
     $stored = get_option('pt_active_livestreams', []);
@@ -2060,6 +2064,7 @@ function pt_live_start_stream_ajax()
         'room'          => $room,
         'title'         => $title,
         'category'      => $category,
+        'hls_url'       => $hls_url,
         'place_id'      => $place_id,
         'place_name'    => $place_name,
         'place_address' => $place_address,
@@ -2115,8 +2120,136 @@ function pt_live_stop_stream_ajax()
         update_option('pt_active_livestreams', $stored, false);
     }
 
+    if ($room !== '') {
+        pt_live_cleanup_room_chunks($room);
+    }
+
     wp_send_json_success([
         'streams' => pt_get_active_livestreams_list(),
+    ]);
+}
+
+function pt_live_get_chunks_dir($room)
+{
+    $upload = wp_upload_dir();
+    $slug   = sanitize_key($room ?: 'default');
+    return [
+        'dir' => trailingslashit($upload['basedir']) . 'pt-live-chunks/' . $slug,
+        'url' => trailingslashit($upload['baseurl']) . 'pt-live-chunks/' . $slug,
+    ];
+}
+
+function pt_live_cleanup_room_chunks($room)
+{
+    $paths = pt_live_get_chunks_dir($room);
+    if (!is_dir($paths['dir'])) {
+        return;
+    }
+    $files = glob($paths['dir'] . '/*');
+    if (is_array($files)) {
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+    }
+    @rmdir($paths['dir']);
+}
+
+add_action('wp_ajax_pt_live_push_chunk', 'pt_live_push_chunk_ajax');
+function pt_live_push_chunk_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    $room = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    $seq  = max(0, intval($_POST['seq'] ?? 0));
+    $mime = sanitize_text_field(wp_unslash($_POST['mime'] ?? 'video/webm'));
+
+    if ($room === '' || empty($_FILES['chunk']['tmp_name'])) {
+        wp_send_json_error(['message' => 'Missing chunk data'], 400);
+    }
+
+    $paths = pt_live_get_chunks_dir($room);
+    if (!is_dir($paths['dir'])) {
+        wp_mkdir_p($paths['dir']);
+    }
+
+    $ext      = strpos($mime, 'mp4') !== false ? 'mp4' : 'webm';
+    $filename = sprintf('chunk_%06d.%s', $seq, $ext);
+    $dest     = $paths['dir'] . '/' . $filename;
+
+    if (!@move_uploaded_file($_FILES['chunk']['tmp_name'], $dest)) {
+        wp_send_json_error(['message' => 'Failed to save chunk'], 500);
+    }
+
+    $manifest_file = $paths['dir'] . '/manifest.json';
+    $manifest      = ['mime' => $mime, 'updated_at' => time(), 'chunks' => []];
+    if (is_file($manifest_file)) {
+        $decoded = json_decode((string) file_get_contents($manifest_file), true);
+        if (is_array($decoded) && !empty($decoded['chunks'])) {
+            $manifest['chunks'] = $decoded['chunks'];
+        }
+    }
+
+    $manifest['mime']       = $mime;
+    $manifest['updated_at'] = time();
+    $manifest['chunks'][]   = [
+        'seq' => $seq,
+        'url' => $paths['url'] . '/' . $filename,
+        'ts'  => time(),
+    ];
+
+    // Keep only the latest 12 chunks (~24s window) and delete older files
+    if (count($manifest['chunks']) > 12) {
+        $removed = array_splice($manifest['chunks'], 0, count($manifest['chunks']) - 12);
+        foreach ($removed as $old) {
+            if (!empty($old['url'])) {
+                $old_path = $paths['dir'] . '/' . basename($old['url']);
+                if (is_file($old_path)) {
+                    @unlink($old_path);
+                }
+            }
+        }
+    }
+
+    file_put_contents($manifest_file, wp_json_encode($manifest));
+
+    // Also refresh stream heartbeat timestamp
+    $stored = get_option('pt_active_livestreams', []);
+    if (is_array($stored) && isset($stored[$room])) {
+        $stored[$room]['updated_at'] = time();
+        update_option('pt_active_livestreams', $stored, false);
+    }
+
+    wp_send_json_success(['seq' => $seq]);
+}
+
+add_action('wp_ajax_pt_live_get_chunks', 'pt_live_get_chunks_ajax');
+add_action('wp_ajax_nopriv_pt_live_get_chunks', 'pt_live_get_chunks_ajax');
+function pt_live_get_chunks_ajax()
+{
+    $room = sanitize_text_field(wp_unslash($_REQUEST['room'] ?? ''));
+    if ($room === '') {
+        wp_send_json_success(['active' => false, 'chunks' => []]);
+    }
+
+    $paths         = pt_live_get_chunks_dir($room);
+    $manifest_file = $paths['dir'] . '/manifest.json';
+    if (!is_file($manifest_file)) {
+        wp_send_json_success(['active' => false, 'chunks' => []]);
+    }
+
+    $manifest = json_decode((string) file_get_contents($manifest_file), true);
+    if (!is_array($manifest) || (time() - (int) ($manifest['updated_at'] ?? 0)) > 45) {
+        wp_send_json_success(['active' => false, 'chunks' => []]);
+    }
+
+    wp_send_json_success([
+        'active' => true,
+        'mime'   => $manifest['mime'] ?? 'video/webm',
+        'chunks' => $manifest['chunks'] ?? [],
     ]);
 }
 
