@@ -555,18 +555,15 @@ PROMPT;
         'generationConfig' => [
             'temperature'     => 0.3,
             'maxOutputTokens' => 700,
-            'thinkingConfig'  => [
-                'thinkingBudget' => 0
-            ]
         ]
     ];
 
     /*
      * =====================================================
-     * 5. CALL GEMINI (gemini-2.5-flash)
+     * 5. CALL GEMINI (gemini-3.8-flash)
      * =====================================================
      */
-    $model = 'gemini-2.5-flash';
+    $model = 'gemini-3.8-flash';
     $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $model . ':generateContent';
 
     $response = wp_remote_post($url, [
