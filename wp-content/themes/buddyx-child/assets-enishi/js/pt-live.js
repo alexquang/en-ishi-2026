@@ -481,7 +481,11 @@
         };
 
         pollChunks();
-        state.chunkPollTimer = setInterval(pollChunks, 2000);
+        const jitterMs = 2000 + Math.floor(Math.random() * 800);
+        state.chunkPollTimer = setInterval(() => {
+            if (document.visibilityState === 'hidden') return;
+            pollChunks();
+        }, jitterMs);
     }
 
     async function fetchLivekitToken(roomName, asHost = false) {
