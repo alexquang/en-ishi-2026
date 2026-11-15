@@ -2281,6 +2281,31 @@ function pt_live_get_chunks_ajax()
     ]);
 }
 
+add_action('wp_ajax_pt_live_push_frame', 'pt_live_push_frame_ajax');
+function pt_live_push_frame_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    $room = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    if ($room === '' || empty($_FILES['frame']['tmp_name'])) {
+        wp_send_json_error(['message' => 'Missing frame'], 400);
+    }
+
+    $paths = pt_live_get_chunks_dir($room);
+    if (!is_dir($paths['dir'])) {
+        wp_mkdir_p($paths['dir']);
+    }
+
+    $dest = $paths['dir'] . '/latest.jpg';
+    if (!@move_uploaded_file($_FILES['frame']['tmp_name'], $dest)) {
+        wp_send_json_error(['message' => 'Failed to save frame'], 500);
+    }
+
+    wp_send_json_success(['url' => $paths['url'] . '/latest.jpg']);
+}
+
 add_action('wp_ajax_pt_get_place_livestreams', 'pt_get_place_livestreams_ajax');
 add_action('wp_ajax_nopriv_pt_get_place_livestreams', 'pt_get_place_livestreams_ajax');
 function pt_get_place_livestreams_ajax()

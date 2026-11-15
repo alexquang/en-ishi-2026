@@ -610,6 +610,7 @@
         if (!hlsUrl && !connectedToLiveKit) {
             startChunkRecorder();
             startPeerHost(state.roomName);
+            startFrameBroadcaster();
         }
 
         if (els.startLiveBtn) {
@@ -841,7 +842,10 @@
             }
             els.videoMount.setAttribute('data-connecting-host', hostName);
         }
-        if (typeof window.Peer === 'undefined') return;
+        if (typeof window.Peer === 'undefined') {
+            startFrameViewer(roomName);
+            return;
+        }
         if (state.viewerPeer) {
             try { state.viewerPeer.destroy(); } catch (e) {}
             state.viewerPeer = null;
@@ -860,9 +864,9 @@
         let gotStream = false;
         const fallbackTimer = setTimeout(() => {
             if (!gotStream && state.roomName === roomName) {
-                startChunkViewer(roomName);
+                startFrameViewer(roomName);
             }
-        }, 5000);
+        }, 1500);
 
         peer.on('open', () => {
             const attemptCall = () => {
@@ -886,6 +890,83 @@
             attemptCall();
             setTimeout(attemptCall, 2000);
         });
+    }
+
+    function startFrameBroadcaster() {
+        if (state.framePushTimer) {
+            clearInterval(state.framePushTimer);
+            state.framePushTimer = null;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 360;
+        const ctx = canvas.getContext('2d');
+        let pushing = false;
+
+        state.framePushTimer = setInterval(() => {
+            if (!state.isLive || state.mode !== 'host' || pushing) return;
+            const video = els.videoMount ? els.videoMount.querySelector('video') : null;
+            if (!video || video.readyState < 2) return;
+            pushing = true;
+            try {
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(async (blob) => {
+                    if (blob && state.isLive) {
+                        const form = new FormData();
+                        form.append('action', 'pt_live_push_frame');
+                        form.append('room', state.roomName);
+                        form.append('frame', blob, 'latest.jpg');
+                        try {
+                            await fetch(ajaxUrl, {
+                                method: 'POST',
+                                body: form,
+                                credentials: 'same-origin',
+                            });
+                        } catch (e) {}
+                    }
+                    pushing = false;
+                }, 'image/jpeg', 0.72);
+            } catch (e) {
+                pushing = false;
+            }
+        }, 280);
+    }
+
+    function startFrameViewer(roomName) {
+        if (!els.videoMount || state.roomName !== roomName) return;
+        stopChunkViewer();
+        const safeRoom = String(roomName || '').replace(/[^a-zA-Z0-9_-]/g, '');
+        const baseFrameUrl = `/wp-content/uploads/pt-live-chunks/${safeRoom}/latest.jpg`;
+
+        els.videoMount.innerHTML = '';
+        const img = document.createElement('img');
+        img.alt = 'Live Stream';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;background:#0f172a;';
+        els.videoMount.appendChild(img);
+
+        if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
+        if (typeof setStatusBadge === 'function') setStatusBadge(true);
+
+        let stopped = false;
+        const loadNext = () => {
+            if (stopped || state.roomName !== roomName || (state.isLive && state.mode === 'host')) return;
+            if (document.visibilityState === 'hidden') {
+                setTimeout(loadNext, 600);
+                return;
+            }
+            const nextImg = new Image();
+            nextImg.onload = () => {
+                if (stopped || state.roomName !== roomName) return;
+                img.src = nextImg.src;
+                setTimeout(loadNext, 260);
+            };
+            nextImg.onerror = () => {
+                if (stopped || state.roomName !== roomName) return;
+                setTimeout(loadNext, 600);
+            };
+            nextImg.src = `${baseFrameUrl}?t=${Date.now()}`;
+        };
+        loadNext();
     }
 
     function bindLiveKitRoomEvents(lkRoom) {
