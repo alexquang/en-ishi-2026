@@ -2057,60 +2057,7 @@ function pt_get_active_livestreams_list()
         update_option('pt_active_livestreams', $cleaned, false);
     }
 
-    $result = array_values($cleaned);
-
-    // Default community channels so viewers always have active rooms to explore
-    $default_channels = [
-        [
-            'room'        => 'enishi-main',
-            'title'       => 'En-Ishi Official Live - Community & Discovery',
-            'category'    => 'Talk & Hangout',
-            'host_name'   => 'En-Ishi Official',
-            'host_avatar' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&auto=format&fit=crop&q=80',
-            'thumb'       => 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=640&auto=format&fit=crop&q=80',
-            'viewers'     => 24,
-            'is_live'     => true,
-        ],
-        [
-            'room'        => 'tokyo-cafe-tour',
-            'title'       => 'Weekend Acoustic Cafe & Cozy Place Review',
-            'category'    => 'Cafe & Review',
-            'host_name'   => 'Hana Cafe Vlog',
-            'host_avatar' => 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=160&auto=format&fit=crop&q=80',
-            'thumb'       => 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=640&auto=format&fit=crop&q=80',
-            'viewers'     => 18,
-            'is_live'     => true,
-        ],
-        [
-            'room'        => 'acoustic-night-live',
-            'title'       => 'Live Acoustic Music Night & Song Requests',
-            'category'    => 'Music',
-            'host_name'   => 'Kenji Music',
-            'host_avatar' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=160&auto=format&fit=crop&q=80',
-            'thumb'       => 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=640&auto=format&fit=crop&q=80',
-            'viewers'     => 42,
-            'is_live'     => true,
-        ],
-        [
-            'room'        => 'street-food-discovery',
-            'title'       => 'Street Food Discovery & Best Local Spots',
-            'category'    => 'Food & Life',
-            'host_name'   => 'Minh Foodie',
-            'host_avatar' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=160&auto=format&fit=crop&q=80',
-            'thumb'       => 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=640&auto=format&fit=crop&q=80',
-            'viewers'     => 15,
-            'is_live'     => false,
-        ],
-    ];
-
-    $existing_rooms = array_column($result, 'room');
-    foreach ($default_channels as $ch) {
-        if (!in_array($ch['room'], $existing_rooms, true)) {
-            $result[] = $ch;
-        }
-    }
-
-    return $result;
+    return array_values($cleaned);
 }
 
 add_action('wp_ajax_pt_live_start_stream', 'pt_live_start_stream_ajax');
