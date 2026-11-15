@@ -2517,7 +2517,7 @@ function pt_render_profile_pmpro_header_summary()
         return;
     }
 
-    $is_owner = function_exists('bp_is_my_profile') && bp_is_my_profile();
+    $is_owner = is_user_logged_in() && ($user_id === get_current_user_id());
     if (!$is_owner && !current_user_can('manage_options')) {
         return;
     }
@@ -2558,7 +2558,7 @@ function pt_render_profile_pmpro_details_box()
         return;
     }
 
-    $is_owner = function_exists('bp_is_my_profile') && bp_is_my_profile();
+    $is_owner = is_user_logged_in() && ($user_id === get_current_user_id());
     if (!$is_owner && !current_user_can('manage_options')) {
         return;
     }
@@ -2590,6 +2590,49 @@ function pt_render_profile_pmpro_details_box()
                 </tr>
             </tbody>
         </table>
+    </div>
+    <?php
+}
+
+/**
+ * Hiển thị tổng số tiền đã nạp trên trang PMPro Membership Account (/membership-account/)
+ */
+add_action('pmpro_account_bullets_top', 'pt_render_pmpro_account_deposited_bullet');
+function pt_render_pmpro_account_deposited_bullet()
+{
+    if (!is_user_logged_in()) {
+        return;
+    }
+    $summary = pt_get_user_pmpro_deposit_summary(get_current_user_id());
+    ?>
+    <li>
+        <strong><?php esc_html_e('Total Deposited:', 'buddyx-child'); ?></strong>
+        <span class="pt-pmpro-amount"><?php echo wp_kses_post($summary['formatted']); ?></span>
+        (<?php echo esc_html((string) $summary['orders_count']); ?> <?php esc_html_e('orders', 'buddyx-child'); ?>)
+    </li>
+    <?php
+}
+
+/**
+ * Hiển thị tổng số tiền đã nạp trên trang WooCommerce My Account (/my-account/)
+ */
+add_action('woocommerce_account_dashboard', 'pt_render_wc_account_pmpro_summary');
+function pt_render_wc_account_pmpro_summary()
+{
+    if (!is_user_logged_in()) {
+        return;
+    }
+    $summary = pt_get_user_pmpro_deposit_summary(get_current_user_id());
+    ?>
+    <div class="pt-profile-pmpro-summary" style="margin: 16px 0;">
+        <span class="pt-pmpro-pill pt-pmpro-level">
+            <i class="fa-solid fa-medal"></i>
+            <span><?php echo esc_html($summary['level_name']); ?></span>
+        </span>
+        <span class="pt-pmpro-pill pt-pmpro-deposited">
+            <i class="fa-solid fa-wallet"></i>
+            <span>Deposited: <strong><?php echo wp_kses_post($summary['formatted']); ?></strong></span>
+        </span>
     </div>
     <?php
 }
