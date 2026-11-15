@@ -907,7 +907,7 @@
             if (!state.isLive || state.mode !== 'host' || pushing) return;
             const video = els.videoMount ? els.videoMount.querySelector('video') : null;
             if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
-            const targetW = Math.min(854, video.videoWidth);
+            const targetW = Math.min(640, video.videoWidth);
             const targetH = Math.max(1, Math.round(targetW * (video.videoHeight / video.videoWidth)));
             if (canvas.width !== targetW || canvas.height !== targetH) {
                 canvas.width = targetW;
@@ -931,11 +931,11 @@
                         } catch (e) {}
                     }
                     pushing = false;
-                }, 'image/jpeg', 0.72);
+                }, 'image/jpeg', 0.62);
             } catch (e) {
                 pushing = false;
             }
-        }, 280);
+        }, 90);
     }
 
     function startFrameViewer(roomName) {
@@ -1002,7 +1002,7 @@
             nextImg.onload = () => {
                 if (stopped || state.roomName !== roomName) return;
                 img.src = nextImg.src;
-                setTimeout(loadNext, 260);
+                setTimeout(loadNext, 60);
             };
             nextImg.onerror = () => {
                 if (stopped || state.roomName !== roomName) return;
