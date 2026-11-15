@@ -682,7 +682,9 @@ function initMap(userLat, userLng) {
   // Tự động load địa điểm xung quanh khi bản đồ sẵn sàng
   google.maps.event.addListenerOnce(map, "idle", function () {
     if (!mapRestoredFromState) {
-      loadNearbyPlaces(defaultLat, defaultLng);
+      const targetLat = userCoords ? userCoords.lat : defaultLat;
+      const targetLng = userCoords ? userCoords.lng : defaultLng;
+      loadNearbyPlaces(targetLat, targetLng);
     }
   });
 
@@ -2364,7 +2366,9 @@ function closePlaceMessageDialog() {
    KHỞI TẠO SỰ KIỆN DOM
 ===================================================== */
 document.addEventListener("DOMContentLoaded", function () {
-  installSeamlessGoogleLoginHook();
+  if (typeof window.ptInstallSeamlessGoogleLoginHook === "function") {
+    window.ptInstallSeamlessGoogleLoginHook();
+  }
 
   const wrapper = document.querySelector(".search-wrapper");
   const resultPanelEl = document.getElementById("result-panel");
@@ -2424,6 +2428,7 @@ document.addEventListener("DOMContentLoaded", function () {
           map.setCenter(userCoords);
           map.setZoom(15);
           renderUserLocationDot(userCoords);
+          loadNearbyPlaces(userCoords.lat, userCoords.lng);
         } else if (map) {
           renderUserLocationDot(userCoords);
         }
@@ -2431,7 +2436,7 @@ document.addEventListener("DOMContentLoaded", function () {
       function (err) {
         console.warn("GPS unavailable:", err.message);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }
 
