@@ -2818,4 +2818,112 @@ function pt_buddynext_render_balance_panel($args)
     }
 }
 
+/**
+ * PeerJS Zoom-like Group Meeting Room Sync, Leave & Chat
+ */
+add_action('wp_ajax_pt_meet_sync', 'pt_ajax_meet_sync');
+add_action('wp_ajax_nopriv_pt_meet_sync', 'pt_ajax_meet_sync');
+function pt_ajax_meet_sync()
+{
+    $room      = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    $peer_id   = sanitize_text_field(wp_unslash($_POST['peer_id'] ?? ''));
+    $user_name = sanitize_text_field(wp_unslash($_POST['user_name'] ?? 'Guest'));
+    $avatar    = esc_url_raw(wp_unslash($_POST['avatar'] ?? ''));
+    $mic_on    = !empty($_POST['mic_on']) && $_POST['mic_on'] === '1';
+    $cam_on    = !empty($_POST['cam_on']) && $_POST['cam_on'] === '1';
+
+    if ($room === '' || $peer_id === '') {
+        wp_send_json_error(['message' => 'Missing room or peer_id']);
+    }
+
+    $room_hash = md5($room);
+    $peers_key = 'pt_meet_peers_' . $room_hash;
+    $chat_key  = 'pt_meet_chat_' . $room_hash;
+
+    $peers = get_transient($peers_key);
+    if (!is_array($peers)) {
+        $peers = [];
+    }
+
+    $now = time();
+    foreach ($peers as $pid => $info) {
+        if (!is_array($info) || ($now - (int) ($info['updated_at'] ?? 0)) > 20) {
+            unset($peers[$pid]);
+        }
+    }
+
+    $peers[$peer_id] = [
+        'peer_id'    => $peer_id,
+        'user_name'  => $user_name ?: 'Guest',
+        'avatar'     => $avatar,
+        'mic_on'     => $mic_on,
+        'cam_on'     => $cam_on,
+        'updated_at' => $now,
+    ];
+
+    set_transient($peers_key, $peers, 60);
+
+    $messages = get_transient($chat_key);
+    if (!is_array($messages)) {
+        $messages = [];
+    }
+
+    wp_send_json_success([
+        'peers'    => array_values($peers),
+        'messages' => $messages,
+    ]);
+}
+
+add_action('wp_ajax_pt_meet_leave', 'pt_ajax_meet_leave');
+add_action('wp_ajax_nopriv_pt_meet_leave', 'pt_ajax_meet_leave');
+function pt_ajax_meet_leave()
+{
+    $room    = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    $peer_id = sanitize_text_field(wp_unslash($_POST['peer_id'] ?? ''));
+
+    if ($room !== '' && $peer_id !== '') {
+        $peers_key = 'pt_meet_peers_' . md5($room);
+        $peers     = get_transient($peers_key);
+        if (is_array($peers) && isset($peers[$peer_id])) {
+            unset($peers[$peer_id]);
+            set_transient($peers_key, $peers, 60);
+        }
+    }
+
+    wp_send_json_success(['left' => true]);
+}
+
+add_action('wp_ajax_pt_meet_chat', 'pt_ajax_meet_chat');
+add_action('wp_ajax_nopriv_pt_meet_chat', 'pt_ajax_meet_chat');
+function pt_ajax_meet_chat()
+{
+    $room      = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    $user_name = sanitize_text_field(wp_unslash($_POST['user_name'] ?? 'Guest'));
+    $text      = trim(sanitize_text_field(wp_unslash($_POST['text'] ?? '')));
+
+    if ($room === '' || $text === '') {
+        wp_send_json_error(['message' => 'Missing room or message']);
+    }
+
+    $chat_key = 'pt_meet_chat_' . md5($room);
+    $messages = get_transient($chat_key);
+    if (!is_array($messages)) {
+        $messages = [];
+    }
+
+    $messages[] = [
+        'user_name' => $user_name ?: 'Guest',
+        'text'      => $text,
+        'time'      => current_time('H:i'),
+    ];
+    if (count($messages) > 100) {
+        $messages = array_slice($messages, -100);
+    }
+
+    set_transient($chat_key, $messages, HOUR_IN_SECONDS);
+
+    wp_send_json_success(['messages' => $messages]);
+}
+
+
 

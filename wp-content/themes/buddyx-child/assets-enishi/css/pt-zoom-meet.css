@@ -1,0 +1,434 @@
+/* Zoom-like WebRTC Meeting Room UI (PeerJS) */
+.pt-zmeet-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 620px;
+  height: 660px;
+  background: #0b1120;
+  color: #f8fafc;
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: inherit;
+  border: 1px solid #1e293b;
+}
+
+.pt-zmeet-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #111827;
+  border-bottom: 1px solid #1e293b;
+  flex-shrink: 0;
+}
+
+.pt-zmeet-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.pt-zmeet-status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  flex-shrink: 0;
+}
+
+.pt-zmeet-room-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pt-zmeet-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pt-zmeet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: #1e293b;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pt-zmeet-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.pt-zmeet-stage {
+  flex: 1;
+  min-width: 0;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.pt-zmeet-grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  align-content: center;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.pt-zmeet-grid.count-1 {
+  grid-template-columns: minmax(0, 760px);
+  justify-content: center;
+}
+
+.pt-zmeet-grid.count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pt-zmeet-grid.count-3,
+.pt-zmeet-grid.count-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pt-zmeet-tile {
+  position: relative;
+  background: #162032;
+  border: 1px solid #26334a;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pt-zmeet-tile.is-local video {
+  transform: scaleX(-1);
+}
+
+.pt-zmeet-tile.is-screen video {
+  transform: none !important;
+  object-fit: contain;
+}
+
+.pt-zmeet-tile video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: #0f172a;
+}
+
+.pt-zmeet-avatar-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+}
+
+.pt-zmeet-avatar-fallback img {
+  width: 72px;
+  height: 72px;
+  border-radius: 9999px;
+  object-fit: cover;
+  border: 2px solid #334155;
+}
+
+.pt-zmeet-avatar-initial {
+  width: 72px;
+  height: 72px;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pt-zmeet-tile-label {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(4px);
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  max-width: calc(100% - 20px);
+}
+
+.pt-zmeet-tile-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pt-zmeet-mic-off {
+  color: #ef4444;
+  font-size: 11px;
+}
+
+/* Sidebar (Chat & Participants) */
+.pt-zmeet-sidebar {
+  width: 300px;
+  background: #111827;
+  border-left: 1px solid #1e293b;
+  display: none;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.pt-zmeet-sidebar.is-open {
+  display: flex;
+}
+
+.pt-zmeet-sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid #1e293b;
+}
+
+.pt-zmeet-sidebar-tab {
+  flex: 1;
+  padding: 10px;
+  background: transparent;
+  border: 0;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.pt-zmeet-sidebar-tab.is-active {
+  color: #ffffff;
+  border-bottom-color: #3b82f6;
+}
+
+.pt-zmeet-chat-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pt-zmeet-chat-msg {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.pt-zmeet-chat-msg-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-bottom: 3px;
+}
+
+.pt-zmeet-chat-msg-head strong {
+  color: #e2e8f0;
+}
+
+.pt-zmeet-chat-form {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  border-top: 1px solid #1e293b;
+}
+
+.pt-zmeet-chat-form input {
+  flex: 1;
+  min-width: 0;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #f8fafc;
+  font-size: 12.5px;
+  outline: none;
+}
+
+.pt-zmeet-chat-form button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 0;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pt-zmeet-participants-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pt-zmeet-participant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #1e293b;
+  font-size: 13px;
+}
+
+/* Bottom Control Bar (Zoom style) */
+.pt-zmeet-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #111827;
+  border-top: 1px solid #1e293b;
+  flex-shrink: 0;
+}
+
+.pt-zmeet-ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.pt-zmeet-ctrl-btn:hover {
+  background: #273549;
+}
+
+.pt-zmeet-ctrl-btn.is-off {
+  background: #7f1d1d;
+  border-color: #991b1b;
+  color: #fecaca;
+}
+
+.pt-zmeet-ctrl-btn.is-active {
+  background: #1d4ed8;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.pt-zmeet-ctrl-btn.is-leave {
+  background: #dc2626;
+  border-color: #ef4444;
+  color: #ffffff;
+  margin-left: 8px;
+}
+
+.pt-zmeet-ctrl-btn.is-leave:hover {
+  background: #b91c1c;
+}
+
+/* Ended / Pre-join overlay */
+.pt-zmeet-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(11, 17, 32, 0.94);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.pt-zmeet-overlay h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  color: #ffffff;
+}
+
+.pt-zmeet-overlay p {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  color: #94a3b8;
+  max-width: 420px;
+}
+
+.pt-zmeet-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 10px;
+  border: 0;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pt-zmeet-primary-btn:hover {
+  background: #1d4ed8;
+}
+
+@media (max-width: 768px) {
+  .pt-zmeet-root {
+    height: auto;
+    min-height: 540px;
+  }
+  .pt-zmeet-grid.count-2,
+  .pt-zmeet-grid.count-3,
+  .pt-zmeet-grid.count-4 {
+    grid-template-columns: 1fr;
+  }
+  .pt-zmeet-sidebar.is-open {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 15;
+    width: 280px;
+  }
+}

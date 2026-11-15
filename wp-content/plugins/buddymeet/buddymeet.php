@@ -302,12 +302,15 @@ class BuddyMeet {
                 'groupId' => bp_get_current_group_id()
             ));
 
-            $handle = 'buddymeet-jitsi-js';
-            $active_domain = self::get_active_group_jitsi_domain(bp_get_current_group_id());
-            $api_js_url = ($active_domain === '8x8.vc')
-                ? 'https://8x8.vc/libs/external_api.min.js'
-                : 'https://' . $active_domain . '/external_api.js';
-            wp_enqueue_script( $handle, $api_js_url, array(), buddymeet_get_version(), true);
+            $css_file = get_stylesheet_directory() . '/assets-enishi/css/pt-zoom-meet.css';
+            if (file_exists($css_file)) {
+                wp_enqueue_style('pt-zoom-meet-css', get_stylesheet_directory_uri() . '/assets-enishi/css/pt-zoom-meet.css', array(), filemtime($css_file));
+            }
+            wp_enqueue_script('pt-peerjs', 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js', array(), '1.5.4', true);
+            $js_file = get_stylesheet_directory() . '/assets-enishi/js/pt-zoom-meet.js';
+            if (file_exists($js_file)) {
+                wp_enqueue_script('pt-zoom-meet-js', get_stylesheet_directory_uri() . '/assets-enishi/js/pt-zoom-meet.js', array('pt-peerjs'), filemtime($js_file), true);
+            }
         }
     }
 
@@ -516,58 +519,49 @@ class BuddyMeet {
         }
 
         $room_name = !empty($params['room']) ? $params['room'] : ('enishi-meet-' . substr(md5(home_url($_SERVER['REQUEST_URI'] ?? '')), 0, 10));
-        if ($jwt !== '' && $app_id !== '') {
-            $room_name = $app_id . '/' . $room_name;
-        }
+        $parent_node = !empty($params['parent_node']) ? $params['parent_node'] : '#meet';
+        $subject = !empty($params['subject']) ? $params['subject'] : __('Group Meeting', 'buddymeet');
+        $user_name = !empty($params['user']) ? $params['user'] : 'Guest';
+        $user_avatar = !empty($params['avatar']) ? $params['avatar'] : '';
 
-        $height_val = (int) preg_replace('/[^0-9]/', '', (string) ($params['height'] ?? ''));
-        if ($height_val < 520) {
-            $height_val = 660;
-        }
-        $width_val = !empty($params['width']) ? $params['width'] : '100%';
+        $zoom_config = [
+            'ajaxUrl'    => admin_url('admin-ajax.php'),
+            'room'       => $room_name,
+            'parentNode' => $parent_node,
+            'subject'    => $subject,
+            'userName'   => $user_name,
+            'userAvatar' => $user_avatar,
+        ];
 
-        $script = sprintf(
-            $this->get_jitsi_init_template(),
-            $params['domain'],
-            $params['settings'],
-            $params['toolbar'],
-            $room_name,
-            $width_val,
-            $height_val,
-            $params['parent_node'],
-            $params['start_audio_only'] === "true" || $params['start_audio_only'] === true ? 1 : 0,
-            !empty($params['default_language']) ? $params['default_language'] : 'en',
-            $params['film_strip_only'] === "true" || $params['film_strip_only'] === true? 1 : 0,
-            !empty($params['background_color']) ? $params['background_color'] : '#0f172a',
-            $params['show_watermark'] === "true" || $params['show_watermark'] === true? 1 : 0,
-            $params['show_brand_watermark'] === "true" || $params['show_brand_watermark'] === true? 1 : 0,
-            $params['brand_watermark_link'],
-            $params['disable_video_quality_label'] === "true" || $params['disable_video_quality_label'] === true ? 1 : 0,
-            isset($params['user']) && $params['user'] !== '' ? $params['user'] : 'Guest',
-            $params['subject'],
-            isset($params['avatar']) ? $params['avatar'] : '',
-            isset($params['password']) ? $params['password'] : '',
-            $hangoutMessage,
-            $params['mobile_open_in_browser'] === "true" || $params['mobile_open_in_browser'] === true ? 1 : 0,
-            $jwt
-        );
+        $init_script = '(function(){ var run = function(){ if (typeof window.ptInitZoomMeet === "function") { window.ptInitZoomMeet(' . wp_json_encode($zoom_config) . '); } }; if (document.readyState === "loading") { document.addEventListener("DOMContentLoaded", run); } else { run(); } })();';
 
-        $api_js_url = ($domain === '8x8.vc')
-            ? 'https://8x8.vc/libs/external_api.min.js'
-            : 'https://' . $domain . '/external_api.js';
+        $css_file = get_stylesheet_directory() . '/assets-enishi/css/pt-zoom-meet.css';
+        $css_url  = file_exists($css_file) ? get_stylesheet_directory_uri() . '/assets-enishi/css/pt-zoom-meet.css?ver=' . filemtime($css_file) : '';
+        $js_file  = get_stylesheet_directory() . '/assets-enishi/js/pt-zoom-meet.js';
+        $js_url   = file_exists($js_file) ? get_stylesheet_directory_uri() . '/assets-enishi/js/pt-zoom-meet.js?ver=' . filemtime($js_file) : '';
+        $peer_url = 'https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
 
-        if(wp_doing_ajax()){
-            //when initializing the meet via an ajax request we need to return the script to the caller to
-            //add it in the page
-            echo '<script src="' . esc_url($api_js_url) . '"></script>';
-            echo '<script>' . $script . '</script>';
+        if (wp_doing_ajax()) {
+            if ($css_url) {
+                echo '<link rel="stylesheet" href="' . esc_url($css_url) . '" />';
+            }
+            echo '<script src="' . esc_url($peer_url) . '"></script>';
+            if ($js_url) {
+                echo '<script src="' . esc_url($js_url) . '"></script>';
+            }
+            echo '<script>if (typeof window.ptInitZoomMeet === "function") { window.ptInitZoomMeet(' . wp_json_encode($zoom_config) . '); }</script>';
         } else {
-            $handle = "buddymeet-jitsi-js";
-            wp_enqueue_script($handle, $api_js_url, array(), buddymeet_get_version(), true);
-            wp_add_inline_script($handle, $script);
+            if (file_exists($css_file)) {
+                wp_enqueue_style('pt-zoom-meet-css', get_stylesheet_directory_uri() . '/assets-enishi/css/pt-zoom-meet.css', array(), filemtime($css_file));
+            }
+            wp_enqueue_script('pt-peerjs', $peer_url, array(), '1.5.4', true);
+            if (file_exists($js_file)) {
+                wp_enqueue_script('pt-zoom-meet-js', get_stylesheet_directory_uri() . '/assets-enishi/js/pt-zoom-meet.js', array('pt-peerjs'), filemtime($js_file), true);
+                wp_add_inline_script('pt-zoom-meet-js', $init_script);
+            }
         }
 
-        return '<div id="meet" style="width:100%;min-height:' . esc_attr((string) $height_val) . 'px;background:#0f172a;border-radius:12px;overflow:hidden;"></div>';
+        return '<div id="meet"></div>';
     }
 
     public function get_jitsi_init_template(){
