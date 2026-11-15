@@ -534,6 +534,134 @@ bp_nouveau_before_groups_directory_content();
             gap: 10px !important;
         }
     }
+
+    /* TOP NAV + CREATE GROUP BUTTON */
+    .pt-groups-top-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .pt-groups-top-bar .bp-navs {
+        margin-bottom: 0 !important;
+    }
+
+    .pt-create-group-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 18px;
+        border-radius: 10px;
+        background: linear-gradient(90deg, #012068, #1d4ed8);
+        color: #ffffff !important;
+        font-size: 13.5px;
+        font-weight: 700;
+        text-decoration: none !important;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(1, 32, 104, 0.2);
+        transition: transform 0.15s ease, filter 0.15s ease;
+        white-space: nowrap;
+        margin-left: auto;
+    }
+
+    .pt-create-group-btn:hover {
+        filter: brightness(1.08);
+        transform: translateY(-1px);
+        color: #ffffff !important;
+    }
+
+    /* GOOGLE LOGIN POPUP FOR CREATE GROUP */
+    .pt-group-login-dialog {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .pt-group-login-dialog.is-open {
+        display: flex;
+    }
+
+    .pt-group-login-card {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 28px 24px 24px;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+        animation: ptGroupLoginFadeIn 0.18s ease-out;
+    }
+
+    @keyframes ptGroupLoginFadeIn {
+        from { opacity: 0; transform: translateY(8px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .pt-group-login-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        border-radius: 9999px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .pt-group-login-close:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .pt-group-login-icon {
+        width: 52px;
+        height: 52px;
+        margin: 0 auto 14px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #012068, #2563eb);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .pt-group-login-card h3 {
+        margin: 0 0 8px;
+        font-size: 19px;
+        font-weight: 700;
+        color: #0f172a;
+    }
+
+    .pt-group-login-card p {
+        margin: 0 0 20px;
+        font-size: 13.5px;
+        line-height: 1.5;
+        color: #64748b;
+    }
+
+    .pt-group-login-nsl {
+        display: flex;
+        justify-content: center;
+    }
 </style>
 
 <div class="pt-groups-wrapper">
@@ -586,9 +714,26 @@ bp_nouveau_before_groups_directory_content();
 
         <?php bp_nouveau_template_notices(); ?>
 
-        <?php if (! bp_nouveau_is_object_nav_in_sidebar()) : ?>
-            <?php bp_get_template_part('common/nav/directory-nav'); ?>
-        <?php endif; ?>
+        <div class="pt-groups-top-bar">
+            <?php if (! bp_nouveau_is_object_nav_in_sidebar()) : ?>
+                <?php bp_get_template_part('common/nav/directory-nav'); ?>
+            <?php endif; ?>
+
+            <?php
+            $create_group_url = function_exists('bp_get_groups_directory_permalink')
+                ? trailingslashit(bp_get_groups_directory_permalink()) . 'create/'
+                : home_url('/groups/create/');
+            ?>
+            <?php if (! is_user_logged_in()) : ?>
+                <a href="<?php echo esc_url($create_group_url); ?>"
+                   id="ptCreateGroupGuestBtn"
+                   class="pt-create-group-btn"
+                   data-requires-login="1">
+                    <i class="fa-solid fa-plus"></i>
+                    <span><?php esc_html_e('Create a Group', 'buddyx-child'); ?></span>
+                </a>
+            <?php endif; ?>
+        </div>
 
         <div class="screen-content">
 
@@ -611,9 +756,95 @@ bp_nouveau_before_groups_directory_content();
     </main>
 </div>
 
+<?php if (! is_user_logged_in()) : ?>
+    <div id="ptGroupLoginDialog" class="pt-group-login-dialog" role="dialog" aria-modal="true" aria-labelledby="ptGroupLoginTitle">
+        <div class="pt-group-login-card">
+            <button type="button" id="ptGroupLoginClose" class="pt-group-login-close" aria-label="<?php esc_attr_e('Close', 'buddyx-child'); ?>">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="pt-group-login-icon">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <h3 id="ptGroupLoginTitle"><?php esc_html_e('Login Required', 'buddyx-child'); ?></h3>
+            <p id="gmLoginRequiredText">
+                <?php esc_html_e('Please log in with Google to create a new group.', 'buddyx-child'); ?>
+            </p>
+            <div id="gmNextendGoogleLogin" class="pt-group-login-nsl">
+                <?php
+                if (shortcode_exists('nextend_social_login')) {
+                    echo do_shortcode('[nextend_social_login provider="google"]');
+                } else {
+                    echo '<a class="pt-create-group-btn" href="' . esc_url(wp_login_url($create_group_url)) . '">' . esc_html__('Log In', 'buddyx-child') . '</a>';
+                }
+                ?>
+            </div>
+        </div>
+    </div>
+<?php endif; ?>
+
 <script>
-document.addEventListener('click', function (e) {
-    // 1. Reset Filter button
+(function () {
+    const isLoggedIn = <?php echo is_user_logged_in() ? 'true' : 'false'; ?>;
+    const createGroupUrl = <?php echo wp_json_encode($create_group_url); ?>;
+    let pendingCreateGroup = false;
+
+    function openGroupLoginPopup() {
+        const dialog = document.getElementById('ptGroupLoginDialog');
+        if (dialog) {
+            dialog.classList.add('is-open');
+            pendingCreateGroup = true;
+            if (typeof window.ptInstallSeamlessGoogleLoginHook === 'function') {
+                window.ptInstallSeamlessGoogleLoginHook();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function closeGroupLoginPopup() {
+        const dialog = document.getElementById('ptGroupLoginDialog');
+        if (dialog) {
+            dialog.classList.remove('is-open');
+        }
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeGroupLoginPopup();
+        }
+    });
+
+    window.addEventListener('pt:google_login_success', function () {
+        closeGroupLoginPopup();
+        if (pendingCreateGroup) {
+            pendingCreateGroup = false;
+            window.location.assign(createGroupUrl);
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        // 0. Close Google Login popup
+        if (e.target.closest('#ptGroupLoginClose') || e.target.id === 'ptGroupLoginDialog') {
+            e.preventDefault();
+            pendingCreateGroup = false;
+            closeGroupLoginPopup();
+            return;
+        }
+
+        // 0b. Intercept Create Group click when not logged in
+        const createTrigger = e.target.closest(
+            '#ptCreateGroupGuestBtn, a[href*="/groups/create"], #groups-create a, .group-create a, a.bp-title-button[href*="create"]'
+        );
+        if (createTrigger && !isLoggedIn && !document.body.classList.contains('logged-in')) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!openGroupLoginPopup()) {
+                window.location.assign(createGroupUrl);
+            }
+            return;
+        }
+
+        // 1. Reset Filter button
     const resetBtn = e.target.closest('#pt-reset-group-filter');
     if (resetBtn) {
         e.preventDefault();
@@ -694,6 +925,7 @@ document.addEventListener('click', function (e) {
         }).catch(function () {});
     }
 });
+})();
 </script>
 
 <?php bp_nouveau_after_directory_page(); ?>
