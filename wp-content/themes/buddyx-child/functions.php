@@ -3052,17 +3052,62 @@ function pt_ajax_live_save_recording()
     ]);
 }
 
+/**
+ * Kiểm tra user có gói PMPro trả phí (không phải free) hay không.
+ */
+function pt_user_has_paid_pmpro($user_id)
+{
+    $user_id = (int) $user_id;
+    if ($user_id <= 0 || !function_exists('pmpro_getMembershipLevelsForUser')) {
+        return false;
+    }
+    $levels = pmpro_getMembershipLevelsForUser($user_id);
+    if (empty($levels) || !is_array($levels)) {
+        return false;
+    }
+    foreach ($levels as $level) {
+        if ((float) ($level->initial_payment ?? 0) > 0 || (float) ($level->billing_amount ?? 0) > 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Trả về inbox đã áp dụng giới hạn: tài khoản free chỉ đọc được tin nhắn đầu tiên (cũ nhất),
+ * các tin còn lại bị che nội dung ngay từ server.
+ */
+function pt_get_place_inbox_for_viewer($user_id)
+{
+    $inbox = get_user_meta((int) $user_id, 'pt_place_inbox_messages', true);
+    if (!is_array($inbox)) {
+        $inbox = [];
+    }
+    $is_paid = pt_user_has_paid_pmpro($user_id);
+    $total   = count($inbox);
+    foreach ($inbox as $i => $msg) {
+        // Inbox lưu mới nhất ở đầu => tin nhắn đầu tiên nhận được là phần tử cuối
+        $is_first = ($i === $total - 1);
+        $inbox[$i]['locked'] = (!$is_paid && !$is_first);
+        if ($inbox[$i]['locked']) {
+            $inbox[$i]['subject'] = '';
+            $inbox[$i]['message'] = '';
+        }
+    }
+    return [
+        'messages' => $inbox,
+        'is_paid'  => $is_paid,
+        'upgrade_url' => function_exists('pmpro_url') ? pmpro_url('levels') : home_url('/membership-levels/'),
+    ];
+}
+
 add_action('wp_ajax_pt_get_place_inbox_messages', 'pt_get_place_inbox_messages_ajax');
 function pt_get_place_inbox_messages_ajax()
 {
     if (!is_user_logged_in()) {
         wp_send_json_error(['message' => 'Login required'], 403);
     }
-    $inbox = get_user_meta(get_current_user_id(), 'pt_place_inbox_messages', true);
-    if (!is_array($inbox)) {
-        $inbox = [];
-    }
-    wp_send_json_success(['messages' => $inbox]);
+    wp_send_json_success(pt_get_place_inbox_for_viewer(get_current_user_id()));
 }
 
 add_action('wp_ajax_pt_get_user_shop_info', 'pt_get_user_shop_info_ajax');

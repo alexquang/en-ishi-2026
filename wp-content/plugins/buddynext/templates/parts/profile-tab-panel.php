@@ -501,12 +501,17 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 			<div class="bn-pf-tab-pane<?php echo 'messages' === $bn_pf_active ? ' is-active' : ''; ?>" data-tab-panel="messages" role="tabpanel" style="<?php echo 'messages' === $bn_pf_active ? '' : 'display:none;'; ?>"<?php echo 'messages' === $bn_pf_active ? '' : ' hidden'; ?>>
 				<div id="pt-profile-inbox-list" style="display:flex;flex-direction:column;gap:12px;">
 				<?php
-				$pt_inbox = get_user_meta( $bn_pf_uid, 'pt_place_inbox_messages', true );
-				if ( ! is_array( $pt_inbox ) ) {
-					$pt_inbox = array();
+				if ( function_exists( 'pt_get_place_inbox_for_viewer' ) ) {
+					$pt_inbox_data = pt_get_place_inbox_for_viewer( $bn_pf_uid );
+				} else {
+					$pt_raw        = get_user_meta( $bn_pf_uid, 'pt_place_inbox_messages', true );
+					$pt_inbox_data = array( 'messages' => is_array( $pt_raw ) ? $pt_raw : array(), 'is_paid' => true, 'upgrade_url' => '' );
 				}
+				$pt_inbox       = $pt_inbox_data['messages'];
+				$pt_upgrade_url = (string) $pt_inbox_data['upgrade_url'];
 				if ( ! empty( $pt_inbox ) ) :
 					foreach ( $pt_inbox as $pt_msg ) :
+						$pt_locked = ! empty( $pt_msg['locked'] );
 				?>
 						<div class="bn-card" style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">
 							<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">
@@ -516,10 +521,22 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 							<?php if ( ! empty( $pt_msg['place_name'] ) ) : ?>
 								<div style="font-size:12px;color:#ef4444;margin-bottom:4px;">📍 <?php echo esc_html( (string) $pt_msg['place_name'] ); ?></div>
 							<?php endif; ?>
-							<?php if ( ! empty( $pt_msg['subject'] ) ) : ?>
-								<div style="font-weight:600;margin-bottom:4px;"><?php echo esc_html( (string) $pt_msg['subject'] ); ?></div>
+							<?php if ( $pt_locked ) : ?>
+								<div style="position:relative;padding:10px 12px;border-radius:8px;background:#f1f5f9;">
+									<div style="filter:blur(4px);user-select:none;color:#64748b;">██████ ████ ███████ ██████ ████</div>
+									<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:#334155;">
+										🔒 Nâng cấp gói PMP Pro trả phí để đọc tin nhắn này
+										<?php if ( $pt_upgrade_url ) : ?>
+											<a href="<?php echo esc_url( $pt_upgrade_url ); ?>" style="background:#ef4444;color:#fff;padding:3px 10px;border-radius:6px;text-decoration:none;">Nâng cấp</a>
+										<?php endif; ?>
+									</div>
+								</div>
+							<?php else : ?>
+								<?php if ( ! empty( $pt_msg['subject'] ) ) : ?>
+									<div style="font-weight:600;margin-bottom:4px;"><?php echo esc_html( (string) $pt_msg['subject'] ); ?></div>
+								<?php endif; ?>
+								<div style="font-size:14px;color:#334155;white-space:pre-line;"><?php echo esc_html( (string) ( $pt_msg['message'] ?? '' ) ); ?></div>
 							<?php endif; ?>
-							<div style="font-size:14px;color:#334155;white-space:pre-line;"><?php echo esc_html( (string) ( $pt_msg['message'] ?? '' ) ); ?></div>
 						</div>
 				<?php
 					endforeach;
@@ -544,13 +561,22 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 							const json = await res.json();
 							if (!json || !json.success || !json.data || !Array.isArray(json.data.messages)) return;
 							const msgs = json.data.messages;
-							const sig = msgs.length + ':' + (msgs[0] ? msgs[0].id : '');
+							const upgradeUrl = json.data.upgrade_url || '';
+							const sig = msgs.length + ':' + (msgs[0] ? msgs[0].id : '') + ':' + (json.data.is_paid ? 1 : 0);
 							if (sig === lastSig) return;
 							lastSig = sig;
 							if (!msgs.length) {
 								listEl.innerHTML = '<div class="bn-empty-state"><div class="bn-empty-title">No messages received yet</div></div>';
 								return;
 							}
+							const lockedHtml =
+								'<div style="position:relative;padding:10px 12px;border-radius:8px;background:#f1f5f9;">' +
+									'<div style="filter:blur(4px);user-select:none;color:#64748b;">██████ ████ ███████ ██████ ████</div>' +
+									'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;color:#334155;">' +
+										'🔒 Nâng cấp gói PMP Pro trả phí để đọc tin nhắn này' +
+										(upgradeUrl ? ' <a href="' + esc(upgradeUrl) + '" style="background:#ef4444;color:#fff;padding:3px 10px;border-radius:6px;text-decoration:none;">Nâng cấp</a>' : '') +
+									'</div>' +
+								'</div>';
 							listEl.innerHTML = msgs.map((m) => (
 								'<div class="bn-card" style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">' +
 									'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">' +
@@ -558,8 +584,10 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 										'<span style="font-size:12px;color:#64748b;">' + esc(m.created_at || '') + '</span>' +
 									'</div>' +
 									(m.place_name ? '<div style="font-size:12px;color:#ef4444;margin-bottom:4px;">📍 ' + esc(m.place_name) + '</div>' : '') +
-									(m.subject ? '<div style="font-weight:600;margin-bottom:4px;">' + esc(m.subject) + '</div>' : '') +
-									'<div style="font-size:14px;color:#334155;white-space:pre-line;">' + esc(m.message || '') + '</div>' +
+									(m.locked ? lockedHtml : (
+										(m.subject ? '<div style="font-weight:600;margin-bottom:4px;">' + esc(m.subject) + '</div>' : '') +
+										'<div style="font-size:14px;color:#334155;white-space:pre-line;">' + esc(m.message || '') + '</div>'
+									)) +
 								'</div>'
 							)).join('');
 						} catch (e) {}
