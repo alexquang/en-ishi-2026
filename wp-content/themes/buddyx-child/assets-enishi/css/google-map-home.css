@@ -1,3 +1,17 @@
+:root {
+  --gm-primary: #1a73e8;
+  --gm-primary-hover: #1557b0;
+  --gm-primary-soft: #e8f0fe;
+  --gm-surface: #ffffff;
+  --gm-surface-alt: #f8f9fa;
+  --gm-text: #202124;
+  --gm-text-muted: #5f6368;
+  --gm-border: #dadce0;
+  --gm-live: #d93025;
+  --gm-star: #fbbc04;
+  --gm-open: #188038;
+}
+
 .google-map-section {
   padding: 20px;
 }
@@ -17,6 +31,20 @@
     height: 70vh;
     min-height: 500px;
   }
+}
+
+:root {
+  --gm-primary: #1a73e8;
+  --gm-primary-hover: #1557b0;
+  --gm-primary-soft: #e8f0fe;
+  --gm-surface: #ffffff;
+  --gm-surface-alt: #f8f9fa;
+  --gm-text: #202124;
+  --gm-text-muted: #5f6368;
+  --gm-border: #dadce0;
+  --gm-live: #d93025;
+  --gm-star: #fbbc04;
+  --gm-open: #188038;
 }
 
 .google-map-section {
@@ -3938,4 +3966,66 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
 
 .gm-place-live-start-btn:hover {
   filter: brightness(0.95);
+}
+
+/* =====================================================
+   UNIFIED GOOGLE MAPS COLOR PALETTE
+   ===================================================== */
+.gm-search-box,
+.gm-cat-btn,
+.gm-map-control-btn,
+.gm-place-panel,
+.gm-ai-panel {
+  border-color: var(--gm-border) !important;
+  color: var(--gm-text);
+}
+
+.gm-cat-btn:hover,
+.gm-map-control-btn:hover {
+  background: var(--gm-surface-alt) !important;
+  color: var(--gm-primary) !important;
+}
+
+.gm-cat-btn.active,
+.gm-tab-btn.active,
+.gm-filter-chip.active {
+  background: var(--gm-primary-soft) !important;
+  color: var(--gm-primary) !important;
+  border-color: var(--gm-primary) !important;
+}
+
+.gm-tab-btn.active::after {
+  background: var(--gm-primary) !important;
+}
+
+.gm-ai-btn,
+.gm-action-primary,
+.gm-login-btn,
+.gm-place-live-join-btn {
+  background: var(--gm-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--gm-primary) !important;
+}
+
+.gm-ai-btn:hover,
+.gm-action-primary:hover,
+.gm-login-btn:hover,
+.gm-place-live-join-btn:hover {
+  background: var(--gm-primary-hover) !important;
+}
+
+.gm-action-btn {
+  color: var(--gm-primary) !important;
+  border-color: var(--gm-border) !important;
+  background: var(--gm-surface) !important;
+}
+
+.gm-action-btn:hover {
+  background: var(--gm-primary-soft) !important;
+  border-color: var(--gm-primary) !important;
+}
+
+.gm-place-live-start-btn {
+  background: var(--gm-live) !important;
+  color: #ffffff !important;
 }
