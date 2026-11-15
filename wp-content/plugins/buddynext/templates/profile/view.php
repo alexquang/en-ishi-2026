@@ -417,6 +417,27 @@ if ( '' !== $bn_pf_about_html ) {
 	);
 }
 
+if ( $is_own_profile && class_exists( '\\BuddyNext\\Core\\PageRouter' ) ) {
+	add_filter(
+		'buddynext_nav_items',
+		static function ( array $items, \BuddyNext\Nav\NavContext $ctx ): array {
+			if ( 'profile' === $ctx->surface ) {
+				$items[] = array(
+					'id'       => 'messages',
+					'surface'  => 'profile',
+					'layer'    => 'primary',
+					'label'    => __( 'Messages', 'buddynext' ),
+					'url'      => \BuddyNext\Core\PageRouter::messages_url(),
+					'priority' => 85,
+				);
+			}
+			return $items;
+		},
+		10,
+		2
+	);
+}
+
 $bn_nav        = buddynext_nav( new \BuddyNext\Nav\NavContext( 'profile', (int) $user_id, (int) $current_user_id ) );
 $bn_pf_metrics = $bn_nav->layer( 'metric' );
 $bn_pf_primary = $bn_nav->layer( 'primary' );
