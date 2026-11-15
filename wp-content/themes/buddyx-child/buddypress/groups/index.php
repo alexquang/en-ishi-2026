@@ -541,29 +541,41 @@ bp_nouveau_before_groups_directory_content();
         flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 12px;
-        margin-bottom: 12px;
+        gap: 14px;
+        padding-bottom: 12px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #e2e8f0;
     }
 
-    .pt-groups-top-bar .bp-navs {
-        margin-bottom: 0 !important;
+    .pt-groups-top-bar .bp-navs,
+    .pt-groups-top-bar nav.main-navs {
+        flex: 1 1 auto;
+        min-width: 0;
+        margin: 0 !important;
+        border-bottom: 0 !important;
+        background: transparent !important;
+    }
+
+    .pt-groups-top-bar .bp-navs ul {
+        margin: 0 !important;
+        border-bottom: 0 !important;
     }
 
     .pt-create-group-btn {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 9px 18px;
+        padding: 10px 18px;
         border-radius: 10px;
-        background: linear-gradient(90deg, #012068, #1d4ed8);
+        background: linear-gradient(135deg, #012068, #1d4ed8);
         color: #ffffff !important;
         font-size: 13.5px;
         font-weight: 700;
         text-decoration: none !important;
         border: none;
         cursor: pointer;
-        box-shadow: 0 2px 8px rgba(1, 32, 104, 0.2);
-        transition: transform 0.15s ease, filter 0.15s ease;
+        box-shadow: 0 3px 10px rgba(1, 32, 104, 0.22);
+        transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
         white-space: nowrap;
         margin-left: auto;
     }
@@ -571,6 +583,7 @@ bp_nouveau_before_groups_directory_content();
     .pt-create-group-btn:hover {
         filter: brightness(1.08);
         transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(1, 32, 104, 0.28);
         color: #ffffff !important;
     }
 
@@ -579,9 +592,9 @@ bp_nouveau_before_groups_directory_content();
         display: none;
         position: fixed;
         inset: 0;
-        z-index: 99999;
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(4px);
+        z-index: 999999;
+        background: rgba(15, 23, 42, 0.62);
+        backdrop-filter: blur(5px);
         align-items: center;
         justify-content: center;
         padding: 16px;
@@ -594,12 +607,13 @@ bp_nouveau_before_groups_directory_content();
     .pt-group-login-card {
         position: relative;
         width: 100%;
-        max-width: 400px;
+        max-width: 420px;
         background: #ffffff;
-        border-radius: 18px;
-        padding: 28px 24px 24px;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 32px 26px 26px;
         text-align: center;
-        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
         animation: ptGroupLoginFadeIn 0.18s ease-out;
     }
 
@@ -610,10 +624,10 @@ bp_nouveau_before_groups_directory_content();
 
     .pt-group-login-close {
         position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 32px;
-        height: 32px;
+        top: 14px;
+        right: 14px;
+        width: 34px;
+        height: 34px;
         border-radius: 9999px;
         border: 1px solid #e2e8f0;
         background: #f8fafc;
@@ -631,36 +645,53 @@ bp_nouveau_before_groups_directory_content();
     }
 
     .pt-group-login-icon {
-        width: 52px;
-        height: 52px;
-        margin: 0 auto 14px;
-        border-radius: 14px;
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 16px;
+        border-radius: 16px;
         background: linear-gradient(135deg, #012068, #2563eb);
         color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        font-size: 22px;
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.28);
     }
 
     .pt-group-login-card h3 {
         margin: 0 0 8px;
-        font-size: 19px;
+        font-size: 20px;
         font-weight: 700;
         color: #0f172a;
     }
 
     .pt-group-login-card p {
-        margin: 0 0 20px;
-        font-size: 13.5px;
-        line-height: 1.5;
+        margin: 0 0 22px;
+        font-size: 14px;
+        line-height: 1.55;
         color: #64748b;
     }
 
     .pt-group-login-nsl {
         display: flex;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
+        gap: 10px;
+    }
+
+    .pt-group-login-nsl .nsl-container,
+    .pt-group-login-nsl .nsl-container-buttons {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+    }
+
+    .pt-group-login-nsl a.nsl-button {
+        min-width: 240px;
+        justify-content: center;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
     }
 </style>
 
@@ -772,7 +803,7 @@ bp_nouveau_before_groups_directory_content();
             <div id="gmNextendGoogleLogin" class="pt-group-login-nsl">
                 <?php
                 if (shortcode_exists('nextend_social_login')) {
-                    echo do_shortcode('[nextend_social_login provider="google"]');
+                    echo do_shortcode('[nextend_social_login provider="google" redirect="' . esc_url($create_group_url) . '"]');
                 } else {
                     echo '<a class="pt-create-group-btn" href="' . esc_url(wp_login_url($create_group_url)) . '">' . esc_html__('Log In', 'buddyx-child') . '</a>';
                 }
