@@ -1861,6 +1861,32 @@ function pt_send_place_message_ajax()
         ], 500);
     }
 
+    // Gửi Notification cho chủ quán trên hệ thống (BuddyNext / BuddyPress)
+    if (class_exists('\\BuddyNext\\Notifications\\NotificationService') && method_exists('\\BuddyNext\\Notifications\\NotificationService', 'create')) {
+        try {
+            \BuddyNext\Notifications\NotificationService::create([
+                'user_id'     => $owner_id,
+                'actor_id'    => $sender_id,
+                'type'        => 'message',
+                'object_type' => 'message_thread',
+                'object_id'   => $thread_id ?: 0,
+                'url'         => $thread_url,
+                'title'       => $subject,
+                'body'        => wp_trim_words($message, 20),
+            ]);
+        } catch (\Throwable $e) {}
+    } elseif (function_exists('bp_notifications_add_notification')) {
+        bp_notifications_add_notification([
+            'user_id'           => $owner_id,
+            'item_id'           => $thread_id ?: $sender_id,
+            'secondary_item_id' => $sender_id,
+            'component_name'    => 'messages',
+            'component_action'  => 'new_message',
+            'date_notified'     => bp_core_current_time(),
+            'is_new'            => 1,
+        ]);
+    }
+
     wp_send_json_success([
         'message'      => sprintf('Your message has been sent to %s!', $owner_info['display_name']),
         'owner'        => $owner_info,
