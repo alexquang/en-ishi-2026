@@ -1700,10 +1700,11 @@
             }
         }
 
-        // Poll chat & active streams every 4s
+        // Poll chat & active streams every 2s for realtime updates
         state.chatPollTimer = setInterval(() => {
+            if (document.visibilityState === 'hidden') return;
             fetchChatMessages(false);
-        }, 4000);
+        }, 2000);
     }
 
     if (document.readyState === 'loading') {
