@@ -3148,11 +3148,10 @@ document.addEventListener("click", function (e) {
     return;
   }
 
-  // Đóng dialog Message
+  // Đóng dialog Message: chỉ khi click nút Close (X) hoặc Hủy bỏ, click ra ngoài không đóng
   if (
     e.target.closest("#gmMessageClose") ||
-    e.target.closest("#gmMessageCancelBtn") ||
-    e.target.id === "gmMessageDialog"
+    e.target.closest("#gmMessageCancelBtn")
   ) {
     closePlaceMessageDialog();
     return;
