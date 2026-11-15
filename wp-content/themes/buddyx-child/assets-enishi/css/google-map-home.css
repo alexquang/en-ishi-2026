@@ -4029,3 +4029,22 @@ body #buddypress.buddypress-wrap form#whats-new-form #whats-new-options select,
   background: var(--gm-live) !important;
   color: #ffffff !important;
 }
+
+/* Unify bottom-left Layers & bottom-right Map Controls to Google Maps white surface */
+#gmControls button,
+.gm-controls button,
+.gm-map-control-btn,
+.gm-layers-btn {
+  background: var(--gm-surface) !important;
+  color: var(--gm-text-muted) !important;
+  border: 1px solid var(--gm-border) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+#gmControls button:hover,
+.gm-controls button:hover,
+.gm-map-control-btn:hover,
+.gm-layers-btn:hover {
+  background: var(--gm-surface-alt) !important;
+  color: var(--gm-primary) !important;
+}
