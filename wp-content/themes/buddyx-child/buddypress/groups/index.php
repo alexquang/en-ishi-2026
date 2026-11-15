@@ -202,11 +202,11 @@ bp_nouveau_before_groups_directory_content();
         color: #fff !important;
     }
 
-    /* GRID */
+    /* GRID - Tối đa 5 cột mỗi dòng */
     #groups-list.pt-fc2-groups-grid {
         display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
-        gap: 14px !important;
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        gap: 18px !important;
         margin: 0 !important;
         padding: 0 !important;
         list-style: none !important;
@@ -239,22 +239,27 @@ bp_nouveau_before_groups_directory_content();
         flex-direction: column !important;
         justify-content: space-between !important;
         height: 100% !important;
-        min-height: 248px;
+        min-height: 270px;
         background: #fff !important;
-        border: 1px solid #e1e3e8 !important;
-        border-radius: 2px !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 12px !important;
         padding: 0 !important;
         margin: 0 !important;
         overflow: hidden !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
-        transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
         text-align: left !important;
     }
 
+    #groups-list.pt-fc2-groups-grid > li.pt-fc2-card-item > .list-wrap.pt-fc2-card.is-live-card {
+        border-color: rgba(239, 68, 68, 0.45) !important;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.1) !important;
+    }
+
     #groups-list.pt-fc2-groups-grid > li.pt-fc2-card-item > .list-wrap.pt-fc2-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.09) !important;
-        border-color: #c5ccd6 !important;
+        transform: translateY(-3px);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.09) !important;
+        border-color: #cbd5e1 !important;
     }
 
     /* THUMBNAIL AREA */
@@ -262,7 +267,7 @@ bp_nouveau_before_groups_directory_content();
         position: relative;
         width: 100%;
         aspect-ratio: 4 / 3;
-        background: #000;
+        background: #f1f5f9;
         overflow: hidden;
         flex-shrink: 0;
     }
@@ -283,18 +288,59 @@ bp_nouveau_before_groups_directory_content();
         border: 0 !important;
         box-shadow: none !important;
         display: block !important;
+        transition: transform 0.25s ease;
+    }
+
+    .pt-fc2-card:hover .pt-fc2-thumb img.avatar {
+        transform: scale(1.04);
+    }
+
+    /* LIVE OVERLAY ON THUMBNAIL */
+    .pt-fc2-thumb-live {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        z-index: 3;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 9px;
+        border-radius: 9999px;
+        background: rgba(239, 68, 68, 0.94) !important;
+        color: #ffffff !important;
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.4px;
+        line-height: 1;
+        text-decoration: none !important;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    }
+
+    .pt-fc2-live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 9999px;
+        background: #ffffff;
+        display: inline-block;
+        animation: ptFc2LivePulse 1.3s ease-in-out infinite;
+    }
+
+    @keyframes ptFc2LivePulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.45; transform: scale(0.8); }
     }
 
     /* FLAG OVERLAY BOTTOM RIGHT */
     .pt-fc2-flag {
         position: absolute;
-        right: 6px;
-        bottom: 6px;
-        width: 22px;
-        height: 15px;
+        right: 8px;
+        bottom: 8px;
+        width: 24px;
+        height: 16px;
         background: #fff;
-        border: 1px solid rgba(0, 0, 0, 0.18);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(0, 0, 0, 0.14);
+        border-radius: 3px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -313,7 +359,7 @@ bp_nouveau_before_groups_directory_content();
 
     /* CARD BODY */
     .pt-fc2-body {
-        padding: 8px 9px 10px !important;
+        padding: 12px 14px 12px !important;
         display: flex;
         flex-direction: column;
         flex: 1;
@@ -323,27 +369,28 @@ bp_nouveau_before_groups_directory_content();
     .pt-fc2-badges {
         display: flex;
         align-items: center;
-        gap: 4px;
-        margin-bottom: 5px;
+        gap: 6px;
+        margin-bottom: 6px;
     }
 
     .pt-fc2-badge-live {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #2389e6 !important;
+        gap: 5px;
+        background: #ef4444 !important;
         color: #fff !important;
         font-size: 11px !important;
         font-weight: 700 !important;
         line-height: 1;
-        padding: 3px 7px;
-        border-radius: 2px;
+        padding: 4px 8px;
+        border-radius: 6px;
         text-decoration: none !important;
         letter-spacing: 0.2px;
     }
 
     .pt-fc2-badge-live:hover {
-        background: #1772c7 !important;
+        background: #dc2626 !important;
         color: #fff !important;
     }
 
@@ -367,38 +414,38 @@ bp_nouveau_before_groups_directory_content();
     }
 
     .pt-fc2-title {
-        margin: 0 0 4px !important;
+        margin: 0 0 6px !important;
         padding: 0 !important;
-        font-size: 13.5px !important;
+        font-size: 14.5px !important;
         font-weight: 700 !important;
-        line-height: 1.3 !important;
-        color: #222 !important;
+        line-height: 1.35 !important;
+        color: #0f172a !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
     .pt-fc2-title a {
-        color: #222 !important;
+        color: #0f172a !important;
         text-decoration: none !important;
         font-size: inherit !important;
         font-weight: inherit !important;
     }
 
     .pt-fc2-title a:hover {
-        color: #2389e6 !important;
+        color: #1d80e2 !important;
     }
 
     .pt-fc2-desc {
-        font-size: 11.5px !important;
-        line-height: 1.38 !important;
-        color: #8c939e !important;
+        font-size: 12.5px !important;
+        line-height: 1.45 !important;
+        color: #64748b !important;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
-        min-height: 31px;
+        min-height: 36px;
         word-break: break-word;
     }
 
@@ -406,35 +453,43 @@ bp_nouveau_before_groups_directory_content();
         display: none;
     }
 
-    /* CARD FOOTER (VIEWERS / STANDBY + STAR) */
+    /* CARD FOOTER (VIEWERS / MEMBERS + STAR) */
     .pt-fc2-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 5px 9px !important;
-        border-top: 1px solid #eceef2;
-        background: #fff;
-        min-height: 29px;
+        padding: 8px 14px !important;
+        border-top: 1px solid #f1f5f9;
+        background: #f8fafc;
+        min-height: 36px;
     }
 
     .pt-fc2-viewers {
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        font-size: 12px;
+        gap: 6px;
+        font-size: 12.5px;
         font-weight: 600;
-        color: #444;
+        color: #334155;
         line-height: 1;
     }
 
     .pt-fc2-viewers i {
-        color: #2389e6;
-        font-size: 11.5px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .pt-fc2-viewers.is-live {
+        color: #dc2626;
+    }
+
+    .pt-fc2-viewers.is-live i {
+        color: #ef4444;
     }
 
     .pt-fc2-viewers.is-standby .pt-fc2-viewer-text {
-        color: #6b7280;
-        font-weight: 500;
+        color: #475569;
+        font-weight: 600;
     }
 
     .pt-fc2-fav-btn {
@@ -442,8 +497,8 @@ bp_nouveau_before_groups_directory_content();
         background: transparent !important;
         padding: 2px !important;
         margin: 0 !important;
-        color: #c5cad3 !important;
-        font-size: 14px !important;
+        color: #cbd5e1 !important;
+        font-size: 15px !important;
         line-height: 1 !important;
         cursor: pointer;
         box-shadow: none !important;
@@ -457,6 +512,20 @@ bp_nouveau_before_groups_directory_content();
 
     .pt-fc2-fav-btn.is-active {
         color: #f59e0b !important;
+    }
+
+    @media (max-width: 1280px) {
+        #groups-list.pt-fc2-groups-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 16px !important;
+        }
+    }
+
+    @media (max-width: 960px) {
+        #groups-list.pt-fc2-groups-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 14px !important;
+        }
     }
 
     @media (max-width: 575px) {
