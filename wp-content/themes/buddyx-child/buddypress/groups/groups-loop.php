@@ -316,17 +316,10 @@ bp_nouveau_before_loop(); ?>
 						</span>
 					</div>
 
-					<!-- BODY: BADGES (CHỈ HIỆN LIVE KHI CHỦ GROUP ĐANG LIVESTREAM), GROUP TITLE, DESCRIPTION -->
+					<!-- BODY: EXTRA BADGES (PRIVATE/HIDDEN), GROUP TITLE, DESCRIPTION -->
 					<div class="pt-fc2-body">
-						<?php if ($has_badges) : ?>
+						<?php if ($group_status === 'private' || $group_status === 'hidden') : ?>
 							<div class="pt-fc2-badges">
-								<?php if ($is_live_active) : ?>
-									<a href="<?php echo esc_url($group_meet_url); ?>" class="pt-fc2-badge-live" title="<?php esc_attr_e('Enter Group Live / Meet', 'buddyx-child'); ?>">
-										<span class="pt-fc2-live-dot" aria-hidden="true"></span>
-										<span>Live</span>
-									</a>
-								<?php endif; ?>
-
 								<?php if ($group_status === 'private') : ?>
 									<span class="pt-fc2-badge-extra is-lock" title="<?php esc_attr_e('Private Group', 'buddyx-child'); ?>">
 										<i class="fa-solid fa-lock"></i>
