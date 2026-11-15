@@ -352,3 +352,55 @@ body.membership-account-page .site-sub-header {
 .main-navigation ul li.current-menu-item > a {
   border-radius: 0px !important;
 }
+
+/* Profile Paid Memberships Pro Deposit Summary */
+.pt-profile-pmpro-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.pt-pmpro-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.pt-pmpro-level {
+  background: linear-gradient(135deg, #ff9800, #ff6d00);
+  color: #fff;
+}
+
+.pt-pmpro-deposited {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.pt-pmpro-account-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a73e8;
+  text-decoration: none;
+  padding: 4px 8px;
+}
+
+.pt-pmpro-account-link:hover {
+  text-decoration: underline;
+}
+
+.pt-profile-pmpro-card {
+  margin-top: 20px;
+}
+
+.pt-profile-pmpro-card .pt-pmpro-amount {
+  color: #059669;
+  font-size: 15px;
+}

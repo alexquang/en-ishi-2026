@@ -2408,4 +2408,161 @@ function pt_toggle_favorite_group_ajax()
     ]);
 }
 
+/**
+ * Lấy tổng số tiền đã nạp / thanh toán qua Paid Memberships Pro của user
+ */
+function pt_get_user_pmpro_deposit_summary($user_id = 0)
+{
+    global $wpdb;
+
+    if (!$user_id) {
+        $user_id = function_exists('bp_displayed_user_id') && bp_displayed_user_id()
+            ? (int) bp_displayed_user_id()
+            : get_current_user_id();
+    }
+
+    $level_name = function_exists('pt_get_user_membership_level')
+        ? (pt_get_user_membership_level($user_id) ?: 'Free')
+        : 'Free';
+
+    $summary = [
+        'total'        => 0.0,
+        'formatted'    => function_exists('pmpro_formatPrice') ? pmpro_formatPrice(0) : '$0.00',
+        'orders_count' => 0,
+        'last_paid_at' => '',
+        'level_name'   => $level_name,
+    ];
+
+    if (!$user_id) {
+        return $summary;
+    }
+
+    $orders_table = !empty($wpdb->pmpro_membership_orders)
+        ? $wpdb->pmpro_membership_orders
+        : ($wpdb->prefix . 'pmpro_membership_orders');
+
+    $table_exists = $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $orders_table));
+    if ($table_exists !== $orders_table) {
+        return $summary;
+    }
+
+    $row = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT COALESCE(SUM(total), 0) AS total_paid,
+                    COUNT(*) AS orders_count,
+                    MAX(timestamp) AS last_paid_at
+             FROM {$orders_table}
+             WHERE user_id = %d
+               AND total > 0
+               AND status NOT IN ('refunded', 'review', 'token', 'error', 'pending', 'cancelled')",
+            $user_id
+        ),
+        ARRAY_A
+    );
+
+    if (is_array($row)) {
+        $total = (float) ($row['total_paid'] ?? 0);
+        $summary['total']        = $total;
+        $summary['orders_count'] = (int) ($row['orders_count'] ?? 0);
+        $summary['last_paid_at'] = !empty($row['last_paid_at']) ? (string) $row['last_paid_at'] : '';
+        $summary['formatted']    = function_exists('pmpro_formatPrice')
+            ? pmpro_formatPrice($total)
+            : number_format($total, 2);
+    }
+
+    return $summary;
+}
+
+/**
+ * Hiển thị số tiền đã nạp (PMPro) trên header trang Profile BuddyPress
+ */
+add_action('bp_before_member_header_meta', 'pt_render_profile_pmpro_header_summary');
+function pt_render_profile_pmpro_header_summary()
+{
+    if (!function_exists('bp_displayed_user_id')) {
+        return;
+    }
+
+    $user_id = (int) bp_displayed_user_id();
+    if (!$user_id) {
+        return;
+    }
+
+    $is_owner = function_exists('bp_is_my_profile') && bp_is_my_profile();
+    if (!$is_owner && !current_user_can('manage_options')) {
+        return;
+    }
+
+    $summary     = pt_get_user_pmpro_deposit_summary($user_id);
+    $account_url = function_exists('pmpro_url') ? pmpro_url('account') : home_url('/membership-account/');
+    ?>
+    <div class="pt-profile-pmpro-summary">
+        <span class="pt-pmpro-pill pt-pmpro-level">
+            <i class="fa-solid fa-medal"></i>
+            <span><?php echo esc_html($summary['level_name']); ?></span>
+        </span>
+        <span class="pt-pmpro-pill pt-pmpro-deposited">
+            <i class="fa-solid fa-wallet"></i>
+            <span>Deposited: <strong><?php echo wp_kses_post($summary['formatted']); ?></strong></span>
+        </span>
+        <?php if ($account_url) : ?>
+            <a class="pt-pmpro-account-link" href="<?php echo esc_url($account_url); ?>">
+                Membership &amp; Billing
+            </a>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
+ * Hiển thị chi tiết số tiền đã nạp (PMPro) trong tab Profile của user
+ */
+add_action('bp_after_profile_loop_content', 'pt_render_profile_pmpro_details_box');
+function pt_render_profile_pmpro_details_box()
+{
+    if (!function_exists('bp_displayed_user_id')) {
+        return;
+    }
+
+    $user_id = (int) bp_displayed_user_id();
+    if (!$user_id) {
+        return;
+    }
+
+    $is_owner = function_exists('bp_is_my_profile') && bp_is_my_profile();
+    if (!$is_owner && !current_user_can('manage_options')) {
+        return;
+    }
+
+    $summary = pt_get_user_pmpro_deposit_summary($user_id);
+    $last_date = $summary['last_paid_at'] !== ''
+        ? date_i18n(get_option('date_format'), strtotime($summary['last_paid_at']))
+        : '—';
+    ?>
+    <div class="bp-widget pt-profile-pmpro-card">
+        <h3 class="screen-heading"><?php esc_html_e('Membership & Account Balance', 'buddyx-child'); ?></h3>
+        <table class="profile-fields bp-tables-user">
+            <tbody>
+                <tr>
+                    <td class="label"><?php esc_html_e('Membership Level', 'buddyx-child'); ?></td>
+                    <td class="data"><strong><?php echo esc_html($summary['level_name']); ?></strong></td>
+                </tr>
+                <tr>
+                    <td class="label"><?php esc_html_e('Total Deposited', 'buddyx-child'); ?></td>
+                    <td class="data"><strong class="pt-pmpro-amount"><?php echo wp_kses_post($summary['formatted']); ?></strong></td>
+                </tr>
+                <tr>
+                    <td class="label"><?php esc_html_e('Completed Orders', 'buddyx-child'); ?></td>
+                    <td class="data"><?php echo esc_html((string) $summary['orders_count']); ?></td>
+                </tr>
+                <tr>
+                    <td class="label"><?php esc_html_e('Latest Payment', 'buddyx-child'); ?></td>
+                    <td class="data"><?php echo esc_html($last_date); ?></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
 
