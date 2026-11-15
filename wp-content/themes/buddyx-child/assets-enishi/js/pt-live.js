@@ -906,7 +906,13 @@
         state.framePushTimer = setInterval(() => {
             if (!state.isLive || state.mode !== 'host' || pushing) return;
             const video = els.videoMount ? els.videoMount.querySelector('video') : null;
-            if (!video || video.readyState < 2) return;
+            if (!video || video.readyState < 2 || !video.videoWidth || !video.videoHeight) return;
+            const targetW = Math.min(854, video.videoWidth);
+            const targetH = Math.max(1, Math.round(targetW * (video.videoHeight / video.videoWidth)));
+            if (canvas.width !== targetW || canvas.height !== targetH) {
+                canvas.width = targetW;
+                canvas.height = targetH;
+            }
             pushing = true;
             try {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -941,11 +947,45 @@
         els.videoMount.innerHTML = '';
         const img = document.createElement('img');
         img.alt = 'Live Stream';
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;background:#0f172a;';
+        img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;background:#0b1120;border-radius:12px;';
         els.videoMount.appendChild(img);
 
         if (els.standbyOverlay) els.standbyOverlay.classList.add('is-hidden');
         if (typeof setStatusBadge === 'function') setStatusBadge(true);
+
+        const viewerId = (window.sessionStorage && sessionStorage.getItem('pt_live_vid')) ||
+            ('v_' + Math.random().toString(36).slice(2, 10));
+        if (window.sessionStorage) {
+            try { sessionStorage.setItem('pt_live_vid', viewerId); } catch (e) {}
+        }
+        const pingViewer = async () => {
+            if (stopped || state.roomName !== roomName || (state.isLive && state.mode === 'host')) return;
+            try {
+                const body = new URLSearchParams({
+                    action: 'pt_live_viewer_ping',
+                    room: roomName,
+                    viewer_id: viewerId,
+                });
+                const res = await fetch(ajaxUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                    credentials: 'same-origin',
+                });
+                const json = await res.json();
+                if (json && json.success && json.data && json.data.viewers && els.viewerCount) {
+                    els.viewerCount.textContent = json.data.viewers;
+                }
+            } catch (e) {}
+        };
+        pingViewer();
+        const pingTimer = setInterval(() => {
+            if (stopped || state.roomName !== roomName) {
+                clearInterval(pingTimer);
+                return;
+            }
+            pingViewer();
+        }, 7000);
 
         let stopped = false;
         const loadNext = () => {
@@ -1395,14 +1435,18 @@
                             : 1
                     ),
                 });
-                await fetch(ajaxUrl, {
+                const res = await fetch(ajaxUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: body.toString(),
                     credentials: 'same-origin',
                 });
+                const json = await res.json();
+                if (json && json.success && json.data && json.data.viewers && els.viewerCount) {
+                    els.viewerCount.textContent = json.data.viewers;
+                }
             } catch (e) {}
-        }, 15000);
+        }, 7000);
     }
 
     function stopHeartbeat() {

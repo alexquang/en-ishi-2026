@@ -2120,6 +2120,9 @@ function pt_live_heartbeat_ajax()
 
     $room    = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
     $viewers = max(1, intval($_POST['viewers'] ?? 1));
+    if ($room !== '') {
+        $viewers = max($viewers, pt_live_count_active_viewers($room));
+    }
 
     $stored = get_option('pt_active_livestreams', []);
     if (is_array($stored) && isset($stored[$room])) {
@@ -2128,7 +2131,7 @@ function pt_live_heartbeat_ajax()
         update_option('pt_active_livestreams', $stored, false);
     }
 
-    wp_send_json_success(['ok' => true]);
+    wp_send_json_success(['ok' => true, 'viewers' => $viewers]);
 }
 
 add_action('wp_ajax_pt_live_stop_stream', 'pt_live_stop_stream_ajax');
@@ -2304,6 +2307,39 @@ function pt_live_push_frame_ajax()
     }
 
     wp_send_json_success(['url' => $paths['url'] . '/latest.jpg']);
+}
+
+function pt_live_count_active_viewers($room, $add_viewer_id = '')
+{
+    $key = 'pt_live_viewers_' . md5($room);
+    $viewers = get_transient($key);
+    if (!is_array($viewers)) {
+        $viewers = [];
+    }
+    $now = time();
+    foreach ($viewers as $vid => $ts) {
+        if (($now - (int) $ts) > 20) {
+            unset($viewers[$vid]);
+        }
+    }
+    if ($add_viewer_id !== '') {
+        $viewers[$add_viewer_id] = $now;
+    }
+    set_transient($key, $viewers, 60);
+    return count($viewers) + 1;
+}
+
+add_action('wp_ajax_pt_live_viewer_ping', 'pt_live_viewer_ping_ajax');
+add_action('wp_ajax_nopriv_pt_live_viewer_ping', 'pt_live_viewer_ping_ajax');
+function pt_live_viewer_ping_ajax()
+{
+    $room = sanitize_text_field(wp_unslash($_POST['room'] ?? ''));
+    $viewer_id = sanitize_text_field(wp_unslash($_POST['viewer_id'] ?? ''));
+    if ($room === '' || $viewer_id === '') {
+        wp_send_json_error(['message' => 'Missing params'], 400);
+    }
+    $count = pt_live_count_active_viewers($room, $viewer_id);
+    wp_send_json_success(['viewers' => $count]);
 }
 
 add_action('wp_ajax_pt_get_place_livestreams', 'pt_get_place_livestreams_ajax');
