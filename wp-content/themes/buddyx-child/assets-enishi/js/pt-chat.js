@@ -219,4 +219,71 @@
         });
     });
 
+    // Realtime Incoming Notification Polling
+    let highestNotifId = 0;
+    let $toastContainer = $('.pt-chat-toast-container');
+    if (!$toastContainer.length) {
+        $toastContainer = $('<div class="pt-chat-toast-container"></div>').appendTo('body');
+    }
+
+    function showToastNotification(notif) {
+        const toastHtml = `
+            <div class="pt-chat-toast" data-sender-id="${notif.sender_id}">
+                <img src="${escapeHtml(notif.sender_avatar)}" alt="" class="pt-chat-toast-avatar" />
+                <div class="pt-chat-toast-content">
+                    <div class="pt-chat-toast-title">You have a new message from ${escapeHtml(notif.sender_name)}</div>
+                    <div class="pt-chat-toast-text">${escapeHtml(notif.message)}</div>
+                </div>
+                <button type="button" class="pt-chat-toast-close">&times;</button>
+            </div>
+        `;
+        const $toast = $(toastHtml).appendTo($toastContainer);
+
+        $toast.on('click', function (e) {
+            if ($(e.target).hasClass('pt-chat-toast-close')) {
+                $toast.fadeOut(200, function () { $(this).remove(); });
+                return;
+            }
+
+            // Click vào toast: Mở tab Chat nếu có và mở cuộc trò chuyện với người đó
+            const $chatTabBtn = $('[data-tab="chat"]');
+            if ($chatTabBtn.length) {
+                $chatTabBtn.trigger('click');
+            }
+            openChatWithUser(notif.sender_id, notif.sender_name, notif.sender_avatar);
+            $toast.fadeOut(200, function () { $(this).remove(); });
+        });
+
+        setTimeout(function () {
+            $toast.fadeOut(300, function () { $(this).remove(); });
+        }, 6000);
+    }
+
+    setInterval(function () {
+        $.ajax({
+            url: config.ajaxUrl,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'pt_chat_poll_incoming',
+                nonce: config.nonce,
+                last_id: highestNotifId
+            },
+            success: function (res) {
+                if (res.success && res.data && res.data.notifications && res.data.notifications.length) {
+                    res.data.notifications.forEach(function (n) {
+                        if (n.id > highestNotifId) {
+                            highestNotifId = n.id;
+                        }
+                        // Nếu đang chat trực tiếp với người đó trong tab Chat thì không cần hiện toast
+                        if (currentRecipientId === n.sender_id && $('[data-tab-panel="chat"]').is(':visible')) {
+                            return;
+                        }
+                        showToastNotification(n);
+                    });
+                }
+            }
+        });
+    }, 4000);
+
 })(jQuery);

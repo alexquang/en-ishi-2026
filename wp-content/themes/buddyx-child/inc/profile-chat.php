@@ -282,13 +282,110 @@ function pt_ajax_chat_send_message() {
         wp_send_json_error( array( 'message' => 'Lỗi lưu tin nhắn' ), 500 );
     }
 
+    $msg_id      = (int) $wpdb->insert_id;
+    $sender_user = get_userdata( $current_user_id );
+    $sender_name = $sender_user ? ( $sender_user->display_name ?: $sender_user->user_login ) : 'Someone';
+    $notif_text  = sprintf( 'You have a new message from %s: "%s"', $sender_name, wp_trim_words( $message, 10, '...' ) );
+    $chat_url    = function_exists( 'buddynext_profile_url' ) 
+        ? add_query_arg( 'tab', 'chat', trailingslashit( buddynext_profile_url( $recipient_id ) ) ) 
+        : home_url( '/members/' . ( $sender_user ? $sender_user->user_login : '' ) . '/#chat' );
+
+    // 1. Tạo Notification trong BuddyNext
+    if ( function_exists( 'buddynext_service' ) ) {
+        try {
+            $notif_svc = buddynext_service( 'notifications' );
+            if ( is_object( $notif_svc ) && method_exists( $notif_svc, 'create' ) ) {
+                $notif_svc->create( array(
+                    'recipient_id' => $recipient_id,
+                    'actor_id'     => $current_user_id,
+                    'sender_id'    => $current_user_id,
+                    'type'         => 'message',
+                    'object_type'  => 'profile_chat',
+                    'object_id'    => $msg_id,
+                    'url'          => $chat_url,
+                    'title'        => 'New message',
+                    'message'      => $notif_text,
+                    'body'         => $notif_text,
+                ) );
+            }
+        } catch ( \Throwable $e ) {}
+    }
+
+    // 2. Tạo Notification trong BuddyPress nếu có
+    if ( function_exists( 'bp_notifications_add_notification' ) ) {
+        bp_notifications_add_notification( array(
+            'user_id'           => $recipient_id,
+            'item_id'           => $msg_id,
+            'secondary_item_id' => $current_user_id,
+            'component_name'    => 'messages',
+            'component_action'  => 'new_chat_message',
+            'date_notified'     => $now,
+            'is_new'            => 1,
+        ) );
+    }
+
     wp_send_json_success( array(
         'message' => array(
-            'id'        => (int) $wpdb->insert_id,
+            'id'        => $msg_id,
             'sender_id' => $current_user_id,
             'is_mine'   => true,
             'message'   => $message,
             'time'      => mysql2date( 'H:i', $now ),
         )
+    ) );
+}
+
+/**
+ * 8. AJAX Polling kiểm tra tin nhắn mới & thông báo realtime dạng Toast Popup
+ */
+add_action( 'wp_ajax_pt_chat_poll_incoming', 'pt_ajax_chat_poll_incoming' );
+function pt_ajax_chat_poll_incoming() {
+    check_ajax_referer( 'pt_profile_chat_nonce', 'nonce' );
+
+    $current_user_id = get_current_user_id();
+    if ( ! $current_user_id ) {
+        wp_send_json_error( array( 'message' => 'Unauthorized' ), 401 );
+    }
+
+    $last_check = isset( $_POST['last_id'] ) ? (int) $_POST['last_id'] : 0;
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'pt_profile_chat_messages';
+
+    $sql = "SELECT m.id, m.sender_id, m.message, m.created_at, u.display_name, u.user_login
+            FROM {$table_name} m
+            LEFT JOIN {$wpdb->users} u ON u.ID = m.sender_id
+            WHERE m.recipient_id = %d AND m.is_read = 0";
+
+    $params = array( $current_user_id );
+
+    if ( $last_check > 0 ) {
+        $sql .= " AND m.id > %d";
+        $params[] = $last_check;
+    }
+
+    $sql .= " ORDER BY m.id DESC LIMIT 5";
+
+    $rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
+
+    $notifications = array();
+    if ( ! empty( $rows ) ) {
+        foreach ( $rows as $r ) {
+            $sender_name = $r['display_name'] ?: ( $r['user_login'] ?: 'Someone' );
+            $sender_id   = (int) $r['sender_id'];
+            $notifications[] = array(
+                'id'          => (int) $r['id'],
+                'sender_id'   => $sender_id,
+                'sender_name' => $sender_name,
+                'sender_avatar' => get_avatar_url( $sender_id, array( 'size' => 64 ) ),
+                'message'     => wp_trim_words( stripslashes( $r['message'] ), 8, '...' ),
+                'notice'      => sprintf( 'You have a new message from %s', $sender_name ),
+                'created_at'  => $r['created_at'],
+            );
+        }
+    }
+
+    wp_send_json_success( array(
+        'notifications' => $notifications,
     ) );
 }
