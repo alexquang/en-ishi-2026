@@ -54,6 +54,11 @@
 
         $messages.find('.pt-chat-placeholder').remove();
 
+        // Kiểm tra xem người dùng có đang ở gần đáy khung chat hay không (trong khoảng 80px)
+        const dom = $messages[0];
+        const isNearBottom = dom ? (dom.scrollHeight - dom.scrollTop - dom.clientHeight < 80) : true;
+        let hasNewMessage = false;
+
         messages.forEach(function (msg) {
             if (msg.id > lastMessageId) {
                 lastMessageId = msg.id;
@@ -63,6 +68,7 @@
                 return;
             }
 
+            hasNewMessage = true;
             const rowClass = msg.is_mine ? 'sent' : 'received';
             let bubbleContent = '';
 
@@ -88,7 +94,11 @@
             $messages.append(rowHtml);
         });
 
-        scrollToBottom();
+        // Chỉ tự động cuộn xuống đáy khi lần đầu load tin nhắn (replaceAll) hoặc người dùng đang ở đáy
+        // Nếu người dùng đang cuộn lên trên để xem tin nhắn cũ, giữ nguyên vị trí cuộn
+        if (replaceAll || (hasNewMessage && isNearBottom)) {
+            scrollToBottom();
+        }
     }
 
     function fetchMessages(recipientId, lastId, isInitial) {
