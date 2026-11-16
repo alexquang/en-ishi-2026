@@ -389,3 +389,54 @@ function pt_ajax_chat_poll_incoming() {
         'notifications' => $notifications,
     ) );
 }
+
+/**
+ * 9. AJAX Search all users (kể cả chưa follow) để có thể chat
+ */
+add_action( 'wp_ajax_pt_chat_search_users', 'pt_ajax_chat_search_users' );
+function pt_ajax_chat_search_users() {
+    check_ajax_referer( 'pt_profile_chat_nonce', 'nonce' );
+
+    $current_user_id = get_current_user_id();
+    if ( ! $current_user_id ) {
+        wp_send_json_error( array( 'message' => 'Unauthorized' ), 401 );
+    }
+
+    $term = isset( $_POST['term'] ) ? trim( sanitize_text_field( wp_unslash( $_POST['term'] ) ) ) : '';
+    if ( $term === '' ) {
+        wp_send_json_success( array( 'users' => array() ) );
+    }
+
+    global $wpdb;
+    $like = '%' . $wpdb->esc_like( $term ) . '%';
+
+    $users = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT ID, user_login, display_name 
+             FROM {$wpdb->users} 
+             WHERE ID != %d 
+               AND (user_login LIKE %s OR display_name LIKE %s)
+             ORDER BY display_name ASC 
+             LIMIT 20",
+            $current_user_id,
+            $like,
+            $like
+        ),
+        ARRAY_A
+    );
+
+    $results = array();
+    if ( ! empty( $users ) ) {
+        foreach ( $users as $u ) {
+            $uid = (int) $u['ID'];
+            $results[] = array(
+                'id'       => $uid,
+                'name'     => $u['display_name'] ?: $u['user_login'],
+                'username' => $u['user_login'],
+                'avatar'   => get_avatar_url( $uid, array( 'size' => 80 ) ),
+            );
+        }
+    }
+
+    wp_send_json_success( array( 'users' => $results ) );
+}

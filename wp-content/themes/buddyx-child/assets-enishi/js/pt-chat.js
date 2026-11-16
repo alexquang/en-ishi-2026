@@ -152,17 +152,78 @@
         inputDom.selectionStart = inputDom.selectionEnd = start + emoji.length;
     });
 
-    // Tìm kiếm trong list follower
+    // Lưu lại danh sách followers ban đầu để khôi phục khi xóa tìm kiếm
+    const initialFollowersHtml = $('#pt-chat-user-list').html();
+    let searchDebounce = null;
+
+    // Tìm kiếm tất cả user trong hệ thống (kể cả chưa follow)
     $searchInput.on('input', function () {
-        const q = $.trim($(this).val()).toLowerCase();
+        const q = $.trim($(this).val());
+        clearTimeout(searchDebounce);
+
+        if (!q) {
+            $('#pt-chat-user-list').html(initialFollowersHtml);
+            if (currentRecipientId > 0) {
+                $(`.pt-chat-user-item[data-user-id="${currentRecipientId}"]`).addClass('is-active');
+            }
+            return;
+        }
+
+        // Lọc nhanh trên danh sách có sẵn
+        let localFound = 0;
         $('.pt-chat-user-item').each(function () {
             const name = $(this).data('user-name').toString().toLowerCase();
-            if (!q || name.indexOf(q) !== -1) {
+            if (name.indexOf(q.toLowerCase()) !== -1) {
                 $(this).show();
+                localFound++;
             } else {
                 $(this).hide();
             }
         });
+
+        // Tìm kiếm toàn hệ thống qua AJAX sau 300ms
+        searchDebounce = setTimeout(function () {
+            $.ajax({
+                url: config.ajaxUrl,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    action: 'pt_chat_search_users',
+                    nonce: config.nonce,
+                    term: q
+                },
+                success: function (res) {
+                    if (res.success && res.data && res.data.users) {
+                        const users = res.data.users;
+                        if (!users.length && localFound === 0) {
+                            $('#pt-chat-user-list').html('<div class="pt-chat-no-users">Không tìm thấy người dùng nào.</div>');
+                            return;
+                        }
+
+                        let html = '';
+                        users.forEach(function (u) {
+                            const activeClass = (u.id === currentRecipientId) ? ' is-active' : '';
+                            html += `
+                                <div class="pt-chat-user-item${activeClass}" 
+                                     data-user-id="${u.id}"
+                                     data-user-name="${escapeHtml(u.name)}"
+                                     data-user-avatar="${escapeHtml(u.avatar)}">
+                                    <div class="pt-chat-avatar-wrap">
+                                        <img src="${escapeHtml(u.avatar)}" alt="" class="pt-chat-avatar" />
+                                        <span class="pt-chat-online-dot"></span>
+                                    </div>
+                                    <div class="pt-chat-user-meta">
+                                        <span class="pt-chat-name">${escapeHtml(u.name)}</span>
+                                        <span class="pt-chat-username">@${escapeHtml(u.username)}</span>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        $('#pt-chat-user-list').html(html);
+                    }
+                }
+            });
+        }, 300);
     });
 
     // Enter để gửi tin nhắn

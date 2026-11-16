@@ -28,7 +28,7 @@ defined( 'ABSPATH' ) || exit;
                     <span class="pt-chat-badge"><?php echo count( $followers ); ?></span>
                 </h4>
                 <div class="pt-chat-search-wrap">
-                    <input type="search" id="pt-chat-search-input" placeholder="<?php esc_attr_e( 'Tìm kiếm follower...', 'buddyx-child' ); ?>" autocomplete="off" />
+                    <input type="search" id="pt-chat-search-input" placeholder="<?php esc_attr_e( 'Tìm kiếm bất kỳ ai để chat...', 'buddyx-child' ); ?>" autocomplete="off" />
                 </div>
             </div>
 
