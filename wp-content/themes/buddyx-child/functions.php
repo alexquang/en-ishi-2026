@@ -3532,6 +3532,11 @@ add_action('wp_footer', function () {
     <?php
 });
 
+/**
+ * Tab Chat kế bên tab Balance trong My Profile
+ */
+require_once get_stylesheet_directory() . '/inc/profile-chat.php';
+
 
 
 
