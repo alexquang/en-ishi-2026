@@ -3532,11 +3532,6 @@ add_action('wp_footer', function () {
     <?php
 });
 
-/**
- * Load Follower Chat Module
- */
-require_once get_stylesheet_directory() . '/inc/follower-chat.php';
-
 
 
 

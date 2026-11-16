@@ -499,13 +499,7 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 
 			<?php if ( $bn_pf_is_owner ) : ?>
 			<div class="bn-pf-tab-pane<?php echo 'messages' === $bn_pf_active ? ' is-active' : ''; ?>" data-tab-panel="messages" role="tabpanel" style="<?php echo 'messages' === $bn_pf_active ? '' : 'display:none;'; ?>"<?php echo 'messages' === $bn_pf_active ? '' : ' hidden'; ?>>
-				<?php 
-				$follower_chat_template = get_stylesheet_directory() . '/template-parts/follower-messages-list.php';
-				if ( file_exists( $follower_chat_template ) ) {
-					include $follower_chat_template;
-				}
-				?>
-				<div id="pt-profile-inbox-list" style="display:flex;flex-direction:column;gap:12px;margin-top:20px;">
+				<div id="pt-profile-inbox-list" style="display:flex;flex-direction:column;gap:12px;">
 				<?php
 				if ( function_exists( 'pt_get_place_inbox_for_viewer' ) ) {
 					$pt_inbox_data = pt_get_place_inbox_for_viewer( $bn_pf_uid );
