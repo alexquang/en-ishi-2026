@@ -3110,6 +3110,116 @@ function pt_get_place_inbox_messages_ajax()
     wp_send_json_success(pt_get_place_inbox_for_viewer(get_current_user_id()));
 }
 
+/**
+ * Reply lại tin nhắn trong Message (nếu người gửi có trong hệ thống thì gửi tin nhắn kèm tin nhắn cũ lại cho người đó).
+ */
+add_action('wp_ajax_pt_reply_place_inbox_message', 'pt_reply_place_inbox_message_ajax');
+function pt_reply_place_inbox_message_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Login required'], 403);
+    }
+
+    $current_user_id = get_current_user_id();
+    $message_id      = sanitize_text_field(wp_unslash($_POST['message_id'] ?? ''));
+    $reply_text      = trim(sanitize_textarea_field(wp_unslash($_POST['reply_text'] ?? '')));
+
+    if ($message_id === '' || $reply_text === '') {
+        wp_send_json_error(['message' => 'Vui lòng nhập nội dung trả lời.'], 400);
+    }
+
+    $inbox = get_user_meta($current_user_id, 'pt_place_inbox_messages', true);
+    if (!is_array($inbox) || empty($inbox)) {
+        wp_send_json_error(['message' => 'Không tìm thấy tin nhắn gốc.'], 404);
+    }
+
+    $orig_index = null;
+    $orig_msg   = null;
+    $total      = count($inbox);
+    $is_paid    = pt_user_has_paid_pmpro($current_user_id);
+
+    foreach ($inbox as $i => $msg) {
+        if (($msg['id'] ?? '') === $message_id) {
+            $is_first = ($i === $total - 1);
+            if (!$is_paid && !$is_first) {
+                wp_send_json_error(['message' => 'Tài khoản Free không thể trả lời tin nhắn bị khóa.'], 403);
+            }
+            $orig_index = $i;
+            $orig_msg   = $msg;
+            break;
+        }
+    }
+
+    if ($orig_msg === null) {
+        wp_send_json_error(['message' => 'Không tìm thấy tin nhắn gốc.'], 404);
+    }
+
+    $target_user_id = (int) ($orig_msg['sender_id'] ?? 0);
+    $target_user    = $target_user_id > 0 ? get_userdata($target_user_id) : false;
+
+    if (!$target_user) {
+        wp_send_json_error(['message' => 'Người gửi không còn tồn tại trong hệ thống.'], 404);
+    }
+
+    $current_user   = get_userdata($current_user_id);
+    $sender_name    = $current_user ? ($current_user->display_name ?: $current_user->user_login) : ('User #' . $current_user_id);
+    $old_message    = (string) ($orig_msg['message'] ?? '');
+    $orig_subject   = (string) ($orig_msg['subject'] ?? '');
+    $reply_subject  = $orig_subject !== '' ? 'Re: ' . $orig_subject : 'Re: Tin nhắn';
+    $combined_msg   = $reply_text . "\n\n--- Tin nhắn cũ ---\n" . $old_message;
+    $now            = current_time('mysql');
+
+    // Gửi tin nhắn kèm tin nhắn cũ vào hộp thư Message của người gửi ban đầu
+    $target_inbox = get_user_meta($target_user_id, 'pt_place_inbox_messages', true);
+    if (!is_array($target_inbox)) {
+        $target_inbox = [];
+    }
+
+    array_unshift($target_inbox, [
+        'id'             => uniqid('ptm_', true),
+        'sender_id'      => $current_user_id,
+        'sender_name'    => $sender_name,
+        'place_name'     => (string) ($orig_msg['place_name'] ?? ''),
+        'address'        => (string) ($orig_msg['address'] ?? ''),
+        'subject'        => $reply_subject,
+        'message'        => $combined_msg,
+        'reply_to_id'    => $message_id,
+        'quoted_message' => $old_message,
+        'created_at'     => $now,
+    ]);
+    update_user_meta($target_user_id, 'pt_place_inbox_messages', array_slice($target_inbox, 0, 100));
+
+    // Đánh dấu tin nhắn gốc đã được trả lời
+    $inbox[$orig_index]['replied']    = true;
+    $inbox[$orig_index]['reply_text'] = $reply_text;
+    $inbox[$orig_index]['replied_at'] = $now;
+    update_user_meta($current_user_id, 'pt_place_inbox_messages', $inbox);
+
+    // Gửi thông báo BuddyNext nếu có
+    if (function_exists('buddynext_service')) {
+        try {
+            $notif_svc = buddynext_service('notifications');
+            if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
+                $notif_svc->create([
+                    'recipient_id' => $target_user_id,
+                    'actor_id'     => $current_user_id,
+                    'type'         => 'message',
+                    'object_type'  => 'message_thread',
+                    'object_id'    => 0,
+                    'title'        => $reply_subject,
+                    'message'      => sprintf('%s đã trả lời tin nhắn của bạn: %s', $sender_name, wp_trim_words($reply_text, 15)),
+                    'body'         => wp_trim_words($reply_text, 20),
+                ]);
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    wp_send_json_success([
+        'message'    => 'Đã gửi phản hồi kèm tin nhắn cũ cho ' . ($target_user->display_name ?: $target_user->user_login) . '!',
+        'replied_at' => $now,
+    ]);
+}
+
 add_action('wp_ajax_pt_get_user_shop_info', 'pt_get_user_shop_info_ajax');
 function pt_get_user_shop_info_ajax()
 {
@@ -3247,11 +3357,6 @@ add_action('wp_footer', function () {
     </script>
     <?php
 });
-
-/**
- * Mutual-Follow Inbox (1-on-1 Chat in My Profile)
- */
-require_once get_stylesheet_directory() . '/inc/inbox.php';
 
 
 
