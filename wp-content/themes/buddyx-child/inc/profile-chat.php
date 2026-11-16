@@ -230,20 +230,55 @@ function pt_ajax_chat_get_messages() {
 
     $rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ), ARRAY_A );
 
+    // Kiểm tra user có tài khoản trả phí hay không
+    $is_paid = false;
+    if ( current_user_can( 'manage_options' ) ) {
+        $is_paid = true;
+    } elseif ( function_exists( 'pt_user_has_paid_pmpro' ) ) {
+        $is_paid = pt_user_has_paid_pmpro( $current_user_id );
+    }
+
+    $upgrade_url = function_exists( 'pmpro_url' ) ? pmpro_url( 'levels' ) : home_url( '/membership-levels/' );
+
+    // Xác định ID tin nhắn đầu tiên (cũ nhất) giữa 2 user
+    $first_msg_id = (int) $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT id FROM {$table_name} 
+             WHERE ((sender_id = %d AND recipient_id = %d) OR (sender_id = %d AND recipient_id = %d)) 
+             ORDER BY id ASC LIMIT 1",
+            $current_user_id,
+            $recipient_id,
+            $recipient_id,
+            $current_user_id
+        )
+    );
+
     $messages = array();
     if ( ! empty( $rows ) ) {
         foreach ( $rows as $row ) {
+            $msg_id  = (int) $row['id'];
+            $is_mine = ( (int) $row['sender_id'] === $current_user_id );
+
+            // Tài khoản Free: chỉ xem được tin nhắn cũ nhất (tin nhắn đầu tiên). Các tin gửi đến khác bị khóa/che
+            $is_first = ( $msg_id === $first_msg_id );
+            $locked   = ( ! $is_paid && ! $is_mine && ! $is_first );
+
             $messages[] = array(
-                'id'        => (int) $row['id'],
+                'id'        => $msg_id,
                 'sender_id' => (int) $row['sender_id'],
-                'is_mine'   => ( (int) $row['sender_id'] === $current_user_id ),
-                'message'   => stripslashes( $row['message'] ),
+                'is_mine'   => $is_mine,
+                'locked'    => $locked,
+                'message'   => $locked ? '' : stripslashes( $row['message'] ),
                 'time'      => mysql2date( 'H:i', $row['created_at'] ),
             );
         }
     }
 
-    wp_send_json_success( array( 'messages' => $messages ) );
+    wp_send_json_success( array(
+        'messages'    => $messages,
+        'is_paid'     => $is_paid,
+        'upgrade_url' => $upgrade_url,
+    ) );
 }
 
 /**

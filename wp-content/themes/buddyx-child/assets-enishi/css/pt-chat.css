@@ -241,6 +241,46 @@
     border-bottom-left-radius: 4px;
 }
 
+.pt-chat-msg-bubble.is-locked {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    padding: 10px 14px;
+    border-radius: 12px;
+}
+
+.pt-chat-lock-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.pt-chat-lock-blur {
+    filter: blur(4px);
+    user-select: none;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    font-size: 12px;
+}
+
+.pt-chat-upgrade-btn {
+    background: #ef4444;
+    color: #ffffff !important;
+    padding: 3px 10px;
+    border-radius: 6px;
+    text-decoration: none !important;
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-block;
+    transition: background 0.15s;
+}
+
+.pt-chat-upgrade-btn:hover {
+    background: #dc2626;
+}
+
 .pt-chat-msg-time {
     font-size: 11px;
     color: #94a3b8;

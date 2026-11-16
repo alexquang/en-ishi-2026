@@ -30,6 +30,7 @@
     let lastMessageId = 0;
     let pollTimer = null;
     let isSending = false;
+    let currentUpgradeUrl = '';
 
     function scrollToBottom() {
         if ($messages.length) {
@@ -63,9 +64,24 @@
             }
 
             const rowClass = msg.is_mine ? 'sent' : 'received';
+            let bubbleContent = '';
+
+            if (msg.locked) {
+                bubbleContent = `
+                    <div class="pt-chat-lock-blur">██████ ████ ███████ ██████</div>
+                    <div class="pt-chat-lock-wrap">
+                        <span>🔒 Nâng cấp gói PMP Pro trả phí để đọc tin nhắn này</span>
+                        ${currentUpgradeUrl ? `<a href="${escapeHtml(currentUpgradeUrl)}" class="pt-chat-upgrade-btn" target="_blank">Nâng cấp</a>` : ''}
+                    </div>
+                `;
+            } else {
+                bubbleContent = escapeHtml(msg.message);
+            }
+
+            const bubbleClass = msg.locked ? 'pt-chat-msg-bubble is-locked' : 'pt-chat-msg-bubble';
             const rowHtml = `
                 <div class="pt-chat-msg-row ${rowClass}" data-msg-id="${msg.id}">
-                    <div class="pt-chat-msg-bubble">${escapeHtml(msg.message)}</div>
+                    <div class="${bubbleClass}">${bubbleContent}</div>
                     <div class="pt-chat-msg-time">${escapeHtml(msg.time)}</div>
                 </div>
             `;
@@ -88,6 +104,9 @@
             },
             success: function (response) {
                 if (response.success && response.data && response.data.messages) {
+                    if (response.data.upgrade_url) {
+                        currentUpgradeUrl = response.data.upgrade_url;
+                    }
                     appendMessages(response.data.messages, isInitial);
                 }
             }
