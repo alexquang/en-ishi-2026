@@ -3248,6 +3248,11 @@ add_action('wp_footer', function () {
     <?php
 });
 
+/**
+ * Mutual-Follow Inbox (1-on-1 Chat in My Profile)
+ */
+require_once get_stylesheet_directory() . '/inc/inbox.php';
+
 
 
 
