@@ -240,14 +240,12 @@ function pt_ajax_chat_get_messages() {
 
     $upgrade_url = function_exists( 'pmpro_url' ) ? pmpro_url( 'levels' ) : home_url( '/membership-levels/' );
 
-    // Xác định ID tin nhắn đầu tiên (cũ nhất) giữa 2 user
-    $first_msg_id = (int) $wpdb->get_var(
+    // Xác định ID tin nhắn cũ nhất mà user khác gửi cho mình (sender_id = $recipient_id, recipient_id = $current_user_id)
+    $first_incoming_msg_id = (int) $wpdb->get_var(
         $wpdb->prepare(
             "SELECT id FROM {$table_name} 
-             WHERE ((sender_id = %d AND recipient_id = %d) OR (sender_id = %d AND recipient_id = %d)) 
+             WHERE sender_id = %d AND recipient_id = %d 
              ORDER BY id ASC LIMIT 1",
-            $current_user_id,
-            $recipient_id,
             $recipient_id,
             $current_user_id
         )
@@ -259,9 +257,11 @@ function pt_ajax_chat_get_messages() {
             $msg_id  = (int) $row['id'];
             $is_mine = ( (int) $row['sender_id'] === $current_user_id );
 
-            // Tài khoản Free: chỉ xem được tin nhắn cũ nhất (tin nhắn đầu tiên). Các tin gửi đến khác bị khóa/che
-            $is_first = ( $msg_id === $first_msg_id );
-            $locked   = ( ! $is_paid && ! $is_mine && ! $is_first );
+            // Tài khoản Free:
+            // - Tin do chính mình gửi ($is_mine): luôn xem được
+            // - Tin user khác gửi cho mình (! $is_mine): CHỈ hiển thị tin nhắn cũ nhất ($first_incoming_msg_id), còn lại bị che
+            $is_first_incoming = ( $msg_id === $first_incoming_msg_id );
+            $locked            = ( ! $is_paid && ! $is_mine && ! $is_first_incoming );
 
             $messages[] = array(
                 'id'        => $msg_id,
