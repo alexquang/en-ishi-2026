@@ -51,15 +51,35 @@ function pt_profile_chat_get_followers( int $user_id ): array {
 
     $followers = array();
 
+    // 1. Thử qua BuddyNext service ('follows')
     if ( function_exists( 'buddynext_service' ) ) {
         try {
-            $follow_svc = buddynext_service( 'follow_service' );
+            $follow_svc = buddynext_service( 'follows' );
             if ( $follow_svc && method_exists( $follow_svc, 'followers' ) ) {
                 $followers = $follow_svc->followers( $user_id );
             }
         } catch ( \Throwable $e ) {}
     }
 
+    // 2. Query trực tiếp từ bảng bn_follows của BuddyNext
+    if ( empty( $followers ) ) {
+        global $wpdb;
+        $bn_table = $wpdb->prefix . 'bn_follows';
+        $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $bn_table ) );
+        if ( $table_exists === $bn_table ) {
+            $rows = $wpdb->get_col(
+                $wpdb->prepare(
+                    "SELECT follower_id FROM {$bn_table} WHERE following_id = %d AND status = 'approved' ORDER BY id DESC",
+                    $user_id
+                )
+            );
+            if ( ! empty( $rows ) ) {
+                $followers = array_map( 'intval', $rows );
+            }
+        }
+    }
+
+    // 3. BuddyPress Follow plugin
     if ( empty( $followers ) && function_exists( 'bp_follow_get_followers' ) ) {
         $followers = bp_follow_get_followers( array( 'user_id' => $user_id ) );
     } elseif ( empty( $followers ) && function_exists( 'bp_get_followers' ) ) {
