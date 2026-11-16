@@ -554,16 +554,20 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 					if (!listEl || !paneEl) return;
 					const ajaxUrl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
 					const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+					const emojis = ['😀','😂','😍','🥰','👍','❤️','🙏','🎉','🔥','👏','😢','😮'];
 					let lastSig = '';
-					async function refreshInbox() {
+					let activeReplyId = '';
+
+					async function refreshInbox(force) {
 						try {
+							if (!force && activeReplyId) return;
 							const res = await fetch(ajaxUrl + '?action=pt_get_place_inbox_messages', { credentials: 'same-origin' });
 							const json = await res.json();
 							if (!json || !json.success || !json.data || !Array.isArray(json.data.messages)) return;
 							const msgs = json.data.messages;
 							const upgradeUrl = json.data.upgrade_url || '';
-							const sig = msgs.length + ':' + (msgs[0] ? msgs[0].id : '') + ':' + (json.data.is_paid ? 1 : 0);
-							if (sig === lastSig) return;
+							const sig = msgs.map((m) => (m.id || '') + (m.replied ? '1' : '0')).join('|') + ':' + (json.data.is_paid ? 1 : 0);
+							if (!force && sig === lastSig) return;
 							lastSig = sig;
 							if (!msgs.length) {
 								listEl.innerHTML = '<div class="bn-empty-state"><div class="bn-empty-title">No messages received yet</div></div>';
@@ -577,8 +581,12 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 										(upgradeUrl ? ' <a href="' + esc(upgradeUrl) + '" style="background:#ef4444;color:#fff;padding:3px 10px;border-radius:6px;text-decoration:none;">Nâng cấp</a>' : '') +
 									'</div>' +
 								'</div>';
+							const emojiButtonsHtml = emojis.map((em) =>
+								'<button type="button" class="pt-msg-emoji-item" data-emoji="' + em + '" style="background:none;border:none;font-size:18px;cursor:pointer;padding:2px 4px;border-radius:4px;">' + em + '</button>'
+							).join('');
+
 							listEl.innerHTML = msgs.map((m) => (
-								'<div class="bn-card" style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">' +
+								'<div class="bn-card pt-msg-card" data-msg-id="' + esc(m.id || '') + '" style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">' +
 									'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">' +
 										'<strong>' + esc(m.sender_name || 'User') + '</strong>' +
 										'<span style="font-size:12px;color:#64748b;">' + esc(m.created_at || '') + '</span>' +
@@ -586,12 +594,106 @@ do_action( 'buddynext_part_profile_tab_panel_before', $args );
 									(m.place_name ? '<div style="font-size:12px;color:#ef4444;margin-bottom:4px;">📍 ' + esc(m.place_name) + '</div>' : '') +
 									(m.locked ? lockedHtml : (
 										(m.subject ? '<div style="font-weight:600;margin-bottom:4px;">' + esc(m.subject) + '</div>' : '') +
-										'<div style="font-size:14px;color:#334155;white-space:pre-line;">' + esc(m.message || '') + '</div>'
+										'<div style="font-size:14px;color:#334155;white-space:pre-line;">' + esc(m.message || '') + '</div>' +
+										(m.replied && m.reply_text ? '<div style="margin-top:8px;padding:6px 10px;background:#f0fdf4;border-left:3px solid #22c55e;border-radius:6px;font-size:12px;color:#166534;">✓ Đã trả lời: ' + esc(m.reply_text) + '</div>' : '') +
+										'<div style="margin-top:10px;display:flex;align-items:center;gap:8px;">' +
+											'<button type="button" class="pt-msg-reply-toggle" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;padding:4px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">↩ Trả lời</button>' +
+										'</div>' +
+										'<div class="pt-msg-reply-box" style="display:none;margin-top:10px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">' +
+											'<textarea class="pt-msg-reply-input" rows="2" placeholder="Nhập nội dung trả lời..." style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>' +
+											'<div class="pt-msg-emoji-bar" style="display:none;flex-wrap:wrap;gap:4px;margin-top:6px;padding:6px;background:#fff;border:1px solid #e2e8f0;border-radius:6px;">' + emojiButtonsHtml + '</div>' +
+											'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">' +
+												'<button type="button" class="pt-msg-emoji-toggle" title="Chèn emoji" style="background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:4px 10px;font-size:14px;cursor:pointer;">😊 Emoji</button>' +
+												'<div style="display:flex;gap:6px;">' +
+													'<button type="button" class="pt-msg-reply-cancel" style="background:#fff;border:1px solid #cbd5e1;color:#475569;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Hủy</button>' +
+													'<button type="button" class="pt-msg-reply-send" style="background:#2563eb;border:none;color:#fff;padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Gửi trả lời</button>' +
+												'</div>' +
+											'</div>' +
+										'</div>'
 									)) +
 								'</div>'
 							)).join('');
 						} catch (e) {}
 					}
+
+					listEl.addEventListener('click', async (e) => {
+						const card = e.target.closest('.pt-msg-card');
+						if (!card) return;
+						const msgId = card.getAttribute('data-msg-id') || '';
+						const box = card.querySelector('.pt-msg-reply-box');
+						const input = card.querySelector('.pt-msg-reply-input');
+						const emojiBar = card.querySelector('.pt-msg-emoji-bar');
+
+						if (e.target.closest('.pt-msg-reply-toggle')) {
+							const isOpen = box && box.style.display !== 'none';
+							listEl.querySelectorAll('.pt-msg-reply-box').forEach((b) => { b.style.display = 'none'; });
+							if (!isOpen && box) {
+								box.style.display = 'block';
+								activeReplyId = msgId;
+								if (input) input.focus();
+							} else {
+								activeReplyId = '';
+							}
+							return;
+						}
+
+						if (e.target.closest('.pt-msg-reply-cancel')) {
+							if (box) box.style.display = 'none';
+							activeReplyId = '';
+							return;
+						}
+
+						if (e.target.closest('.pt-msg-emoji-toggle')) {
+							if (emojiBar) {
+								emojiBar.style.display = emojiBar.style.display === 'none' ? 'flex' : 'none';
+							}
+							return;
+						}
+
+						const emojiBtn = e.target.closest('.pt-msg-emoji-item');
+						if (emojiBtn && input) {
+							const em = emojiBtn.getAttribute('data-emoji') || '';
+							const start = input.selectionStart || input.value.length;
+							const end = input.selectionEnd || input.value.length;
+							input.value = input.value.slice(0, start) + em + input.value.slice(end);
+							input.focus();
+							input.selectionStart = input.selectionEnd = start + em.length;
+							return;
+						}
+
+						const sendBtn = e.target.closest('.pt-msg-reply-send');
+						if (sendBtn && input) {
+							const text = (input.value || '').trim();
+							if (!text) {
+								alert('Vui lòng nhập nội dung trả lời.');
+								return;
+							}
+							sendBtn.disabled = true;
+							sendBtn.textContent = 'Đang gửi...';
+							try {
+								const fd = new FormData();
+								fd.append('action', 'pt_reply_place_inbox_message');
+								fd.append('message_id', msgId);
+								fd.append('reply_text', text);
+								const res = await fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd });
+								const json = await res.json();
+								if (json && json.success) {
+									activeReplyId = '';
+									if (box) box.style.display = 'none';
+									await refreshInbox(true);
+								} else {
+									alert((json && json.data && json.data.message) || 'Không thể gửi trả lời.');
+								}
+							} catch (err) {
+								alert('Lỗi kết nối, vui lòng thử lại.');
+							} finally {
+								sendBtn.disabled = false;
+								sendBtn.textContent = 'Gửi trả lời';
+							}
+						}
+					});
+
+					refreshInbox(true);
 					document.addEventListener('click', (e) => {
 						const tabBtn = e.target.closest('[data-tab]');
 						if (!tabBtn) return;

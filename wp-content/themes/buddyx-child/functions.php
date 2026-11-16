@@ -3220,6 +3220,180 @@ function pt_reply_place_inbox_message_ajax()
     ]);
 }
 
+/**
+ * TH1: Gửi tin nhắn trực tiếp từ trang Profile của người khác (Người A -> Người B).
+ */
+add_action('wp_ajax_pt_send_profile_message', 'pt_send_profile_message_ajax');
+function pt_send_profile_message_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Vui lòng đăng nhập để gửi tin nhắn.'], 403);
+    }
+
+    $sender_id    = get_current_user_id();
+    $recipient_id = isset($_POST['recipient_id']) ? (int) $_POST['recipient_id'] : 0;
+    $subject      = sanitize_text_field(wp_unslash($_POST['subject'] ?? ''));
+    $message      = trim(sanitize_textarea_field(wp_unslash($_POST['message'] ?? '')));
+
+    if ($recipient_id <= 0 || $recipient_id === $sender_id) {
+        wp_send_json_error(['message' => 'Người nhận không hợp lệ.'], 400);
+    }
+
+    $recipient_user = get_userdata($recipient_id);
+    if (!$recipient_user) {
+        wp_send_json_error(['message' => 'Người nhận không tồn tại trong hệ thống.'], 404);
+    }
+
+    if ($message === '') {
+        wp_send_json_error(['message' => 'Vui lòng nhập nội dung tin nhắn.'], 400);
+    }
+
+    $sender_user = get_userdata($sender_id);
+    $sender_name = $sender_user ? ($sender_user->display_name ?: $sender_user->user_login) : ('User #' . $sender_id);
+    $now         = current_time('mysql');
+
+    $inbox = get_user_meta($recipient_id, 'pt_place_inbox_messages', true);
+    if (!is_array($inbox)) {
+        $inbox = [];
+    }
+
+    array_unshift($inbox, [
+        'id'          => uniqid('ptm_', true),
+        'sender_id'   => $sender_id,
+        'sender_name' => $sender_name,
+        'place_name'  => '',
+        'address'     => '',
+        'subject'     => $subject !== '' ? $subject : 'Tin nhắn từ ' . $sender_name,
+        'message'     => $message,
+        'created_at'  => $now,
+    ]);
+    update_user_meta($recipient_id, 'pt_place_inbox_messages', array_slice($inbox, 0, 100));
+
+    if (function_exists('buddynext_service')) {
+        try {
+            $notif_svc = buddynext_service('notifications');
+            if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
+                $notif_svc->create([
+                    'recipient_id' => $recipient_id,
+                    'actor_id'     => $sender_id,
+                    'type'         => 'message',
+                    'object_type'  => 'message_thread',
+                    'object_id'    => 0,
+                    'title'        => $subject !== '' ? $subject : 'Tin nhắn mới',
+                    'message'      => sprintf('%s đã gửi tin nhắn cho bạn: %s', $sender_name, wp_trim_words($message, 15)),
+                    'body'         => wp_trim_words($message, 20),
+                ]);
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    wp_send_json_success([
+        'message' => 'Đã gửi tin nhắn tới ' . ($recipient_user->display_name ?: $recipient_user->user_login) . '!',
+    ]);
+}
+
+/**
+ * Hiển thị nút "Gửi tin nhắn" + Modal khi xem Profile của người khác (TH1).
+ */
+add_action('buddynext_part_profile_tab_panel_after', 'pt_render_profile_send_message_widget');
+function pt_render_profile_send_message_widget($args)
+{
+    if (!is_user_logged_in()) {
+        return;
+    }
+    $profile_user_id = (int) ($args['profile_user_id'] ?? 0);
+    $viewer_id       = (int) ($args['viewer_id'] ?? get_current_user_id());
+    if ($profile_user_id <= 0 || $viewer_id <= 0 || $profile_user_id === $viewer_id) {
+        return;
+    }
+    $target_user = get_userdata($profile_user_id);
+    if (!$target_user) {
+        return;
+    }
+    $target_name = $target_user->display_name ?: $target_user->user_login;
+    $ajax_url    = admin_url('admin-ajax.php');
+    ?>
+    <div style="margin:12px 0;display:flex;justify-content:flex-end;">
+        <button type="button" id="pt-open-profile-msg-btn" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;">
+            💬 Gửi tin nhắn cho <?php echo esc_html($target_name); ?>
+        </button>
+    </div>
+
+    <div id="pt-profile-msg-modal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.55);align-items:center;justify-content:center;padding:16px;">
+        <div style="background:#fff;border-radius:14px;max-width:460px;width:100%;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,0.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                <h3 style="margin:0;font-size:16px;font-weight:700;color:#0f172a;">Gửi tin nhắn cho <?php echo esc_html($target_name); ?></h3>
+                <button type="button" id="pt-close-profile-msg-btn" style="background:none;border:none;font-size:22px;line-height:1;color:#64748b;cursor:pointer;">&times;</button>
+            </div>
+            <form id="pt-profile-msg-form">
+                <input type="hidden" name="recipient_id" value="<?php echo esc_attr((string) $profile_user_id); ?>" />
+                <div style="margin-bottom:10px;">
+                    <input type="text" id="pt-pm-subject" name="subject" placeholder="Tiêu đề (tùy chọn)" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;box-sizing:border-box;" />
+                </div>
+                <div style="margin-bottom:12px;">
+                    <textarea id="pt-pm-message" name="message" rows="4" required placeholder="Nhập nội dung tin nhắn..." style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+                </div>
+                <div style="display:flex;justify-content:flex-end;gap:8px;">
+                    <button type="button" id="pt-cancel-profile-msg-btn" style="background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;padding:8px 14px;border-radius:8px;font-size:13px;cursor:pointer;">Hủy</button>
+                    <button type="submit" id="pt-submit-profile-msg-btn" style="background:#2563eb;border:none;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">Gửi tin nhắn</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        const openBtn = document.getElementById('pt-open-profile-msg-btn');
+        const modal = document.getElementById('pt-profile-msg-modal');
+        const closeBtn = document.getElementById('pt-close-profile-msg-btn');
+        const cancelBtn = document.getElementById('pt-cancel-profile-msg-btn');
+        const form = document.getElementById('pt-profile-msg-form');
+        const submitBtn = document.getElementById('pt-submit-profile-msg-btn');
+        if (!openBtn || !modal || !form) return;
+
+        const closeModal = () => { modal.style.display = 'none'; };
+        openBtn.addEventListener('click', () => { modal.style.display = 'flex'; });
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('pt-pm-message');
+            const subEl = document.getElementById('pt-pm-subject');
+            const text = (msgEl.value || '').trim();
+            if (!text) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang gửi...';
+            try {
+                const fd = new FormData();
+                fd.append('action', 'pt_send_profile_message');
+                fd.append('recipient_id', form.querySelector('[name="recipient_id"]').value);
+                fd.append('subject', subEl.value || '');
+                fd.append('message', text);
+                const res = await fetch(<?php echo wp_json_encode($ajax_url); ?>, { method: 'POST', credentials: 'same-origin', body: fd });
+                const json = await res.json();
+                if (json && json.success) {
+                    alert(json.data.message || 'Đã gửi tin nhắn!');
+                    msgEl.value = '';
+                    subEl.value = '';
+                    closeModal();
+                } else {
+                    alert((json && json.data && json.data.message) || 'Không thể gửi tin nhắn.');
+                }
+            } catch (err) {
+                alert('Lỗi kết nối, vui lòng thử lại.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Gửi tin nhắn';
+            }
+        });
+    })();
+    </script>
+    <?php
+}
+
 add_action('wp_ajax_pt_get_user_shop_info', 'pt_get_user_shop_info_ajax');
 function pt_get_user_shop_info_ajax()
 {
