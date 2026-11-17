@@ -430,16 +430,19 @@
 
     const selectors = document.querySelectorAll(".gt_selector");
     selectors.forEach(function (sel) {
-      if (sel.value !== targetValue) {
-        sel.value = targetValue;
+      sel.setAttribute("translate", "no");
+      sel.classList.add("notranslate");
+      if (sel.closest(".gtranslate_wrapper")) {
+        sel.closest(".gtranslate_wrapper").setAttribute("translate", "no");
+        sel.closest(".gtranslate_wrapper").classList.add("notranslate");
       }
+      sel.value = targetValue;
       for (let i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === targetValue) {
-          if (!sel.options[i].selected) {
-            sel.options[i].selected = true;
-            sel.selectedIndex = i;
-          }
-          break;
+          sel.options[i].selected = true;
+          sel.selectedIndex = i;
+        } else {
+          sel.options[i].selected = false;
         }
       }
       fitSelectorWidth(sel);
@@ -632,10 +635,23 @@
     });
   }
 
+  function getExistingCookieLang() {
+    const googtransMatches = document.cookie.match("(^|;) ?googtrans=([^;]*)(;|$)");
+    if (googtransMatches) {
+      const raw = decodeURIComponent(googtransMatches[2]);
+      const parts = raw.split("/");
+      if (parts.length >= 3 && parts[2]) {
+        return parts[2];
+      }
+    }
+    return null;
+  }
+
   function initAutoLanguage() {
     removeLoadingState();
     document.querySelectorAll(".gt_selector").forEach(fitSelectorWidth);
 
+    const cookieLang = getExistingCookieLang();
     let storedLang = null;
     let isUserManual = false;
 
@@ -644,7 +660,18 @@
       isUserManual = !!localStorage.getItem("pt_gtranslate_user_manual");
     } catch (e) {}
 
+    // Priority 1: If cookie exists (e.g. /en/ja) or user manual selection, prioritize that language!
+    if (cookieLang) {
+      applyLanguage(cookieLang);
+      return;
+    }
+
     if (isUserManual && storedLang) {
+      applyLanguage(storedLang);
+      return;
+    }
+
+    if (storedLang) {
       applyLanguage(storedLang);
       return;
     }
