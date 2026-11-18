@@ -3841,8 +3841,36 @@ function pt_filter_buddynext_notification_meta($meta, $type)
 }
 
 /**
+ * Tắt cross-document ViewTransition của trình duyệt để tránh lỗi InvalidStateError: Transition was aborted
+ * và bắt sớm các unhandled promise rejections
+ */
+add_action('wp_head', function () {
+    ?>
+    <style>
+    @view-transition {
+        navigation: none !important;
+    }
+    </style>
+    <script>
+    (function() {
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event && event.reason) {
+                var errStr = String(event.reason.message || event.reason || '');
+                if (errStr.indexOf('Transition') !== -1 ||
+                    errStr.indexOf('ViewTransition') !== -1 ||
+                    (event.reason.name === 'InvalidStateError')) {
+                    event.preventDefault();
+                }
+            }
+        });
+    })();
+    </script>
+    <?php
+}, 1);
+
+/**
  * Click handler hỗ trợ trực tiếp cho các dòng notification BuddyNext (.bn-notif-row)
- * Khắc phục lỗi ViewTransition opt-in disabled và điều hướng chính xác về tab Message
+ * Đảm bảo click vào dòng thông báo sẽ chuyển ngay về tab Message trong My Profile
  */
 add_action('wp_footer', function () {
     if (!is_user_logged_in()) {
@@ -3851,34 +3879,22 @@ add_action('wp_footer', function () {
     $my_messages_url = pt_get_user_messages_profile_url();
     ?>
     <style>
-    @view-transition {
-        navigation: auto;
-    }
     .bn-notif-row[data-interactive],
-    .bn-notif-row[data-notif-link] {
+    .bn-notif-row[data-notif-link],
+    .bn-notif-row {
         cursor: pointer !important;
     }
     </style>
     <script>
     (function() {
-        // 1. Ngăn chặn unhandled promise rejection từ aborted ViewTransition của browser
-        window.addEventListener('unhandledrejection', function(event) {
-            if (event && event.reason) {
-                var errStr = String(event.reason.message || event.reason || '');
-                if (errStr.indexOf('Transition was aborted') !== -1 ||
-                    errStr.indexOf('ViewTransition') !== -1 ||
-                    (event.reason.name === 'InvalidStateError' && errStr.indexOf('Transition') !== -1)) {
-                    event.preventDefault();
-                }
-            }
-        });
+        var myMessagesUrl = <?php echo json_encode($my_messages_url); ?>;
 
-        // 2. Click handler điều hướng an toàn tới tab Message
+        // Bắt sự kiện click ở capture phase (true) để ưu tiên xử lý điều hướng trước khi Interactivity API xung đột
         document.addEventListener('click', function(e) {
             var row = e.target.closest('.bn-notif-row');
             if (!row) return;
 
-            // Bỏ qua nếu click nút Dismiss (x) hoặc nút trong .bn-notif-row__actions (Open, Mark as read, Accept, Decline)
+            // Bỏ qua nếu click nút Dismiss (x) hoặc nút trong .bn-notif-row__actions (Accept, Decline, v.v.)
             if (e.target.closest('.bn-notif-row__dismiss, [data-wp-on--click*="dismiss"], [data-wp-on--click*="markReadOnly"], .bn-notif-row__actions')) {
                 return;
             }
@@ -3893,25 +3909,41 @@ add_action('wp_footer', function () {
 
             // Nếu row không có link (ví dụ các notification cũ đang hiển thị trên trang), tự động điều hướng về My Profile Messages
             if (!link) {
-                link = <?php echo json_encode($my_messages_url); ?>;
+                link = myMessagesUrl;
             }
 
             if (link) {
-                // Đánh dấu đã đọc ngầm nếu row đang là unread
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                // Đánh dấu đã đọc trên UI ngay lập tức
                 var notifId = row.dataset ? row.dataset.notifId : null;
                 if (notifId && row.classList.contains('bn-notif-row--unread')) {
+                    row.classList.remove('bn-notif-row--unread');
+                    var pulse = row.querySelector('.bn-notif-row__pulse');
+                    if (pulse) pulse.hidden = true;
+
                     try {
                         if (window.wp && window.wp.apiFetch) {
                             window.wp.apiFetch({
                                 path: '/buddynext/v1/notifications/' + notifId + '/read',
                                 method: 'POST'
                             }).catch(function() {});
+                        } else {
+                            var nonce = (window.buddynext && window.buddynext.nonce) ? window.buddynext.nonce : '';
+                            fetch('/wp-json/buddynext/v1/notifications/' + notifId + '/read', {
+                                method: 'POST',
+                                headers: { 'X-WP-Nonce': nonce }
+                            }).catch(function() {});
                         }
                     } catch (err) {}
                 }
-                window.location.href = link;
+
+                // Điều hướng tới My Profile Messages tab
+                window.location.assign(link);
             }
-        });
+        }, true);
     })();
     </script>
     <?php
