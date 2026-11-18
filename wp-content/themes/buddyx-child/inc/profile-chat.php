@@ -330,14 +330,21 @@ function pt_ajax_chat_send_message() {
         try {
             $notif_svc = buddynext_service( 'notifications' );
             if ( is_object( $notif_svc ) && method_exists( $notif_svc, 'create' ) ) {
+                $recipient_messages_url = function_exists('pt_get_user_messages_profile_url') 
+                    ? pt_get_user_messages_profile_url($recipient_id) 
+                    : $chat_url;
                 $notif_svc->create( array(
                     'recipient_id' => $recipient_id,
                     'actor_id'     => $current_user_id,
                     'sender_id'    => $current_user_id,
-                    'type'         => 'message',
+                    'type'         => 'bn.new_message',
                     'object_type'  => 'profile_chat',
                     'object_id'    => $msg_id,
-                    'url'          => $chat_url,
+                    'data'         => array(
+                        'url'     => $recipient_messages_url,
+                        'message' => $notif_text,
+                    ),
+                    'url'          => $recipient_messages_url,
                     'title'        => 'New message',
                     'message'      => $notif_text,
                     'body'         => $notif_text,
