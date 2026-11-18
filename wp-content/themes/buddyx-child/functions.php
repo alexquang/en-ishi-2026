@@ -1899,6 +1899,7 @@ function pt_send_place_message_ajax()
     update_user_meta($owner_id, 'pt_place_inbox_messages', array_slice($inbox, 0, 100));
 
     // Gửi Notification cho chủ quán trên hệ thống (BuddyNext Notifications -> hiện trên icon cái chuông)
+    $recipient_messages_url = function_exists('pt_get_user_messages_profile_url') ? pt_get_user_messages_profile_url($owner_id) : $thread_url;
     if (function_exists('buddynext_service')) {
         try {
             $notif_svc = buddynext_service('notifications');
@@ -1909,10 +1910,16 @@ function pt_send_place_message_ajax()
                 $notif_svc->create([
                     'recipient_id' => $owner_id,
                     'actor_id'     => $sender_id,
+                    'sender_id'    => $sender_id,
                     'type'         => 'message',
                     'object_type'  => 'message_thread',
                     'object_id'    => $thread_id ?: 0,
-                    'url'          => $thread_url,
+                    'data'         => [
+                        'url'             => $recipient_messages_url,
+                        'message'         => $notif_msg,
+                        'conversation_id' => $thread_id ?: 0,
+                    ],
+                    'url'          => $recipient_messages_url,
                     'title'        => $subject,
                     'message'      => $notif_msg,
                     'body'         => wp_trim_words($message, 20),
@@ -3196,6 +3203,8 @@ function pt_reply_place_inbox_message_ajax()
     update_user_meta($current_user_id, 'pt_place_inbox_messages', $inbox);
 
     // Gửi thông báo BuddyNext nếu có
+    $recipient_messages_url = function_exists('pt_get_user_messages_profile_url') ? pt_get_user_messages_profile_url($target_user_id) : home_url('/members/' . ($target_user ? $target_user->user_nicename : '') . '/messages/');
+    $notif_msg = sprintf('%s đã trả lời tin nhắn của bạn: %s', $sender_name, wp_trim_words($reply_text, 15));
     if (function_exists('buddynext_service')) {
         try {
             $notif_svc = buddynext_service('notifications');
@@ -3203,15 +3212,32 @@ function pt_reply_place_inbox_message_ajax()
                 $notif_svc->create([
                     'recipient_id' => $target_user_id,
                     'actor_id'     => $current_user_id,
+                    'sender_id'    => $current_user_id,
                     'type'         => 'message',
-                    'object_type'  => 'message_thread',
+                    'object_type'  => 'message_reply',
                     'object_id'    => 0,
+                    'data'         => [
+                        'url'     => $recipient_messages_url,
+                        'message' => $notif_msg,
+                    ],
+                    'url'          => $recipient_messages_url,
                     'title'        => $reply_subject,
-                    'message'      => sprintf('%s đã trả lời tin nhắn của bạn: %s', $sender_name, wp_trim_words($reply_text, 15)),
+                    'message'      => $notif_msg,
                     'body'         => wp_trim_words($reply_text, 20),
                 ]);
             }
         } catch (\Throwable $e) {}
+    }
+    if (function_exists('bp_notifications_add_notification')) {
+        bp_notifications_add_notification([
+            'user_id'           => $target_user_id,
+            'item_id'           => $current_user_id,
+            'secondary_item_id' => $current_user_id,
+            'component_name'    => 'messages',
+            'component_action'  => 'new_message',
+            'date_notified'     => bp_core_current_time(),
+            'is_new'            => 1,
+        ]);
     }
 
     wp_send_json_success([
@@ -3273,18 +3299,37 @@ function pt_send_profile_message_ajax()
         try {
             $notif_svc = buddynext_service('notifications');
             if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
+                $recipient_messages_url = function_exists('pt_get_user_messages_profile_url') ? pt_get_user_messages_profile_url($recipient_id) : home_url('/members/' . ($recipient_user ? $recipient_user->user_nicename : '') . '/messages/');
+                $notif_msg = sprintf('%s đã gửi tin nhắn cho bạn: %s', $sender_name, wp_trim_words($message, 15));
                 $notif_svc->create([
                     'recipient_id' => $recipient_id,
                     'actor_id'     => $sender_id,
+                    'sender_id'    => $sender_id,
                     'type'         => 'message',
-                    'object_type'  => 'message_thread',
+                    'object_type'  => 'profile_message',
                     'object_id'    => 0,
+                    'data'         => [
+                        'url'     => $recipient_messages_url,
+                        'message' => $notif_msg,
+                    ],
+                    'url'          => $recipient_messages_url,
                     'title'        => $subject !== '' ? $subject : 'Tin nhắn mới',
-                    'message'      => sprintf('%s đã gửi tin nhắn cho bạn: %s', $sender_name, wp_trim_words($message, 15)),
+                    'message'      => $notif_msg,
                     'body'         => wp_trim_words($message, 20),
                 ]);
             }
         } catch (\Throwable $e) {}
+    }
+    if (function_exists('bp_notifications_add_notification')) {
+        bp_notifications_add_notification([
+            'user_id'           => $recipient_id,
+            'item_id'           => $sender_id,
+            'secondary_item_id' => $sender_id,
+            'component_name'    => 'messages',
+            'component_action'  => 'new_message',
+            'date_notified'     => bp_core_current_time(),
+            'is_new'            => 1,
+        ]);
     }
 
     wp_send_json_success([
@@ -3536,6 +3581,615 @@ add_action('wp_footer', function () {
  * Tab Chat kế bên tab Balance trong My Profile
  */
 require_once get_stylesheet_directory() . '/inc/profile-chat.php';
+
+/**
+ * =========================================================================
+ * REALTIME NOTIFICATIONS & DIRECT MESSAGE NAVIGATION CHO BUDDYX
+ * =========================================================================
+ */
+
+/**
+ * Helper: Trả về URL chính xác của tab Messages trong My Profile (/members/[username]/messages/)
+ */
+if (!function_exists('pt_get_user_messages_profile_url')) {
+    function pt_get_user_messages_profile_url($user_id = 0)
+    {
+        if (!$user_id) {
+            $user_id = function_exists('bp_loggedin_user_id') ? bp_loggedin_user_id() : 0;
+        }
+        if (!$user_id) {
+            $user_id = function_exists('bp_displayed_user_id') ? bp_displayed_user_id() : 0;
+        }
+        if (!$user_id) {
+            $user_id = get_current_user_id();
+        }
+
+        $profile_url = '';
+        if ($user_id > 0) {
+            if (class_exists('\\BuddyNext\\Core\\PageRouter') && method_exists('\\BuddyNext\\Core\\PageRouter', 'profile_url')) {
+                $profile_url = \BuddyNext\Core\PageRouter::profile_url($user_id);
+            } elseif (function_exists('bp_members_get_user_url')) {
+                $profile_url = bp_members_get_user_url($user_id);
+            } elseif (function_exists('bp_core_get_user_domain')) {
+                $profile_url = bp_core_get_user_domain($user_id);
+            }
+        }
+
+        if (!empty($profile_url)) {
+            return trailingslashit($profile_url) . 'messages/';
+        }
+
+        $user = $user_id > 0 ? get_userdata($user_id) : wp_get_current_user();
+        if ($user && !empty($user->user_nicename)) {
+            return home_url('/members/' . $user->user_nicename . '/messages/');
+        } elseif ($user && !empty($user->user_login)) {
+            return home_url('/members/' . $user->user_login . '/messages/');
+        }
+
+        return home_url('/messages/');
+    }
+}
+
+/**
+ * Hook lọc thông báo tin nhắn của BuddyPress:
+ * Khi click notification trên header/menu BuddyX, điều hướng thẳng tới /members/[username]/messages/
+ */
+add_filter('bp_notifications_get_notifications_for_user', 'pt_filter_buddypress_message_notifications', 10, 8);
+function pt_filter_buddypress_message_notifications($action, $item_id, $secondary_item_id, $total_items, $format = 'string', $component_action_name = '', $component_name = '', $id = 0)
+{
+    $action_name = !empty($component_action_name) ? $component_action_name : $action;
+    $comp_name   = !empty($component_name) ? $component_name : 'messages';
+
+    $is_msg_action = in_array($action_name, ['new_message', 'new_chat_message', 'message'], true);
+    $is_msg_comp   = in_array($comp_name, ['messages', 'message'], true);
+
+    if (!$is_msg_action && !$is_msg_comp) {
+        return $action;
+    }
+
+    $messages_url = pt_get_user_messages_profile_url();
+    $sender_id    = 0;
+    if (!empty($secondary_item_id) && (int) $secondary_item_id > 0) {
+        $sender_id = (int) $secondary_item_id;
+    } elseif (!empty($item_id) && (int) $item_id > 0) {
+        $sender_id = (int) $item_id;
+    }
+
+    $count = !empty($total_items) ? (int) $total_items : 1;
+    if ($count > 1) {
+        $text = sprintf(__('Bạn có %d tin nhắn mới', 'buddyx-child'), $count);
+    } else {
+        if ($sender_id > 0) {
+            $sender_name = function_exists('bp_core_get_user_displayname')
+                ? bp_core_get_user_displayname($sender_id)
+                : '';
+            if (empty($sender_name)) {
+                $user = get_userdata($sender_id);
+                $sender_name = $user ? ($user->display_name ?: $user->user_login) : ('User #' . $sender_id);
+            }
+            $text = sprintf(__('%s đã gửi tin nhắn cho bạn', 'buddyx-child'), $sender_name);
+        } else {
+            $text = __('Bạn có một tin nhắn mới', 'buddyx-child');
+        }
+    }
+
+    if ('string' === $format) {
+        return '<a href="' . esc_url($messages_url) . '">' . esc_html($text) . '</a>';
+    }
+
+    return [
+        'text' => esc_html($text),
+        'link' => esc_url($messages_url),
+    ];
+}
+
+add_filter('bp_get_the_notification_description', 'pt_filter_buddypress_notification_description_link', 20, 2);
+function pt_filter_buddypress_notification_description_link($description, $notification)
+{
+    if (!$notification || !is_object($notification)) {
+        return $description;
+    }
+
+    $comp_name = !empty($notification->component_name) ? $notification->component_name : '';
+    $comp_act  = !empty($notification->component_action) ? $notification->component_action : '';
+
+    $is_msg_comp = in_array($comp_name, ['messages', 'message'], true);
+    $is_msg_act  = in_array($comp_act, ['new_message', 'new_chat_message', 'message'], true);
+
+    if (!$is_msg_comp && !$is_msg_act) {
+        return $description;
+    }
+
+    $target_user_id = !empty($notification->user_id) ? (int)$notification->user_id : bp_loggedin_user_id();
+    $messages_url   = pt_get_user_messages_profile_url($target_user_id);
+
+    if (preg_match('/<a\s+[^>]*href=["\']([^"\']*)["\']/i', $description)) {
+        $description = preg_replace('/href=["\'][^"\']*["\']/i', 'href="' . esc_url($messages_url) . '"', $description);
+    } else {
+        $description = '<a href="' . esc_url($messages_url) . '">' . $description . '</a>';
+    }
+
+    return $description;
+}
+
+/**
+ * Hook filters cho BuddyNext:
+ * Định tuyến URL thông báo và khắc phục chữ mặc định "You have a new notification."
+ */
+add_filter('buddynext_notification_url', function ($url, $type, $actor_id, $object_id, $data) {
+    if (in_array($type, ['message', 'bn.new_message', 'new_message', 'new_chat_message'], true)) {
+        return pt_get_user_messages_profile_url();
+    }
+    if (!empty($data['url'])) {
+        return $data['url'];
+    }
+    return $url;
+}, 10, 5);
+
+add_filter('buddynext_notification_message', function ($message, $type, $actor_name, $object_id, $data) {
+    if (in_array($type, ['message', 'bn.new_message', 'new_message', 'new_chat_message'], true)) {
+        if (!empty($data['message'])) {
+            return (string)$data['message'];
+        }
+        if (!empty($actor_name)) {
+            return sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $actor_name);
+        }
+        return __('Bạn có một tin nhắn mới.', 'buddyx-child');
+    }
+    return $message;
+}, 10, 5);
+
+add_filter('buddynext_notification_meta', function ($meta, $type) {
+    if (in_array($type, ['message', 'bn.new_message', 'new_message', 'new_chat_message'], true)) {
+        return [
+            'icon'  => 'mail',
+            'tone'  => 'info',
+            'label' => __('Message', 'buddyx-child'),
+        ];
+    }
+    return $meta;
+}, 10, 2);
+
+add_filter('buddynext_part_notification_row_args', function ($args) {
+    if (!isset($args['notif_row']) || !is_object($args['notif_row'])) {
+        return $args;
+    }
+    global $wpdb;
+    $row      = $args['notif_row'];
+    $type     = !empty($row->type) ? (string)$row->type : '';
+    $obj_type = !empty($row->object_type) ? (string)$row->object_type : '';
+
+    $raw_data = [];
+    if (!empty($row->data)) {
+        $raw_data = is_string($row->data) ? json_decode($row->data, true) : (array)$row->data;
+    } elseif (!empty($row->id) && $wpdb) {
+        $db_data = $wpdb->get_var($wpdb->prepare("SELECT data FROM {$wpdb->prefix}bn_notifications WHERE id = %d", (int)$row->id));
+        if ($db_data) {
+            $raw_data = json_decode($db_data, true) ?: [];
+        }
+    }
+
+    if (empty($row->sender_id) && !empty($row->id) && $wpdb) {
+        $db_sender = $wpdb->get_var($wpdb->prepare("SELECT sender_id FROM {$wpdb->prefix}bn_notifications WHERE id = %d", (int)$row->id));
+        if (!empty($db_sender)) {
+            $row->sender_id = (int)$db_sender;
+        }
+    }
+
+    $current_msg = $args['payload']['message'] ?? '';
+    $is_fallback_text = empty($current_msg)
+        || $current_msg === 'You have a new notification.'
+        || $current_msg === __('You have a new notification.', 'buddynext');
+
+    $is_msg = in_array($type, ['message', 'bn.new_message', 'new_message', 'new_chat_message', 'bp_message'], true)
+        || in_array($obj_type, ['message_thread', 'message_reply', 'profile_message', 'profile_chat', 'conversation'], true)
+        || (!empty($raw_data['url']) && strpos($raw_data['url'], 'messages') !== false)
+        || (!empty($raw_data['message']))
+        || $is_fallback_text;
+
+    if ($is_msg) {
+        $recipient_id = !empty($row->recipient_id) ? (int)$row->recipient_id : get_current_user_id();
+        $messages_url = pt_get_user_messages_profile_url($recipient_id);
+
+        if (!isset($args['payload']) || !is_array($args['payload'])) {
+            $args['payload'] = [];
+        }
+
+        $args['payload']['url']   = $messages_url;
+        $args['payload']['label'] = __('Message', 'buddyx-child');
+        $args['payload']['icon']  = 'mail';
+        $args['payload']['tone']  = 'info';
+
+        $sender_id   = !empty($row->sender_id) ? (int)$row->sender_id : (!empty($raw_data['sender_id']) ? (int)$raw_data['sender_id'] : 0);
+        $sender_name = '';
+
+        if ($sender_id <= 0 && $recipient_id > 0) {
+            $inbox = get_user_meta($recipient_id, 'pt_place_inbox_messages', true);
+            if (is_array($inbox) && !empty($inbox[0])) {
+                $latest = $inbox[0];
+                if (!empty($latest['sender_id'])) {
+                    $sender_id   = (int)$latest['sender_id'];
+                    $sender_name = $latest['sender_name'] ?? '';
+                    if (empty($raw_data['message']) && !empty($latest['message'])) {
+                        $place_txt = !empty($latest['place_name']) ? (' cho ' . $latest['place_name']) : '';
+                        $raw_data['message'] = sprintf('%s đã gửi tin nhắn%s: %s', $sender_name, $place_txt, wp_trim_words($latest['message'], 15));
+                    }
+                }
+            }
+        }
+
+        if ($sender_id > 0) {
+            $row->sender_id               = $sender_id;
+            $args['payload']['actor_id']   = $sender_id;
+            if (empty($sender_name)) {
+                $sender_name = function_exists('bp_core_get_user_displayname') ? bp_core_get_user_displayname($sender_id) : '';
+                if (empty($sender_name)) {
+                    $user = get_userdata($sender_id);
+                    $sender_name = $user ? ($user->display_name ?: $user->user_login) : ('User #' . $sender_id);
+                }
+            }
+            $args['payload']['actor_name'] = $sender_name;
+        }
+
+        if (!empty($raw_data['message'])) {
+            $args['payload']['message'] = $raw_data['message'];
+        } elseif ($is_fallback_text || empty($args['payload']['message'])) {
+            if (!empty($sender_name)) {
+                $args['payload']['message'] = sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $sender_name);
+            } else {
+                $args['payload']['message'] = __('Bạn có một tin nhắn mới.', 'buddyx-child');
+            }
+        }
+    }
+
+    return $args;
+}, 20, 1);
+
+/**
+ * AJAX Endpoint phục vụ realtime notifications cho BuddyX và website
+ */
+add_action('wp_ajax_pt_get_realtime_notifications', 'pt_get_realtime_notifications_ajax');
+function pt_get_realtime_notifications_ajax()
+{
+    if (!is_user_logged_in()) {
+        wp_send_json_error(['message' => 'Not logged in'], 403);
+    }
+
+    $current_user_id = get_current_user_id();
+    $messages_url    = pt_get_user_messages_profile_url($current_user_id);
+
+    // 1. Lấy unread count từ BuddyPress
+    $bp_unread = 0;
+    if (function_exists('bp_notifications_get_unread_notification_count')) {
+        $bp_unread = (int) bp_notifications_get_unread_notification_count($current_user_id);
+    }
+
+    // 2. Lấy unread count từ BuddyNext nếu có
+    $bn_unread = 0;
+    if (function_exists('buddynext_service')) {
+        try {
+            $notif_svc = buddynext_service('notifications');
+            if (is_object($notif_svc) && method_exists($notif_svc, 'unread_count')) {
+                $bn_unread = (int) $notif_svc->unread_count($current_user_id);
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    $total_unread = max($bp_unread, $bn_unread);
+
+    // 3. Render danh sách notifications dropdown cho BuddyX (#bp-notify)
+    $dropdown_html = '';
+    $latest_items  = [];
+
+    if (function_exists('bp_has_notifications') && bp_has_notifications([
+        'user_id'  => $current_user_id,
+        'per_page' => 10,
+        'max'      => 10,
+    ])) {
+        ob_start();
+        while (bp_the_notifications()) {
+            bp_the_notification();
+            global $bp;
+            $notif = isset($bp->notifications->query_loop->notification) ? $bp->notifications->query_loop->notification : null;
+            ?>
+            <div class="dropdown-item">
+                <div class="dropdown-item-title notification ellipsis"><?php bp_the_notification_description(); ?></div>
+                <p class="mute"><?php bp_the_notification_time_since(); ?></p>
+            </div>
+            <?php
+            if (count($latest_items) < 3 && $notif) {
+                $raw_desc = strip_tags(bp_get_the_notification_description());
+                $latest_items[] = [
+                    'id'   => (int) $notif->id,
+                    'text' => $raw_desc,
+                    'link' => $messages_url,
+                    'time' => bp_get_the_notification_time_since(),
+                ];
+            }
+        }
+        $dropdown_html = ob_get_clean();
+    } elseif (function_exists('buddynext_service')) {
+        try {
+            $notif_svc = buddynext_service('notifications');
+            if ($notif_svc && method_exists($notif_svc, 'list_for_user')) {
+                $listed = $notif_svc->list_for_user($current_user_id, null, 10, 'unread', 0);
+                $rows   = $listed['items'] ?? [];
+                if (!empty($rows)) {
+                    ob_start();
+                    foreach ($rows as $item) {
+                        $sender_id = !empty($item['sender_id']) ? (int)$item['sender_id'] : 0;
+                        $sender_name = $sender_id ? (bp_core_get_user_displayname($sender_id) ?: 'Someone') : 'Hệ thống';
+                        $time_str = !empty($item['created_at']) ? human_time_diff(strtotime($item['created_at']), current_time('timestamp')) . ' trước' : '';
+                        $desc = sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $sender_name);
+                        ?>
+                        <div class="dropdown-item">
+                            <div class="dropdown-item-title notification ellipsis">
+                                <a href="<?php echo esc_url($messages_url); ?>"><?php echo esc_html($desc); ?></a>
+                            </div>
+                            <p class="mute"><?php echo esc_html($time_str); ?></p>
+                        </div>
+                        <?php
+                        if (count($latest_items) < 3) {
+                            $latest_items[] = [
+                                'id'   => (int) $item['id'],
+                                'text' => $desc,
+                                'link' => $messages_url,
+                                'time' => $time_str,
+                            ];
+                        }
+                    }
+                    $dropdown_html = ob_get_clean();
+                }
+            }
+        } catch (\Throwable $e) {}
+    }
+
+    wp_send_json_success([
+        'unread_count'  => $total_unread,
+        'count_display' => $total_unread > 9 ? '9+' : (string) $total_unread,
+        'dropdown_html' => $dropdown_html,
+        'latest_items'  => $latest_items,
+        'messages_url'  => $messages_url,
+    ]);
+}
+
+/**
+ * Tắt cross-document ViewTransition và ngăn chặn triệt để lỗi InvalidStateError
+ */
+add_action('wp_head', function () {
+    ?>
+    <style>
+    @view-transition {
+        navigation: none !important;
+    }
+    .user-notifications a.bp-icon-wrap {
+        position: relative;
+    }
+    .user-notifications a.bp-icon-wrap sup.count {
+        position: absolute;
+        top: -6px;
+        right: -8px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        padding: 3px 6px;
+        border-radius: 9999px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .bn-notif-row[data-interactive],
+    .bn-notif-row[data-notif-link],
+    .bn-notif-row {
+        cursor: pointer !important;
+    }
+    </style>
+    <script>
+    (function() {
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event && event.reason) {
+                var errStr = String(event.reason.message || event.reason || '');
+                if (errStr.indexOf('Transition') !== -1 ||
+                    errStr.indexOf('ViewTransition') !== -1 ||
+                    (event.reason.name === 'InvalidStateError')) {
+                    event.preventDefault();
+                }
+            }
+        });
+    })();
+    </script>
+    <?php
+}, 1);
+
+/**
+ * Realtime Notification Polling & Click Handler cho BuddyX
+ */
+add_action('wp_footer', function () {
+    if (!is_user_logged_in()) {
+        return;
+    }
+    $my_messages_url = pt_get_user_messages_profile_url();
+    $ajax_url        = admin_url('admin-ajax.php');
+    $nonce           = wp_create_nonce('pt_realtime_notif_nonce');
+    ?>
+    <script>
+    (function() {
+        var myMessagesUrl = <?php echo json_encode($my_messages_url); ?>;
+        var ajaxUrl       = <?php echo json_encode($ajax_url); ?>;
+        var nonce         = <?php echo json_encode($nonce); ?>;
+        var lastCount     = -1;
+        var isPolling     = false;
+
+        function updateNotificationBadges(count, countDisplay) {
+            var $ = window.jQuery;
+            if ($) {
+                var $bellWrap = $('.user-notifications a.bp-icon-wrap');
+                if ($bellWrap.length) {
+                    var $sup = $bellWrap.find('sup.count');
+                    if (count > 0) {
+                        if ($sup.length) {
+                            $sup.text(countDisplay).show();
+                        } else {
+                            $bellWrap.append('<sup class="count">' + countDisplay + '</sup>');
+                        }
+                    } else {
+                        $sup.remove();
+                    }
+                }
+
+                // Cập nhật các badge của BuddyNext nếu có
+                var $bnBadges = $('.bn-notification-badge, .bn-badge');
+                if ($bnBadges.length) {
+                    if (count > 0) {
+                        $bnBadges.text(countDisplay).prop('hidden', false).show();
+                    } else {
+                        $bnBadges.prop('hidden', true).hide();
+                    }
+                }
+            }
+        }
+
+        function showRealtimeToast(item) {
+            var toastId = 'pt-realtime-notif-toast';
+            var toast = document.getElementById(toastId);
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = toastId;
+                toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999999;max-width:350px;background:#1e293b;color:#fff;padding:12px 18px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.35s ease;opacity:0;transform:translateY(20px);';
+                document.body.appendChild(toast);
+            }
+            var text = (item && item.text) ? item.text : 'Bạn có thông báo mới!';
+            var targetLink = (item && item.link) ? item.link : myMessagesUrl;
+            toast.innerHTML = '<span style="font-size:22px;line-height:1;">🔔</span><div style="flex:1;"><strong style="display:block;font-size:13px;color:#38bdf8;margin-bottom:2px;">Thông báo mới</strong><div style="font-size:13px;line-height:1.4;color:#f8fafc;">' + text + '</div></div>';
+            toast.onclick = function() {
+                window.location.assign(targetLink);
+            };
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateY(0)';
+            if (toast._timer) clearTimeout(toast._timer);
+            toast._timer = setTimeout(function() {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(20px)';
+            }, 6000);
+        }
+
+        function pollRealtimeNotifications() {
+            if (isPolling) return;
+            isPolling = true;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', ajaxUrl, true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+            xhr.onload = function() {
+                isPolling = false;
+                if (xhr.status >= 200 && xhr.status < 400) {
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        if (res && res.success && res.data) {
+                            var data = res.data;
+                            var unread = parseInt(data.unread_count, 10) || 0;
+
+                            // Báo toast realtime khi có thông báo mới xuất hiện
+                            if (lastCount !== -1 && unread > lastCount) {
+                                var latest = (data.latest_items && data.latest_items.length) ? data.latest_items[0] : null;
+                                showRealtimeToast(latest);
+                            }
+                            lastCount = unread;
+                            updateNotificationBadges(unread, data.count_display);
+
+                            // Cập nhật dropdown BuddyX (#bp-notify)
+                            if (data.dropdown_html && window.jQuery) {
+                                var $inner = window.jQuery('#bp-notify .bp-dropdown-inner');
+                                if ($inner.length) {
+                                    $inner.html(data.dropdown_html);
+                                } else {
+                                    var $alert = window.jQuery('#bp-notify .alert-message');
+                                    if ($alert.length) {
+                                        $alert.replaceWith('<div class="bp-dropdown-inner">' + data.dropdown_html + '</div>');
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {}
+                }
+            };
+            xhr.onerror = function() { isPolling = false; };
+            xhr.send('action=pt_get_realtime_notifications&nonce=' + encodeURIComponent(nonce));
+        }
+
+        // Bắt đầu polling realtime mỗi 5 giây
+        setTimeout(pollRealtimeNotifications, 1000);
+        setInterval(pollRealtimeNotifications, 5000);
+
+        // Click Handler: Đảm bảo click vào bất kỳ notification nào cũng dẫn chuẩn về Message tab
+        document.addEventListener('click', function(e) {
+            // 1. Click vào dropdown item của BuddyX (#bp-notify)
+            var bpItem = e.target.closest('#bp-notify .dropdown-item, .user-notifications .dropdown-item');
+            if (bpItem) {
+                var aTag = bpItem.querySelector('a[href]');
+                var targetHref = aTag ? aTag.getAttribute('href') : myMessagesUrl;
+                if (targetHref) {
+                    e.preventDefault();
+                    window.location.assign(targetHref);
+                    return;
+                }
+            }
+
+            // 2. Click vào notification row của BuddyNext (.bn-notif-row)
+            var row = e.target.closest('.bn-notif-row');
+            if (!row) return;
+
+            // Bỏ qua nếu click nút Dismiss (x) hoặc action riêng biệt
+            if (e.target.closest('.bn-notif-row__dismiss, [data-wp-on--click*="dismiss"], [data-wp-on--click*="markReadOnly"], .bn-notif-row__actions')) {
+                return;
+            }
+
+            var link = row.getAttribute('data-notif-link') || (row.dataset ? row.dataset.notifLink : null);
+            if (!link) {
+                var openBtn = row.querySelector('a.bn-btn[href], a[href*="messages"]');
+                if (openBtn) {
+                    link = openBtn.getAttribute('href');
+                }
+            }
+            if (!link) {
+                link = myMessagesUrl;
+            }
+
+            if (link) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                var notifId = row.dataset ? row.dataset.notifId : null;
+                if (notifId && row.classList.contains('bn-notif-row--unread')) {
+                    row.classList.remove('bn-notif-row--unread');
+                    var pulse = row.querySelector('.bn-notif-row__pulse');
+                    if (pulse) pulse.hidden = true;
+
+                    try {
+                        if (window.wp && window.wp.apiFetch) {
+                            window.wp.apiFetch({
+                                path: '/buddynext/v1/notifications/' + notifId + '/read',
+                                method: 'POST'
+                            }).catch(function() {});
+                        } else {
+                            var bNonce = (window.buddynext && window.buddynext.nonce) ? window.buddynext.nonce : '';
+                            fetch('/wp-json/buddynext/v1/notifications/' + notifId + '/read', {
+                                method: 'POST',
+                                headers: { 'X-WP-Nonce': bNonce }
+                            }).catch(function() {});
+                        }
+                    } catch (err) {}
+                }
+
+                window.location.assign(link);
+            }
+        }, true);
+    })();
+    </script>
+    <?php
+}, 999);
+
 
 
 

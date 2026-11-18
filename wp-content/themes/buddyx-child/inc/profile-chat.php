@@ -321,9 +321,11 @@ function pt_ajax_chat_send_message() {
     $sender_user = get_userdata( $current_user_id );
     $sender_name = $sender_user ? ( $sender_user->display_name ?: $sender_user->user_login ) : 'Someone';
     $notif_text  = sprintf( 'You have a new message from %s: "%s"', $sender_name, wp_trim_words( $message, 10, '...' ) );
-    $chat_url    = function_exists( 'buddynext_profile_url' ) 
-        ? add_query_arg( 'tab', 'chat', trailingslashit( buddynext_profile_url( $recipient_id ) ) ) 
-        : home_url( '/members/' . ( $sender_user ? $sender_user->user_login : '' ) . '/#chat' );
+    $chat_url    = function_exists('pt_get_user_messages_profile_url') 
+        ? pt_get_user_messages_profile_url($recipient_id) 
+        : (function_exists( 'buddynext_profile_url' ) 
+            ? add_query_arg( 'tab', 'chat', trailingslashit( buddynext_profile_url( $recipient_id ) ) ) 
+            : home_url( '/members/' . ( $sender_user ? $sender_user->user_login : '' ) . '/messages/' ));
 
     // 1. Tạo Notification trong BuddyNext
     if ( function_exists( 'buddynext_service' ) ) {
@@ -337,6 +339,10 @@ function pt_ajax_chat_send_message() {
                     'type'         => 'message',
                     'object_type'  => 'profile_chat',
                     'object_id'    => $msg_id,
+                    'data'         => array(
+                        'url'     => $chat_url,
+                        'message' => $notif_text,
+                    ),
                     'url'          => $chat_url,
                     'title'        => 'New message',
                     'message'      => $notif_text,
