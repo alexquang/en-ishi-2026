@@ -1905,8 +1905,8 @@ function pt_send_place_message_ajax()
             $notif_svc = buddynext_service('notifications');
             if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
                 $sender_label = ($sender_user && !empty($sender_user->display_name)) ? $sender_user->display_name : ('User #' . $sender_id);
-                $shop_label   = $place_name !== '' ? $place_name : 'shop của bạn';
-                $notif_msg    = sprintf('%s đã gửi tin nhắn cho %s: %s', $sender_label, $shop_label, wp_trim_words($message, 15));
+                $shop_label   = $place_name !== '' ? $place_name : 'your place';
+                $notif_msg    = sprintf('%s sent a message to %s: %s', $sender_label, $shop_label, wp_trim_words($message, 15));
                 $notif_svc->create([
                     'recipient_id' => $owner_id,
                     'actor_id'     => $sender_id,
@@ -3204,7 +3204,7 @@ function pt_reply_place_inbox_message_ajax()
 
     // Gửi thông báo BuddyNext nếu có
     $recipient_messages_url = function_exists('pt_get_user_messages_profile_url') ? pt_get_user_messages_profile_url($target_user_id) : home_url('/members/' . ($target_user ? $target_user->user_nicename : '') . '/messages/');
-    $notif_msg = sprintf('%s đã trả lời tin nhắn của bạn: %s', $sender_name, wp_trim_words($reply_text, 15));
+    $notif_msg = sprintf('%s replied to your message: %s', $sender_name, wp_trim_words($reply_text, 15));
     if (function_exists('buddynext_service')) {
         try {
             $notif_svc = buddynext_service('notifications');
@@ -3300,7 +3300,7 @@ function pt_send_profile_message_ajax()
             $notif_svc = buddynext_service('notifications');
             if (is_object($notif_svc) && method_exists($notif_svc, 'create')) {
                 $recipient_messages_url = function_exists('pt_get_user_messages_profile_url') ? pt_get_user_messages_profile_url($recipient_id) : home_url('/members/' . ($recipient_user ? $recipient_user->user_nicename : '') . '/messages/');
-                $notif_msg = sprintf('%s đã gửi tin nhắn cho bạn: %s', $sender_name, wp_trim_words($message, 15));
+                $notif_msg = sprintf('%s sent you a message: %s', $sender_name, wp_trim_words($message, 15));
                 $notif_svc->create([
                     'recipient_id' => $recipient_id,
                     'actor_id'     => $sender_id,
@@ -3313,7 +3313,7 @@ function pt_send_profile_message_ajax()
                         'message' => $notif_msg,
                     ],
                     'url'          => $recipient_messages_url,
-                    'title'        => $subject !== '' ? $subject : 'Tin nhắn mới',
+                    'title'        => $subject !== '' ? $subject : 'New message',
                     'message'      => $notif_msg,
                     'body'         => wp_trim_words($message, 20),
                 ]);
@@ -3631,6 +3631,51 @@ if (!function_exists('pt_get_user_messages_profile_url')) {
 }
 
 /**
+ * Helper: Chuyển đổi nội dung thông báo sang tiếng Anh (kể cả thông báo đã lưu trong DB)
+ */
+if (!function_exists('pt_translate_notification_message_to_en')) {
+    function pt_translate_notification_message_to_en($msg)
+    {
+        if (empty($msg) || !is_string($msg)) {
+            return $msg;
+        }
+        $search = [
+            'đã gửi tin nhắn cho bạn:',
+            'đã gửi tin nhắn cho bạn.',
+            'đã gửi tin nhắn cho bạn',
+            'đã gửi tin nhắn cho',
+            'đã gửi tin nhắn',
+            'đã trả lời tin nhắn của bạn:',
+            'đã trả lời tin nhắn của bạn.',
+            'đã trả lời tin nhắn của bạn',
+            'đã trả lời tin nhắn',
+            'Bạn có một tin nhắn mới.',
+            'Bạn có một tin nhắn mới',
+            'Bạn có tin nhắn mới',
+            'cho shop của bạn',
+            'shop của bạn',
+        ];
+        $replace = [
+            'sent you a message:',
+            'sent you a message.',
+            'sent you a message',
+            'sent a message to',
+            'sent a message',
+            'replied to your message:',
+            'replied to your message.',
+            'replied to your message',
+            'replied to your message',
+            'You have a new message.',
+            'You have a new message',
+            'You have a new message',
+            'to your place',
+            'your place',
+        ];
+        return str_replace($search, $replace, $msg);
+    }
+}
+
+/**
  * Hook lọc thông báo tin nhắn của BuddyPress:
  * Khi click notification trên header/menu BuddyX, điều hướng thẳng tới /members/[username]/messages/
  */
@@ -3657,7 +3702,7 @@ function pt_filter_buddypress_message_notifications($action, $item_id, $secondar
 
     $count = !empty($total_items) ? (int) $total_items : 1;
     if ($count > 1) {
-        $text = sprintf(__('Bạn có %d tin nhắn mới', 'buddyx-child'), $count);
+        $text = sprintf(__('You have %d new messages', 'buddyx-child'), $count);
     } else {
         if ($sender_id > 0) {
             $sender_name = function_exists('bp_core_get_user_displayname')
@@ -3667,11 +3712,13 @@ function pt_filter_buddypress_message_notifications($action, $item_id, $secondar
                 $user = get_userdata($sender_id);
                 $sender_name = $user ? ($user->display_name ?: $user->user_login) : ('User #' . $sender_id);
             }
-            $text = sprintf(__('%s đã gửi tin nhắn cho bạn', 'buddyx-child'), $sender_name);
+            $text = sprintf(__('%s sent you a message', 'buddyx-child'), $sender_name);
         } else {
-            $text = __('Bạn có một tin nhắn mới', 'buddyx-child');
+            $text = __('You have a new message', 'buddyx-child');
         }
     }
+
+    $text = pt_translate_notification_message_to_en($text);
 
     if ('string' === $format) {
         return '<a href="' . esc_url($messages_url) . '">' . esc_html($text) . '</a>';
@@ -3697,7 +3744,7 @@ function pt_filter_buddypress_notification_description_link($description, $notif
     $is_msg_act  = in_array($comp_act, ['new_message', 'new_chat_message', 'message'], true);
 
     if (!$is_msg_comp && !$is_msg_act) {
-        return $description;
+        return pt_translate_notification_message_to_en($description);
     }
 
     $target_user_id = !empty($notification->user_id) ? (int)$notification->user_id : bp_loggedin_user_id();
@@ -3709,7 +3756,7 @@ function pt_filter_buddypress_notification_description_link($description, $notif
         $description = '<a href="' . esc_url($messages_url) . '">' . $description . '</a>';
     }
 
-    return $description;
+    return pt_translate_notification_message_to_en($description);
 }
 
 /**
@@ -3729,14 +3776,14 @@ add_filter('buddynext_notification_url', function ($url, $type, $actor_id, $obje
 add_filter('buddynext_notification_message', function ($message, $type, $actor_name, $object_id, $data) {
     if (in_array($type, ['message', 'bn.new_message', 'new_message', 'new_chat_message'], true)) {
         if (!empty($data['message'])) {
-            return (string)$data['message'];
+            return pt_translate_notification_message_to_en((string)$data['message']);
         }
         if (!empty($actor_name)) {
-            return sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $actor_name);
+            return sprintf(__('%s sent you a message.', 'buddyx-child'), $actor_name);
         }
-        return __('Bạn có một tin nhắn mới.', 'buddyx-child');
+        return __('You have a new message.', 'buddyx-child');
     }
-    return $message;
+    return pt_translate_notification_message_to_en($message);
 }, 10, 5);
 
 add_filter('buddynext_notification_meta', function ($meta, $type) {
@@ -3811,8 +3858,8 @@ add_filter('buddynext_part_notification_row_args', function ($args) {
                     $sender_id   = (int)$latest['sender_id'];
                     $sender_name = $latest['sender_name'] ?? '';
                     if (empty($raw_data['message']) && !empty($latest['message'])) {
-                        $place_txt = !empty($latest['place_name']) ? (' cho ' . $latest['place_name']) : '';
-                        $raw_data['message'] = sprintf('%s đã gửi tin nhắn%s: %s', $sender_name, $place_txt, wp_trim_words($latest['message'], 15));
+                        $place_txt = !empty($latest['place_name']) ? (' to ' . $latest['place_name']) : '';
+                        $raw_data['message'] = sprintf('%s sent a message%s: %s', $sender_name, $place_txt, wp_trim_words($latest['message'], 15));
                     }
                 }
             }
@@ -3832,14 +3879,18 @@ add_filter('buddynext_part_notification_row_args', function ($args) {
         }
 
         if (!empty($raw_data['message'])) {
-            $args['payload']['message'] = $raw_data['message'];
+            $args['payload']['message'] = pt_translate_notification_message_to_en($raw_data['message']);
         } elseif ($is_fallback_text || empty($args['payload']['message'])) {
             if (!empty($sender_name)) {
-                $args['payload']['message'] = sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $sender_name);
+                $args['payload']['message'] = sprintf(__('%s sent you a message.', 'buddyx-child'), $sender_name);
             } else {
-                $args['payload']['message'] = __('Bạn có một tin nhắn mới.', 'buddyx-child');
+                $args['payload']['message'] = __('You have a new message.', 'buddyx-child');
             }
         }
+    }
+
+    if (!empty($args['payload']['message'])) {
+        $args['payload']['message'] = pt_translate_notification_message_to_en($args['payload']['message']);
     }
 
     return $args;
@@ -3918,9 +3969,10 @@ function pt_get_realtime_notifications_ajax()
                     ob_start();
                     foreach ($rows as $item) {
                         $sender_id = !empty($item['sender_id']) ? (int)$item['sender_id'] : 0;
-                        $sender_name = $sender_id ? (bp_core_get_user_displayname($sender_id) ?: 'Someone') : 'Hệ thống';
-                        $time_str = !empty($item['created_at']) ? human_time_diff(strtotime($item['created_at']), current_time('timestamp')) . ' trước' : '';
-                        $desc = sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $sender_name);
+                        $sender_name = $sender_id ? (bp_core_get_user_displayname($sender_id) ?: 'Someone') : 'System';
+                        $time_str = !empty($item['created_at']) ? human_time_diff(strtotime($item['created_at']), current_time('timestamp')) . ' ago' : '';
+                        $desc = sprintf(__('%s sent you a message.', 'buddyx-child'), $sender_name);
+                        $desc = pt_translate_notification_message_to_en($desc);
                         ?>
                         <div class="dropdown-item">
                             <div class="dropdown-item-title notification ellipsis">
@@ -4058,9 +4110,9 @@ add_action('wp_footer', function () {
                 toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:999999;max-width:350px;background:#1e293b;color:#fff;padding:12px 18px;border-radius:10px;box-shadow:0 10px 25px rgba(0,0,0,0.3);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.35s ease;opacity:0;transform:translateY(20px);';
                 document.body.appendChild(toast);
             }
-            var text = (item && item.text) ? item.text : 'Bạn có thông báo mới!';
+            var text = (item && item.text) ? item.text : 'You have a new message!';
             var targetLink = (item && item.link) ? item.link : myMessagesUrl;
-            toast.innerHTML = '<span style="font-size:22px;line-height:1;">🔔</span><div style="flex:1;"><strong style="display:block;font-size:13px;color:#38bdf8;margin-bottom:2px;">Thông báo mới</strong><div style="font-size:13px;line-height:1.4;color:#f8fafc;">' + text + '</div></div>';
+            toast.innerHTML = '<span style="font-size:22px;line-height:1;">🔔</span><div style="flex:1;"><strong style="display:block;font-size:13px;color:#38bdf8;margin-bottom:2px;">New notification</strong><div style="font-size:13px;line-height:1.4;color:#f8fafc;">' + text + '</div></div>';
             toast.onclick = function() {
                 window.location.assign(targetLink);
             };
