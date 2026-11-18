@@ -3214,6 +3214,19 @@ function pt_reply_place_inbox_message_ajax()
         } catch (\Throwable $e) {}
     }
 
+    // Tạo Notification trong BuddyPress nếu có
+    if (function_exists('bp_notifications_add_notification')) {
+        bp_notifications_add_notification([
+            'user_id'           => $target_user_id,
+            'item_id'           => $current_user_id,
+            'secondary_item_id' => $current_user_id,
+            'component_name'    => 'messages',
+            'component_action'  => 'new_message',
+            'date_notified'     => bp_core_current_time(),
+            'is_new'            => 1,
+        ]);
+    }
+
     wp_send_json_success([
         'message'    => 'Đã gửi phản hồi kèm tin nhắn cũ cho ' . ($target_user->display_name ?: $target_user->user_login) . '!',
         'replied_at' => $now,
@@ -3285,6 +3298,19 @@ function pt_send_profile_message_ajax()
                 ]);
             }
         } catch (\Throwable $e) {}
+    }
+
+    // Tạo Notification trong BuddyPress nếu có
+    if (function_exists('bp_notifications_add_notification')) {
+        bp_notifications_add_notification([
+            'user_id'           => $recipient_id,
+            'item_id'           => $sender_id,
+            'secondary_item_id' => $sender_id,
+            'component_name'    => 'messages',
+            'component_action'  => 'new_message',
+            'date_notified'     => bp_core_current_time(),
+            'is_new'            => 1,
+        ]);
     }
 
     wp_send_json_success([
@@ -3536,6 +3562,192 @@ add_action('wp_footer', function () {
  * Tab Chat kế bên tab Balance trong My Profile
  */
 require_once get_stylesheet_directory() . '/inc/profile-chat.php';
+
+/**
+ * Helper lấy URL trang cá nhân My Profile tại tab "Message" (/members/[username]/messages/)
+ *
+ * @param int $user_id ID của người dùng (người nhận thông báo).
+ * @return string URL chuẩn /members/[username]/messages/
+ */
+function pt_get_user_messages_profile_url($user_id = 0)
+{
+    if (!$user_id) {
+        $user_id = bp_loggedin_user_id();
+    }
+    if (!$user_id) {
+        $user_id = bp_displayed_user_id();
+    }
+    if (!$user_id) {
+        $user_id = get_current_user_id();
+    }
+
+    $profile_url = '';
+    if ($user_id > 0) {
+        if (function_exists('bp_members_get_user_url')) {
+            $profile_url = bp_members_get_user_url($user_id);
+        } elseif (function_exists('bp_core_get_user_domain')) {
+            $profile_url = bp_core_get_user_domain($user_id);
+        }
+    }
+
+    if (empty($profile_url) && function_exists('bp_loggedin_user_url')) {
+        $profile_url = bp_loggedin_user_url();
+    }
+    if (empty($profile_url) && function_exists('bp_loggedin_user_domain')) {
+        $profile_url = bp_loggedin_user_domain();
+    }
+
+    if (!empty($profile_url)) {
+        return trailingslashit($profile_url) . 'messages/';
+    }
+
+    return home_url('/messages/');
+}
+
+/**
+ * Filter định tuyến URL thông báo tin nhắn BuddyPress về My Profile Messages (/members/[username]/messages/)
+ * Sử dụng hook lọc chuẩn của BuddyPress: bp_notifications_get_notifications_for_user
+ */
+add_filter('bp_notifications_get_notifications_for_user', 'pt_filter_buddypress_message_notifications', 10, 8);
+function pt_filter_buddypress_message_notifications($action, $item_id, $secondary_item_id, $total_items, $format = 'string', $component_action_name = '', $component_name = '', $id = 0)
+{
+    // Xác định đúng component hoặc action liên quan tới tin nhắn
+    $action_name = !empty($component_action_name) ? $component_action_name : $action;
+    $comp_name   = !empty($component_name) ? $component_name : 'messages';
+
+    $is_msg_action = in_array($action_name, ['new_message', 'new_chat_message'], true);
+    $is_msg_comp   = in_array($comp_name, ['messages', 'message'], true);
+
+    if (!$is_msg_action && !$is_msg_comp) {
+        return $action;
+    }
+
+    // 1. Tạo URL điều hướng tới My Profile tại tab "Message" (/members/[username]/messages/)
+    $target_user_id = bp_loggedin_user_id();
+    if (!$target_user_id && !empty($id)) {
+        $notif = bp_notifications_get_notification($id);
+        if ($notif && !empty($notif->user_id)) {
+            $target_user_id = (int) $notif->user_id;
+        }
+    }
+    if (!$target_user_id) {
+        $target_user_id = bp_displayed_user_id();
+    }
+
+    $messages_url = pt_get_user_messages_profile_url($target_user_id);
+
+    // 2. Giữ nguyên nội dung thông báo & tên người gửi
+    $sender_id = (int) $secondary_item_id;
+    if ($sender_id <= 0 && (int) $item_id > 0) {
+        $sender_id = (int) $item_id;
+    }
+
+    $count = !empty($total_items) ? (int) $total_items : 1;
+    if ($count > 1) {
+        /* translators: %d: number of new messages */
+        $text = sprintf(__('You have %d new messages', 'buddypress'), $count);
+    } else {
+        if ($sender_id > 0) {
+            $sender_name = function_exists('bp_core_get_user_displayname')
+                ? bp_core_get_user_displayname($sender_id)
+                : '';
+            if (empty($sender_name)) {
+                $user = get_userdata($sender_id);
+                $sender_name = $user ? ($user->display_name ?: $user->user_login) : ('User #' . $sender_id);
+            }
+            /* translators: %s: member name */
+            $text = sprintf(__('%s sent you a new message', 'buddypress'), $sender_name);
+        } else {
+            $text = __('You have a new message', 'buddypress');
+        }
+    }
+
+    // 3. Trả về định dạng tương thích (string hoặc object/array)
+    if ('string' === $format) {
+        return '<a href="' . esc_url($messages_url) . '">' . esc_html($text) . '</a>';
+    }
+
+    return [
+        'text' => esc_html($text),
+        'link' => esc_url($messages_url),
+    ];
+}
+
+/**
+ * Filter định tuyến trực tiếp cho bộ định dạng tin nhắn của BuddyPress Messages component
+ */
+add_filter('bp_messages_single_new_message_string_notification', 'pt_filter_bp_messages_string_notification', 10, 6);
+add_filter('bp_messages_multiple_new_message_string_notification', 'pt_filter_bp_messages_string_notification', 10, 6);
+function pt_filter_bp_messages_string_notification($retval, $total_items, $text, $link, $item_id, $secondary_item_id)
+{
+    $messages_url = pt_get_user_messages_profile_url();
+    return '<a href="' . esc_url($messages_url) . '">' . esc_html($text) . '</a>';
+}
+
+add_filter('bp_messages_single_new_message_array_notification', 'pt_filter_bp_messages_array_notification', 10, 6);
+add_filter('bp_messages_multiple_new_message_array_notification', 'pt_filter_bp_messages_array_notification', 10, 6);
+function pt_filter_bp_messages_array_notification($retval, $total_items, $text, $link, $item_id, $secondary_item_id)
+{
+    if (is_array($retval)) {
+        $retval['link'] = esc_url(pt_get_user_messages_profile_url());
+    }
+    return $retval;
+}
+
+add_filter('bp_messages_new_chat_message_notification', 'pt_filter_bp_messages_new_chat_notification', 10, 5);
+function pt_filter_bp_messages_new_chat_notification($retval, $item_id, $secondary_item_id, $total_items, $format)
+{
+    $sender_id   = (int) $item_id;
+    $sender_name = function_exists('bp_core_get_user_displayname') ? bp_core_get_user_displayname($sender_id) : '';
+    if (empty($sender_name)) {
+        $user = get_userdata($sender_id);
+        $sender_name = $user ? ($user->display_name ?: $user->user_login) : ('User #' . $sender_id);
+    }
+    $text = sprintf(__('%s sent you a new message', 'buddypress'), $sender_name);
+    $messages_url = pt_get_user_messages_profile_url();
+
+    if ('string' === $format) {
+        return '<a href="' . esc_url($messages_url) . '">' . esc_html($text) . '</a>';
+    }
+    return [
+        'text' => esc_html($text),
+        'link' => esc_url($messages_url),
+    ];
+}
+
+/**
+ * Filter cập nhật URL trong header notification menu (BuddyX dropdown & toolbar)
+ */
+add_filter('bp_get_the_notification_description', 'pt_filter_buddypress_notification_description_link', 20, 2);
+function pt_filter_buddypress_notification_description_link($description, $notification)
+{
+    if (!$notification || !is_object($notification)) {
+        return $description;
+    }
+
+    $comp_name = !empty($notification->component_name) ? $notification->component_name : '';
+    $comp_act  = !empty($notification->component_action) ? $notification->component_action : '';
+
+    $is_msg_comp = in_array($comp_name, ['messages', 'message'], true);
+    $is_msg_act  = in_array($comp_act, ['new_message', 'new_chat_message'], true);
+
+    if (!$is_msg_comp && !$is_msg_act) {
+        return $description;
+    }
+
+    $target_user_id = !empty($notification->user_id) ? (int)$notification->user_id : bp_loggedin_user_id();
+    $messages_url   = pt_get_user_messages_profile_url($target_user_id);
+
+    // Thay thế href trong thẻ <a> hiện có (giữ nguyên toàn bộ text và avatar/icon của notification)
+    if (preg_match('/<a\s+[^>]*href=["\']([^"\']*)["\']/i', $description)) {
+        $description = preg_replace('/href=["\'][^"\']*["\']/i', 'href="' . esc_url($messages_url) . '"', $description);
+    } else {
+        $description = '<a href="' . esc_url($messages_url) . '">' . $description . '</a>';
+    }
+
+    return $description;
+}
+
 
 
 

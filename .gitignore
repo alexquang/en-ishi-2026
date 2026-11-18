@@ -1,1 +1,48 @@
-/vendor/
+# 1. Chặn toàn bộ WordPress Core
+wp-admin/
+wp-includes/
+wp-*.php
+index.php
+xmlrpc.php
+license.txt
+readme.html
+
+# 2. Chặn toàn bộ wp-content (Uploads, Cache, Plugins, Languages...)
+wp-content/*
+
+# 3. CHỈ MỞ LẠI thư mục Themes để lọc tiếp
+!wp-content/themes/
+wp-content/themes/*
+
+# 4. CHỈ CHO PHÉP AI đọc đúng Child Theme của bạn (Thay tên nếu khác)
+!wp-content/themes/buddyx-child/
+
+# *(Tùy chọn) Nếu bạn có tự viết 1 plugin riêng thì mới mở dòng dưới:*
+# !wp-content/plugins/ten-custom-plugin-cua-ban/
+
+# 5. Chặn các file nặng/rác bên trong chính Child Theme
+**/node_modules/
+**/vendor/
+**/assets/fonts/
+**/assets/images/
+**/languages/
+*.min.js
+*.min.css
+*.map
+*.po
+*.mo
+*.pot
+package-lock.json
+composer.lock
+
+# 6. Chặn dữ liệu Docker, Database & Logs
+mysql/
+mariadb/
+redis/
+db_data/
+*.sql
+*.sql.gz
+*.log
+*.zip
+*.tar.gz
+.env
