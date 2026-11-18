@@ -3785,6 +3785,13 @@ function pt_filter_buddypress_notification_description_link($description, $notif
  * Đảm bảo mọi notification tin nhắn trong hub /notifications/ hoặc header bell
  * đều điều hướng tới My Profile tab Message (/members/[username]/messages/)
  */
+add_filter('buddynext_notification_force_on_site', function ($force, $recipient_id, $type, $data) {
+    if (in_array($type, ['bn.new_message', 'message', 'new_message', 'new_chat_message'], true)) {
+        return true;
+    }
+    return $force;
+}, 10, 4);
+
 add_filter('buddynext_part_notification_row_args', 'pt_filter_buddynext_notification_row_args', 20, 1);
 function pt_filter_buddynext_notification_row_args($args)
 {
@@ -3792,17 +3799,40 @@ function pt_filter_buddynext_notification_row_args($args)
         return $args;
     }
 
+    global $wpdb;
     $row      = $args['notif_row'];
     $type     = !empty($row->type) ? (string)$row->type : '';
     $obj_type = !empty($row->object_type) ? (string)$row->object_type : '';
 
-    $is_msg = in_array($type, ['message', 'bn.new_message', 'new_message', 'new_chat_message'], true)
-        || in_array($obj_type, ['message_thread', 'message_reply', 'profile_message', 'profile_chat'], true);
-
-    $raw_data = !empty($row->data) ? (is_string($row->data) ? json_decode($row->data, true) : (array)$row->data) : [];
-    if (!$is_msg && !empty($raw_data['url']) && strpos($raw_data['url'], 'messages') !== false) {
-        $is_msg = true;
+    // Lấy data từ database nếu NotificationService::hydrate() bỏ qua data
+    $raw_data = [];
+    if (!empty($row->data)) {
+        $raw_data = is_string($row->data) ? json_decode($row->data, true) : (array)$row->data;
+    } elseif (!empty($row->id) && $wpdb) {
+        $db_data = $wpdb->get_var($wpdb->prepare("SELECT data FROM {$wpdb->prefix}bn_notifications WHERE id = %d", (int)$row->id));
+        if ($db_data) {
+            $raw_data = json_decode($db_data, true) ?: [];
+        }
     }
+
+    // Nếu sender_id trống, thử lấy từ DB row
+    if (empty($row->sender_id) && !empty($row->id) && $wpdb) {
+        $db_sender = $wpdb->get_var($wpdb->prepare("SELECT sender_id FROM {$wpdb->prefix}bn_notifications WHERE id = %d", (int)$row->id));
+        if (!empty($db_sender)) {
+            $row->sender_id = (int)$db_sender;
+        }
+    }
+
+    $current_msg = $args['payload']['message'] ?? '';
+    $is_fallback_text = empty($current_msg)
+        || $current_msg === 'You have a new notification.'
+        || $current_msg === __('You have a new notification.', 'buddynext');
+
+    $is_msg = in_array($type, ['message', 'bn.new_message', 'new_message', 'new_chat_message', 'bp_message'], true)
+        || in_array($obj_type, ['message_thread', 'message_reply', 'profile_message', 'profile_chat', 'conversation'], true)
+        || (!empty($raw_data['url']) && strpos($raw_data['url'], 'messages') !== false)
+        || (!empty($raw_data['message']))
+        || $is_fallback_text;
 
     if ($is_msg) {
         $recipient_id = !empty($row->recipient_id) ? (int)$row->recipient_id : get_current_user_id();
@@ -3817,26 +3847,47 @@ function pt_filter_buddynext_notification_row_args($args)
         $args['payload']['icon']  = 'mail';
         $args['payload']['tone']  = 'info';
 
-        // Xử lý nội dung hiển thị nếu đang bị rơi vào fallback "You have a new notification."
-        $current_msg = $args['payload']['message'] ?? '';
-        if (empty($current_msg) || $current_msg === 'You have a new notification.' || $current_msg === __('You have a new notification.', 'buddynext')) {
-            if (!empty($raw_data['message'])) {
-                $args['payload']['message'] = $raw_data['message'];
-            } else {
-                $sender_id = !empty($row->sender_id) ? (int)$row->sender_id : 0;
-                $sender_name = '';
-                if ($sender_id > 0) {
-                    $sender_name = function_exists('bp_core_get_user_displayname') ? bp_core_get_user_displayname($sender_id) : '';
-                    if (empty($sender_name)) {
-                        $user = get_userdata($sender_id);
-                        $sender_name = $user ? ($user->display_name ?: $user->user_login) : ('User #' . $sender_id);
+        // Xác định sender_id và tên người gửi
+        $sender_id   = !empty($row->sender_id) ? (int)$row->sender_id : (!empty($raw_data['sender_id']) ? (int)$raw_data['sender_id'] : 0);
+        $sender_name = '';
+
+        // Nếu sender_id vẫn chưa có, kiểm tra tin nhắn mới nhất trong pt_place_inbox_messages của recipient
+        if ($sender_id <= 0 && $recipient_id > 0) {
+            $inbox = get_user_meta($recipient_id, 'pt_place_inbox_messages', true);
+            if (is_array($inbox) && !empty($inbox[0])) {
+                $latest = $inbox[0];
+                if (!empty($latest['sender_id'])) {
+                    $sender_id   = (int)$latest['sender_id'];
+                    $sender_name = $latest['sender_name'] ?? '';
+                    if (empty($raw_data['message']) && !empty($latest['message'])) {
+                        $place_txt = !empty($latest['place_name']) ? (' cho ' . $latest['place_name']) : '';
+                        $raw_data['message'] = sprintf('%s đã gửi tin nhắn%s: %s', $sender_name, $place_txt, wp_trim_words($latest['message'], 15));
                     }
                 }
-                if (!empty($sender_name)) {
-                    $args['payload']['message'] = sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $sender_name);
-                } else {
-                    $args['payload']['message'] = __('Bạn có một tin nhắn mới.', 'buddyx-child');
+            }
+        }
+
+        if ($sender_id > 0) {
+            $row->sender_id               = $sender_id;
+            $args['payload']['actor_id']   = $sender_id;
+            if (empty($sender_name)) {
+                $sender_name = function_exists('bp_core_get_user_displayname') ? bp_core_get_user_displayname($sender_id) : '';
+                if (empty($sender_name)) {
+                    $user = get_userdata($sender_id);
+                    $sender_name = $user ? ($user->display_name ?: $user->user_login) : ('User #' . $sender_id);
                 }
+            }
+            $args['payload']['actor_name'] = $sender_name;
+        }
+
+        // Cập nhật nội dung thông báo
+        if (!empty($raw_data['message'])) {
+            $args['payload']['message'] = $raw_data['message'];
+        } elseif ($is_fallback_text || empty($args['payload']['message'])) {
+            if (!empty($sender_name)) {
+                $args['payload']['message'] = sprintf(__('%s đã gửi tin nhắn cho bạn.', 'buddyx-child'), $sender_name);
+            } else {
+                $args['payload']['message'] = __('Bạn có một tin nhắn mới.', 'buddyx-child');
             }
         }
     }
@@ -3886,21 +3937,47 @@ function pt_filter_buddynext_notification_meta($meta, $type)
 
 /**
  * Click handler hỗ trợ trực tiếp cho các dòng notification BuddyNext (.bn-notif-row)
+ * Khắc phục lỗi ViewTransition opt-in disabled và điều hướng chính xác về tab Message
  */
 add_action('wp_footer', function () {
     if (!is_user_logged_in()) {
         return;
     }
+    $my_messages_url = pt_get_user_messages_profile_url();
     ?>
+    <style>
+    @view-transition {
+        navigation: auto;
+    }
+    .bn-notif-row[data-interactive],
+    .bn-notif-row[data-notif-link] {
+        cursor: pointer !important;
+    }
+    </style>
     <script>
     (function() {
+        // Ngăn chặn unhandled promise rejection từ aborted ViewTransition của browser
+        window.addEventListener('unhandledrejection', function(event) {
+            if (event && event.reason) {
+                var errStr = String(event.reason.message || event.reason || '');
+                if (errStr.indexOf('Transition was aborted') !== -1 ||
+                    errStr.indexOf('ViewTransition') !== -1 ||
+                    (event.reason.name === 'InvalidStateError' && errStr.indexOf('Transition') !== -1)) {
+                    event.preventDefault();
+                }
+            }
+        });
+
+        // Click handler điều hướng an toàn tới liên kết notification
         document.addEventListener('click', function(e) {
             var row = e.target.closest('.bn-notif-row');
             if (!row) return;
-            // Bỏ qua nếu click nút Dismiss (x) hoặc action riêng biệt
-            if (e.target.closest('.bn-notif-row__dismiss, [data-wp-on--click*="dismiss"], [data-wp-on--click*="markReadOnly"]')) {
+
+            // Bỏ qua nếu click nút Dismiss (x) hoặc các nút action cụ thể (.bn-notif-row__actions)
+            if (e.target.closest('.bn-notif-row__dismiss, [data-wp-on--click*="dismiss"], [data-wp-on--click*="markReadOnly"], .bn-notif-row__actions')) {
                 return;
             }
+
             var link = row.getAttribute('data-notif-link') || (row.dataset ? row.dataset.notifLink : null);
             if (!link) {
                 var openBtn = row.querySelector('a.bn-btn[href], a[href*="messages"]');
@@ -3908,18 +3985,33 @@ add_action('wp_footer', function () {
                     link = openBtn.getAttribute('href');
                 }
             }
+
+            if (!link) {
+                var notifType = row.getAttribute('data-notif-type') || '';
+                var text = (row.innerText || '').toLowerCase();
+                if (notifType.indexOf('message') !== -1 || text.indexOf('tin nhắn') !== -1 || text.indexOf('message') !== -1) {
+                    link = <?php echo json_encode($my_messages_url); ?>;
+                }
+            }
+
             if (link) {
+                // Đánh dấu đã đọc qua API nếu chưa đọc
+                var notifId = row.dataset ? row.dataset.notifId : null;
+                if (notifId && row.classList.contains('bn-notif-row--unread')) {
+                    try {
+                        if (window.wp && window.wp.apiFetch) {
+                            window.wp.apiFetch({
+                                path: '/buddynext/v1/notifications/' + notifId + '/read',
+                                method: 'POST'
+                            }).catch(function() {});
+                        }
+                    } catch (err) {}
+                }
                 window.location.href = link;
             }
         });
     })();
     </script>
-    <style>
-    .bn-notif-row[data-interactive],
-    .bn-notif-row[data-notif-link] {
-        cursor: pointer !important;
-    }
-    </style>
     <?php
 }, 999);
 
